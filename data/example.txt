@@ -1,0 +1,13 @@
+
+The Dual-Brain RAG Architecture is a design pattern for AI applications. 
+It utilizes a small, fast model like Gemini 3 Flash to perform "Query Expansion". 
+Query Expansion transforms a simple user question into a dense, descriptive set of keywords.
+This is critical because vector databases rely on semantic overlap between the query and the indexed text.
+
+The second brain, typically a larger model like Gemini 3 Pro, handles the "Reasoning" phase.
+Once the vector database (like ChromaDB) returns relevant context chunks, the reasoning model 
+analyzes the text, thinks through the implications, and synthesizes a high-fidelity response.
+
+By separating these concerns, the system is both faster at searching and smarter at answering.
+Sentence Transformers are used locally to create the high-dimensional vectors (embeddings) 
+that make the search possible.
