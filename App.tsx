@@ -33,7 +33,7 @@ const App: React.FC = () => {
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isResizing.current) return;
     const newWidth = window.innerWidth - e.clientX;
-    if (newWidth > 200 && newWidth < 800) {
+    if (newWidth > 240 && newWidth < 800) {
       setRightWidth(newWidth);
     }
   }, []);
@@ -138,18 +138,14 @@ const App: React.FC = () => {
 
     try {
       const fileNames = state.documents.map(d => d.name);
-      // Generate previews (first ~300 chars) for each document to ground BOTH brains
       const filePreviews = state.documents.map(d => `[File: ${d.name}]\n${d.content.substring(0, 300)}...`);
 
-      // Brain 1 grounded in vault metadata
       const expandedQuery = await geminiRAG.expandQuery(currentQuery, fileNames, filePreviews, state.temperature);
       updateMessage(assistantId, { expandedQuery, status: 'searching' });
 
-      // Search
       const sources = await vectorService.search(expandedQuery);
       updateMessage(assistantId, { sources, status: 'reasoning' });
 
-      // Brain 2 (Reasoning) with duration tracking
       const startTime = performance.now();
       
       const { answer } = await geminiRAG.generateAnswer(
@@ -191,10 +187,10 @@ const App: React.FC = () => {
         isIndexing={state.isIndexing}
       />
       
-      <main className="flex-1 flex flex-col min-w-0">
+      <main className="flex-1 flex flex-col min-w-0 bg-[#F8F9FB] dark:bg-brand-base">
         {state.error && (
-          <div className="bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-brand-border p-2 text-center text-[10px] text-red-600 dark:text-red-400 font-bold uppercase tracking-widest">
-            {state.error}
+          <div className="bg-red-500/10 border-b border-red-500/20 p-2 text-center text-[9px] text-red-500 font-bold uppercase tracking-[0.2em]">
+            System Error: {state.error}
           </div>
         )}
         <ChatInterface 
@@ -204,10 +200,10 @@ const App: React.FC = () => {
 
       <div 
         onMouseDown={startResizing}
-        className="w-1 cursor-col-resize hover:bg-purple-400 dark:hover:bg-brand-accent transition-colors bg-transparent z-20"
+        className="w-[1px] cursor-col-resize hover:bg-brand-accent transition-colors bg-gray-100 dark:bg-brand-border z-20"
       />
 
-      <div style={{ width: `${rightWidth}px` }}>
+      <div style={{ width: `${rightWidth}px` }} className="shrink-0">
         <RightSidebar
           inputValue={inputValue}
           setInputValue={setInputValue}

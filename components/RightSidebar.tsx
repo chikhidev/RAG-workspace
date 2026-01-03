@@ -1,5 +1,5 @@
 import React from 'react';
-import { Send, Loader2, Sliders, Sun, Moon } from 'lucide-react';
+import { Send, Loader2, Sliders, Sun, Moon, Terminal } from 'lucide-react';
 
 interface Props {
   inputValue: string;
@@ -30,76 +30,83 @@ export const RightSidebar: React.FC<Props> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-brand-base border-l border-gray-100 dark:border-brand-border p-6 w-full transition-colors overflow-y-auto">
-      <div className="flex justify-end mb-4">
+    <div className="flex flex-col h-full bg-white dark:bg-brand-darker border-l border-gray-100 dark:border-brand-border p-6 w-full transition-colors overflow-y-auto">
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-2">
+          <Terminal size={14} className="text-brand-accent" />
+          <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-gray-500">Controller</span>
+        </div>
         <button 
           onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-brand-darker rounded-full transition-colors text-gray-400 dark:text-brand-accent"
+          className="p-1.5 hover:bg-gray-100 dark:hover:bg-brand-border rounded-lg transition-colors text-gray-400"
         >
-          {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+          {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
         </button>
       </div>
 
-      <div className="mb-6">
-        <h2 className="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-4 flex items-center gap-2">
-          Input & Actions
+      <div className="mb-8">
+        <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 dark:text-gray-600 mb-4">
+          Synthesis Query
         </h2>
         <div className="relative group">
           <textarea
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type your query..."
-            className="w-full bg-gray-50 dark:bg-brand-darker border border-gray-100 dark:border-brand-border rounded-2xl p-4 focus:ring-2 focus:ring-purple-100 dark:focus:ring-brand-accent/20 focus:border-purple-300 dark:focus:border-brand-accent transition-all text-sm font-medium h-48 resize-none text-gray-800 dark:text-gray-100"
+            placeholder="Describe your reasoning task..."
+            className="w-full bg-gray-50 dark:bg-brand-base border border-gray-100 dark:border-brand-border rounded-xl p-5 focus:border-brand-accent transition-all text-sm font-medium h-52 resize-none text-gray-800 dark:text-gray-100 outline-none leading-relaxed"
           />
           <button
             onClick={onSend}
             disabled={isProcessing || !inputValue.trim()}
-            className="absolute bottom-4 right-4 bg-purple-600 dark:bg-brand-accent hover:bg-purple-700 dark:hover:bg-brand-accent/80 disabled:bg-gray-100 dark:disabled:bg-brand-darker disabled:text-gray-300 dark:disabled:text-gray-600 h-10 w-10 flex items-center justify-center rounded-xl transition-all shadow-lg shadow-purple-600/10 dark:shadow-none"
+            className="absolute bottom-4 right-4 bg-gray-900 dark:bg-brand-accent hover:bg-black dark:hover:bg-brand-accent/90 disabled:bg-gray-100 dark:disabled:bg-brand-border disabled:text-gray-300 dark:disabled:text-gray-600 h-10 w-10 flex items-center justify-center rounded-lg transition-all shadow-xl shadow-brand-accent/5"
           >
             {isProcessing ? (
-              <Loader2 className="animate-spin text-white" size={18} />
+              <Loader2 className="animate-spin text-white" size={16} />
             ) : (
-              <Send className="text-white" size={18} />
+              <Send className="text-white" size={16} />
             )}
           </button>
         </div>
       </div>
 
-      <div className="mt-8">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 flex items-center gap-2">
-            <Sliders size={14} />
-            Brain Config
+      <div className="mt-4">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 dark:text-gray-600 flex items-center gap-2">
+            <Sliders size={12} />
+            Hyperparameters
           </h2>
-          <span className="text-[10px] font-bold text-purple-600 dark:text-brand-accent bg-purple-50 dark:bg-brand-accent/10 px-2 py-0.5 rounded-full">
-            {temperature.toFixed(1)}
+          <span className="text-[11px] font-mono text-brand-accent">
+            {temperature.toFixed(2)}
           </span>
         </div>
-        <div className="space-y-4">
+        <div className="space-y-6">
           <div>
-            <label className="block text-[11px] font-semibold text-gray-500 dark:text-gray-400 mb-2">Temperature</label>
+            <label className="block text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-3">Model Temperature</label>
             <input
               type="range"
               min="0"
               max="2"
-              step="0.1"
+              step="0.01"
               value={temperature}
               onChange={(e) => setTemperature(parseFloat(e.target.value))}
-              className="w-full h-1.5 bg-gray-100 dark:bg-brand-border rounded-lg appearance-none cursor-pointer accent-purple-600 dark:accent-brand-accent"
+              className="w-full h-[1px] bg-gray-200 dark:bg-brand-border rounded-lg appearance-none cursor-pointer accent-brand-accent"
             />
-            <div className="flex justify-between mt-2 text-[9px] text-gray-400 font-medium">
-              <span>Precise</span>
+            <div className="flex justify-between mt-3 text-[9px] text-gray-400 dark:text-gray-600 font-mono uppercase tracking-widest">
+              <span>Deterministic</span>
               <span>Creative</span>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="mt-auto pt-6 border-t border-gray-50 dark:border-brand-border">
-        <p className="text-[10px] text-gray-300 dark:text-gray-600 leading-relaxed text-center">
-          Adjust temperature to control the randomness of the dual-brain synthesis.
-        </p>
+      <div className="mt-auto pt-8 border-t border-gray-50 dark:border-brand-border">
+        <div className="flex flex-col items-center gap-2">
+          <p className="text-[9px] font-mono text-gray-400 dark:text-gray-700 uppercase tracking-[0.3em]">
+            System v2.5.0-Flash
+          </p>
+          <div className="w-1 h-1 bg-brand-accent rounded-full animate-pulse"></div>
+        </div>
       </div>
     </div>
   );

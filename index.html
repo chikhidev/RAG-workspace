@@ -14,9 +14,9 @@
             colors: {
               brand: {
                 accent: '#F25912',
-                base: '#211832',
-                darker: '#1a1328',
-                border: '#2d2144',
+                base: '#000000',
+                darker: '#080808',
+                border: '#1a1a1a',
               }
             }
           }
@@ -32,17 +32,23 @@
         font-family: 'JetBrains Mono', monospace;
       }
       ::-webkit-scrollbar {
-        width: 6px;
+        width: 4px;
       }
       ::-webkit-scrollbar-track {
         background: transparent;
       }
       ::-webkit-scrollbar-thumb {
-        background: #E5E7EB;
+        background: #222;
         border-radius: 10px;
       }
       .dark ::-webkit-scrollbar-thumb {
-        background: #2d2144;
+        background: #333;
+      }
+      .grid-bg {
+        background-image: 
+          linear-gradient(rgba(26, 26, 26, 0.5) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(26, 26, 26, 0.5) 1px, transparent 1px);
+        background-size: 40px 40px;
       }
       .fade-in {
         animation: fadeIn 0.4s ease-out;
@@ -52,24 +58,18 @@
         to { opacity: 1; transform: translateY(0); }
       }
       .shimmer {
-        background: linear-gradient(90deg, #F3F4F6 0%, #E5E7EB 50%, #F3F4F6 100%);
+        background: linear-gradient(90deg, #111 0%, #1a1a1a 50%, #111 100%);
         background-size: 200% 100%;
         animation: shimmer 2s infinite;
-      }
-      .dark .shimmer {
-        background: linear-gradient(90deg, #211832 0%, #2d2144 50%, #211832 100%);
       }
       @keyframes shimmer {
         0% { background-position: 200% 0; }
         100% { background-position: -200% 0; }
       }
       .prose { max-width: none; }
-      .dark .prose { color: #EDEAF3; }
+      .dark .prose { color: #e5e5e5; }
       .message-shadow {
-        box-shadow: 0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-      }
-      .dark .message-shadow {
-        box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        box-shadow: 0 4px 24px rgba(0,0,0,0.5);
       }
     </style>
   <script type="importmap">
