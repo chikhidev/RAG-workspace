@@ -1,6 +1,7 @@
 import React from 'react';
-import { Send, Loader2, Sun, Moon, Terminal, Cpu, Eraser, Layers, Key, Settings2 } from 'lucide-react';
+import { Send, Loader2, Sun, Moon, Terminal, Cpu, Eraser, Layers, Key, Settings2, Sparkles } from 'lucide-react';
 import { SUPPORTED_MODELS } from '../services/modelService';
+import { ModelDefinition } from '../types';
 
 interface Props {
   inputValue: string;
@@ -25,6 +26,34 @@ interface Props {
   setOpenRouterKey: (k: string) => void;
   onOpenApiManagement: () => void;
 }
+
+const ModelDetails: React.FC<{ model?: ModelDefinition }> = ({ model }) => {
+  if (!model) return null;
+  const { metadata } = model;
+  
+  return (
+    <div className="mt-3 p-3 bg-gray-50 dark:bg-brand-base/40 border border-gray-100 dark:border-brand-border/50 rounded-xl space-y-2.5 animate-[fadeIn_0.3s_ease-out]">
+      <div className="flex flex-col gap-0.5">
+        <span className="text-[10px] font-mono text-gray-400 dark:text-brand-muted uppercase tracking-tighter">by {metadata.author}</span>
+        <span className="text-[10px] font-mono font-bold text-brand-accent">{metadata.context} context</span>
+      </div>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-2 pt-1 border-t border-gray-100 dark:border-brand-border/30">
+        <div className="flex flex-col">
+          <span className="text-[11px] font-mono text-gray-700 dark:text-gray-300 font-bold">{metadata.inputPrice} input tokens</span>
+        </div>
+        <div className="flex flex-col text-right">
+          <span className="text-[11px] font-mono text-gray-700 dark:text-gray-300 font-bold">{metadata.outputPrice} output tokens</span>
+        </div>
+        <div className="flex flex-col">
+          <span className="text-[11px] font-mono text-gray-700 dark:text-gray-300 font-bold">Latency {metadata.latency}</span>
+        </div>
+        <div className="flex flex-col text-right">
+          <span className="text-[11px] font-mono text-gray-700 dark:text-gray-300 font-bold">Throughput {metadata.throughput}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export const RightSidebar: React.FC<Props> = ({
   inputValue, setInputValue, onSend, onHistoryNav, isProcessing,
@@ -65,7 +94,7 @@ export const RightSidebar: React.FC<Props> = ({
       </div>
 
       <div className="mb-10">
-        <h2 className="text-[26px] font-serif italic text-gray-900 dark:text-white tracking-tight mb-4">Synthesis Query</h2>
+        <h2 className="text-lg text-gray-900 dark:text-white tracking-tight mb-4">Synthesis Query</h2>
         <div className="relative group">
           <textarea
             value={inputValue} onChange={(e) => setInputValue(e.target.value)} onKeyDown={handleKeyDown}
@@ -84,7 +113,7 @@ export const RightSidebar: React.FC<Props> = ({
       <div className="mb-10 space-y-8">
         <div>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-[26px] font-serif italic text-gray-900 dark:text-white tracking-tight">Brain Config</h2>
+            <h2 className="text-md text-gray-900 dark:text-white tracking-tight">Context expander Config</h2>
             <button onClick={onClearContext} className="p-1.5 hover:bg-gray-100 dark:hover:bg-brand-border rounded transition-colors text-gray-400 hover:text-brand-accent"><Eraser size={14} /></button>
           </div>
           <div className="space-y-3">
@@ -107,7 +136,7 @@ export const RightSidebar: React.FC<Props> = ({
 
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-[26px] font-serif italic text-gray-900 dark:text-white tracking-tight">Parameters</h2>
+            <h2 className="text-md text-gray-900 dark:text-white tracking-tight">Parameters</h2>
             <span className="text-[11px] font-mono text-brand-accent font-bold">{temperature.toFixed(2)}</span>
           </div>
           <input type="range" min="0" max="2" step="0.01" value={temperature} onChange={(e) => setTemperature(parseFloat(e.target.value))} className="w-full h-[1px] bg-gray-200 dark:bg-brand-border rounded-lg appearance-none cursor-pointer accent-brand-accent" />
@@ -116,49 +145,62 @@ export const RightSidebar: React.FC<Props> = ({
 
       <div className="mt-4 pt-10 border-t border-gray-100 dark:border-brand-border space-y-10">
         <div>
-          <h2 className="text-[26px] font-serif italic text-gray-900 dark:text-white mb-6 tracking-tight">Infrastructure</h2>
-          <div className="space-y-6">
+          <h2 className="text-md text-gray-900 dark:text-white mb-6 tracking-tight">Infrastructure</h2>
+          <div className="space-y-8">
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-[10px] font-mono text-gray-400 dark:text-brand-muted uppercase tracking-widest">Brain (Expander)</label>
+              <label className="flex items-center gap-2 text-[10px] font-mono text-gray-400 dark:text-brand-muted uppercase tracking-widest">
+                Context expander
+                {selectedExpander?.isFree && (
+                  <span className="ml-1 px-1 py-0.5 bg-emerald-500/10 text-emerald-500 rounded text-[8px] font-bold">FREE</span>
+                )}
+              </label>
               <div className="relative group/select">
                 {selectedExpander && (
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center z-10 pointer-events-none">
-                    <img src={selectedExpander.logo} alt="" className="max-w-full max-h-full object-contain filter grayscale group-hover/select:grayscale-0 transition-all opacity-70 group-hover/select:opacity-100" />
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center z-10 pointer-events-none bg-white rounded p-0.5">
+                    <img src={selectedExpander.logo} alt="" className="max-w-full max-h-full object-contain" />
                   </div>
                 )}
                 <select value={expanderModel} onChange={(e) => setExpanderModel(e.target.value)} className={selectClass}>
                   {smallModels.map(m => (
                     <option key={m.id} value={m.id} title={m.description}>
-                      {m.name}
+                      {m.name} {m.isFree ? '(FREE)' : ''}
                     </option>
                   ))}
                 </select>
                 <Settings2 size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover/select:text-brand-accent transition-colors" />
               </div>
+              <ModelDetails model={selectedExpander} />
             </div>
+            
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-[10px] font-mono text-gray-400 dark:text-brand-muted uppercase tracking-widest">Synthesizer (Reasoner)</label>
+              <label className="flex items-center gap-2 text-[10px] font-mono text-gray-400 dark:text-brand-muted uppercase tracking-widest">
+                Synthesizer (Reasoner)
+                {selectedReasoner?.isFree && (
+                  <span className="ml-1 px-1 py-0.5 bg-emerald-500/10 text-emerald-500 rounded text-[8px] font-bold">FREE</span>
+                )}
+              </label>
               <div className="relative group/select">
                 {selectedReasoner && (
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center z-10 pointer-events-none">
-                    <img src={selectedReasoner.logo} alt="" className="max-w-full max-h-full object-contain filter grayscale group-hover/select:grayscale-0 transition-all opacity-70 group-hover/select:opacity-100" />
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center z-10 pointer-events-none bg-white rounded p-0.5">
+                    <img src={selectedReasoner.logo} alt="" className="max-w-full max-h-full object-contain" />
                   </div>
                 )}
                 <select value={reasonerModel} onChange={(e) => setReasonerModel(e.target.value)} className={selectClass}>
                   {largeModels.map(m => (
                     <option key={m.id} value={m.id} title={m.description}>
-                      {m.name}
+                      {m.name} {m.isFree ? '(FREE)' : ''}
                     </option>
                   ))}
                 </select>
                 <Settings2 size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover/select:text-brand-accent transition-colors" />
               </div>
+              <ModelDetails model={selectedReasoner} />
             </div>
           </div>
         </div>
 
         <div>
-          <h2 className="text-[26px] font-serif italic text-gray-900 dark:text-white mb-6 tracking-tight">API Management</h2>
+          <h2 className="text-md text-gray-900 dark:text-white mb-6 tracking-tight">API Management</h2>
           <div className="space-y-3">
              <button 
               onClick={onOpenApiManagement}

@@ -22,6 +22,8 @@ export interface Message {
   status?: PipelineStatus;
   expandedQuery?: string;
   sources?: Chunk[];
+  expansionDuration?: number;
+  searchDuration?: number;
   reasoningDuration?: number;
   timestamp: Date;
 }
@@ -34,6 +36,15 @@ export interface Toast {
 
 export type ModelProviderId = 'google' | 'openrouter';
 
+export interface ModelMetadata {
+  author: string;
+  context: string;
+  inputPrice: string;
+  outputPrice: string;
+  latency: string;
+  throughput: string;
+}
+
 export interface ModelDefinition {
   id: string;
   name: string;
@@ -41,6 +52,8 @@ export interface ModelDefinition {
   description: string;
   size: 'small' | 'large';
   logo: string;
+  isFree?: boolean;
+  metadata: ModelMetadata;
 }
 
 export interface AppState {

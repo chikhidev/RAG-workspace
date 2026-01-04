@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Message } from '../types';
-import { Search, Bot, Loader2, CheckCircle2, ChevronDown, ChevronRight, FileText, Sparkles, Copy, Check, Zap, Cpu } from 'lucide-react';
+import { Message, PipelineStatus } from '../types';
+import { Search, Bot, Loader2, CheckCircle2, ChevronDown, ChevronRight, FileText, Sparkles, Copy, Check, Zap, Cpu, RefreshCw, Trash2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { SUPPORTED_MODELS } from '../services/modelService';
@@ -9,7 +9,36 @@ interface Props {
   messages: Message[];
   expanderModelId: string;
   reasonerModelId: string;
+  onRetry: (id: string) => void;
+  onClearChat: () => void;
 }
+
+const LiveTimer: React.FC<{ status: PipelineStatus; activeAt: PipelineStatus; finalDuration?: number }> = ({ status, activeAt, finalDuration }) => {
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    let interval: any;
+    if (status === activeAt) {
+      const startTime = performance.now();
+      interval = setInterval(() => {
+        setElapsed((performance.now() - startTime) / 1000);
+      }, 100);
+    } else if (finalDuration !== undefined) {
+      setElapsed(finalDuration);
+    } else {
+      setElapsed(0);
+    }
+    return () => clearInterval(interval);
+  }, [status, activeAt, finalDuration]);
+
+  if (elapsed === 0 && status !== activeAt && finalDuration === undefined) return null;
+
+  return (
+    <div className="font-mono text-[10px] text-brand-accent font-bold tabular-nums">
+      {elapsed.toFixed(1)}s
+    </div>
+  );
+};
 
 const CodeBlock = ({ children, className, ...props }: any) => {
   const [copied, setCopied] = useState(false);
@@ -67,19 +96,21 @@ const PipelineDetails: React.FC<{ msg: Message }> = ({ msg }) => {
 
   return (
     <div className="w-full max-w-2xl space-y-2 mt-6">
+      {/* Step 1: Query Expansion */}
       <div className="bg-white dark:bg-brand-darker border border-gray-100 dark:border-brand-border rounded-xl overflow-hidden transition-all duration-300">
-        <button 
-          onClick={() => setIsExpandedToggled(!isExpendedToggled)}
-          className="w-full flex items-center justify-between p-3.5 hover:bg-gray-50 dark:hover:bg-brand-base transition-colors"
-        >
-          <div className="flex items-center gap-3 text-[10px] font-serif font-bold text-gray-500 dark:text-gray-500 uppercase tracking-[0.15em]">
+        <div className="w-full flex items-center justify-between p-3.5">
+          <button 
+            onClick={() => setIsExpandedToggled(!isExpendedToggled)}
+            className="flex items-center gap-3 text-[10px] font-serif font-bold text-gray-500 dark:text-gray-500 uppercase tracking-[0.15em] hover:text-brand-accent transition-colors"
+          >
             Query Expansion
-          </div>
-          <div className="flex items-center gap-3">
-            {msg.expandedQuery ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Loader2 size={14} className="animate-spin text-brand-accent" />}
             {isExpendedToggled ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400" />}
+          </button>
+          <div className="flex items-center gap-3">
+            <LiveTimer status={msg.status} activeAt="expanding" finalDuration={msg.expansionDuration} />
+            {msg.expandedQuery ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Loader2 size={14} className="animate-spin text-brand-accent" />}
           </div>
-        </button>
+        </div>
         
         {isExpendedToggled && (
           <div className="px-3.5 pb-3.5 animate-[fadeIn_0.2s_ease-out]">
@@ -94,16 +125,21 @@ const PipelineDetails: React.FC<{ msg: Message }> = ({ msg }) => {
         )}
       </div>
 
+      {/* Step 2: Vault Search */}
       {(msg.expandedQuery || msg.status === 'searching') && (
         <div className="bg-white dark:bg-brand-darker border border-gray-100 dark:border-brand-border rounded-xl overflow-hidden animate-[fadeIn_0.5s_ease-out]">
-          <button 
-            onClick={() => setIsFilesToggled(!isFilesToggled)}
-            className="w-full flex items-center justify-between p-3.5 hover:bg-gray-50 dark:hover:bg-brand-base transition-colors"
-          >
-            <div className="flex items-center gap-3 text-[10px] font-serif font-bold font-bold text-gray-500 dark:text-gray-500 uppercase tracking-[0.15em]">
+          <div className="w-full flex items-center justify-between p-3.5">
+            <button 
+              onClick={() => setIsFilesToggled(!isFilesToggled)}
+              className="flex items-center gap-3 text-[10px] font-serif font-bold text-gray-500 dark:text-gray-500 uppercase tracking-[0.15em] hover:text-brand-accent transition-colors"
+            >
               Vault Search
-            </div>
+              {usedFiles.length > 0 && (
+                isFilesToggled ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400" />
+              )}
+            </button>
             <div className="flex items-center gap-3">
+              <LiveTimer status={msg.status} activeAt="searching" finalDuration={msg.searchDuration} />
               {msg.sources ? (
                 <div className="flex items-center gap-2">
                   <span className="text-[9px] text-emerald-600 dark:text-emerald-500 font-bold px-1.5 py-0.5 rounded border border-emerald-500/20">
@@ -114,11 +150,8 @@ const PipelineDetails: React.FC<{ msg: Message }> = ({ msg }) => {
               ) : (
                 <Loader2 size={14} className="animate-spin text-gray-300 dark:text-gray-600" />
               )}
-              {usedFiles.length > 0 && (
-                isFilesToggled ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400" />
-              )}
             </div>
-          </button>
+          </div>
           
           {isFilesToggled && usedFiles.length > 0 && (
             <div className="px-3.5 pb-3.5 border-t border-gray-50 dark:border-brand-border pt-3 animate-[fadeIn_0.2s_ease-out]">
@@ -135,23 +168,23 @@ const PipelineDetails: React.FC<{ msg: Message }> = ({ msg }) => {
         </div>
       )}
 
-      {(msg.sources && (msg.status === 'reasoning' || msg.status === 'completed')) && (
+      {/* Step 3: Synthesis / Reasoning */}
+      {(msg.status === 'reasoning' || msg.status === 'completed') && (
         <div className="bg-white dark:bg-brand-darker border border-gray-100 dark:border-brand-border p-3.5 flex items-center justify-between animate-[fadeIn_0.5s_ease-out] rounded-xl">
           <div className="flex items-center gap-3 text-[10px] font-serif font-bold text-gray-500 dark:text-brand-accent uppercase tracking-[0.15em]">
-            {msg.status === 'completed' && msg.reasoningDuration 
-              ? `Reasoning : ${msg.reasoningDuration.toFixed(1)}s` 
-              : 'Synthesizing Response...'}
+            {msg.status === 'completed' ? 'Synthesis Complete' : 'Synthesizing Response'}
           </div>
-          {msg.status === 'reasoning' ? (
-            <Loader2 size={14} className="animate-spin text-brand-accent" />
-          ) : <CheckCircle2 size={14} className="text-emerald-500" />}
+          <div className="flex items-center gap-3">
+            <LiveTimer status={msg.status} activeAt="reasoning" finalDuration={msg.reasoningDuration} />
+            {msg.status === 'completed' ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Loader2 size={14} className="animate-spin text-brand-accent" />}
+          </div>
         </div>
       )}
     </div>
   );
 };
 
-export const ChatInterface: React.FC<Props> = ({ messages, expanderModelId, reasonerModelId }) => {
+export const ChatInterface: React.FC<Props> = ({ messages, expanderModelId, reasonerModelId, onRetry, onClearChat }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -172,12 +205,12 @@ export const ChatInterface: React.FC<Props> = ({ messages, expanderModelId, reas
         <div className="flex items-center gap-8 max-w-4xl w-full justify-between">
            <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                 <div className="w-8 h-8 rounded-lg bg-gray-50 dark:bg-brand-darker border border-gray-100 dark:border-brand-border flex items-center justify-center overflow-hidden p-1.5 transition-transform hover:scale-105">
+                 <div className="w-8 h-8 rounded-lg bg-white border border-gray-100 dark:border-brand-border flex items-center justify-center overflow-hidden p-1.5 transition-transform hover:scale-105">
                     {expanderModel && <img src={expanderModel.logo} alt="" className="max-w-full max-h-full object-contain" />}
                  </div>
                  <div className="flex flex-col">
                     <span className="text-[9px] font-mono uppercase tracking-widest text-gray-500 font-bold leading-none mb-1 flex items-center gap-1">
-                       Brain
+                       Context expander
                     </span>
                     <span className="text-[11px] font-medium text-gray-600 dark:text-gray-300 leading-none truncate max-w-[120px]">
                        {expanderModel?.name || 'Unknown'}
@@ -188,7 +221,7 @@ export const ChatInterface: React.FC<Props> = ({ messages, expanderModelId, reas
               <div className="h-6 w-[1px] bg-gray-200 dark:bg-brand-border mx-2"></div>
 
               <div className="flex items-center gap-2">
-                 <div className="w-8 h-8 rounded-lg bg-gray-50 dark:bg-brand-darker border border-gray-100 dark:border-brand-border flex items-center justify-center overflow-hidden p-1.5 transition-transform hover:scale-105">
+                 <div className="w-8 h-8 rounded-lg bg-white border border-gray-100 dark:border-brand-border flex items-center justify-center overflow-hidden p-1.5 transition-transform hover:scale-105">
                     {reasonerModel && <img src={reasonerModel.logo} alt="" className="max-w-full max-h-full object-contain" />}
                  </div>
                  <div className="flex flex-col">
@@ -201,6 +234,15 @@ export const ChatInterface: React.FC<Props> = ({ messages, expanderModelId, reas
                  </div>
               </div>
            </div>
+
+           <button 
+             onClick={onClearChat}
+             title="Clear Chat"
+             className="p-2.5 hover:bg-gray-100 dark:hover:bg-brand-border rounded-xl transition-all text-gray-400 hover:text-red-500 flex items-center gap-2 group"
+           >
+              <Trash2 size={16} className="group-hover:scale-110 transition-transform" />
+              <span className="text-[11px] font-bold uppercase tracking-wider hidden sm:inline">Clear</span>
+           </button>
         </div>
       </div>
 
@@ -218,9 +260,9 @@ export const ChatInterface: React.FC<Props> = ({ messages, expanderModelId, reas
           messages.map((msg) => (
             <div key={msg.id} className="max-w-4xl mx-auto w-full fade-in">
               <div className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} space-y-3`}>
-                <div className={`px-7 py-6 rounded-2xl leading-relaxed text-[15px] ${
+                <div className={`px-7 py-6 rounded-xl leading-relaxed text-[15px] ${
                   msg.role === 'user' 
-                    ? 'bg-gray-100 dark:bg-brand-darker text-gray-700 dark:text-gray-300 max-w-xl border border-transparent dark:border-brand-border' 
+                    ? 'text-gray-700 dark:text-gray-300 max-w-xl' 
                     : 'bg-white dark:bg-brand-darker text-gray-800 dark:text-gray-200 w-full border border-gray-100 dark:border-brand-border'
                 }`}>
                   {msg.status === 'completed' || msg.role === 'user' ? (
@@ -235,12 +277,23 @@ export const ChatInterface: React.FC<Props> = ({ messages, expanderModelId, reas
                         </ReactMarkdown>
                      </div>
                   ) : msg.status === 'error' ? (
-                     <p className="text-red-400 italic text-[13px]">Critical failure in brain pipeline.</p>
+                    <div className="flex flex-col items-start gap-4">
+                       <p className="text-red-400 italic text-[13px]">Critical failure in pipeline or request timed out.</p>
+                       <button 
+                        onClick={() => onRetry(msg.id)}
+                        className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg text-[12px] font-bold transition-all"
+                       >
+                          <RefreshCw size={14} />
+                          Retry Generation
+                       </button>
+                    </div>
                   ) : (
-                    <div className="flex gap-2 py-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-brand-accent animate-pulse"></span>
-                      <span className="w-1.5 h-1.5 rounded-full bg-brand-accent animate-pulse [animation-delay:0.2s]"></span>
-                      <span className="w-1.5 h-1.5 rounded-full bg-brand-accent animate-pulse [animation-delay:0.4s]"></span>
+                    <div className="flex items-center gap-3 py-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-brand-accent animate-pulse"></div>
+                      <div className="text-[11px] font-mono text-gray-400 dark:text-brand-muted uppercase tracking-widest flex items-center gap-2">
+                        Synthesizing
+                        <LiveTimer status={msg.status} activeAt="reasoning" finalDuration={msg.reasoningDuration} />
+                      </div>
                     </div>
                   )}
                 </div>

@@ -14,15 +14,15 @@ export const DocumentList: React.FC<Props> = ({ documents, onUpload, onRemove, o
   const isAtLimit = documents.length >= 10;
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-brand-darker border-r border-gray-100 dark:border-brand-border p-6 w-72 transition-colors shrink-0">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-3">
-          <Box size={18} className="text-gray-900 dark:text-gray-100" />
-          <h2 className="text-[20px] font-serif italic text-gray-900 dark:text-gray-100 tracking-tight">
+    <div className="flex flex-col h-full bg-white dark:bg-brand-darker border-r border-gray-100 dark:border-brand-border p-6 w-full transition-colors shrink-0">
+      <div className="flex items-center justify-between mb-2 overflow-hidden">
+        <div className="flex items-center gap-3 min-w-0">
+          <Box size={18} className="text-gray-900 dark:text-gray-100 shrink-0" />
+          <h2 className="text-[20px] font-serif italic text-gray-900 dark:text-gray-100 tracking-tight truncate">
             Knowledge Vault
           </h2>
         </div>
-        <label className={`p-1.5 rounded-lg transition-colors ${
+        <label className={`p-1.5 rounded-lg transition-colors shrink-0 ${
           isAtLimit 
             ? 'text-gray-300 cursor-not-allowed' 
             : 'cursor-pointer text-gray-400 hover:text-brand-accent hover:bg-gray-100 dark:hover:bg-brand-border'

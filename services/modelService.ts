@@ -1,13 +1,23 @@
 import { ModelDefinition } from "../types";
 
 export const SUPPORTED_MODELS: ModelDefinition[] = [
+  // --- FREE MODELS ---
   { 
     id: 'nvidia/nemotron-nano-9b-v2:free', 
     name: 'Nemotron Nano 9B V2', 
     provider: 'openrouter', 
     description: 'NVIDIA - Optimized for speed and small-scale tasks.',
     size: 'small',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/8/8e/Logo-nvidia-transparent-PNG.png'
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/8/8e/Logo-nvidia-transparent-PNG.png',
+    isFree: true,
+    metadata: {
+      author: 'NVIDIA',
+      context: '128K',
+      inputPrice: '$0.00/M',
+      outputPrice: '$0.00/M',
+      latency: '0.80s',
+      throughput: '120tps'
+    }
   },
   { 
     id: 'qwen/qwen3-4b:free', 
@@ -15,7 +25,16 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
     provider: 'openrouter', 
     description: 'Qwen - Ultra-fast small language model.',
     size: 'small',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Qwen_logo.svg/2048px-Qwen_logo.svg.png'
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Qwen_logo.svg/2048px-Qwen_logo.svg.png',
+    isFree: true,
+    metadata: {
+      author: 'Qwen',
+      context: '32K',
+      inputPrice: '$0.00/M',
+      outputPrice: '$0.00/M',
+      latency: '0.40s',
+      throughput: '180tps'
+    }
   },
   { 
     id: 'google/gemma-3-4b-it:free', 
@@ -23,7 +42,16 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
     provider: 'openrouter', 
     description: 'Google - Efficient and capable small model.',
     size: 'small',
-    logo: 'https://registry.npmmirror.com/@lobehub/icons-static-png/latest/files/dark/gemma-color.png'
+    logo: 'https://registry.npmmirror.com/@lobehub/icons-static-png/latest/files/dark/gemma-color.png',
+    isFree: true,
+    metadata: {
+      author: 'Google',
+      context: '128K',
+      inputPrice: '$0.00/M',
+      outputPrice: '$0.00/M',
+      latency: '0.60s',
+      throughput: '150tps'
+    }
   },
   { 
     id: 'deepseek/deepseek-r1-0528:free', 
@@ -31,7 +59,16 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
     provider: 'openrouter', 
     description: 'DeepSeek - High-performance reasoning model.',
     size: 'large',
-    logo: 'https://images.seeklogo.com/logo-png/61/1/deepseek-ai-icon-logo-png_seeklogo-611473.png'
+    logo: 'https://images.seeklogo.com/logo-png/61/1/deepseek-ai-icon-logo-png_seeklogo-611473.png',
+    isFree: true,
+    metadata: {
+      author: 'DeepSeek',
+      context: '64K',
+      inputPrice: '$0.00/M',
+      outputPrice: '$0.00/M',
+      latency: '2.50s',
+      throughput: '45tps'
+    }
   },
   { 
     id: 'nvidia/nemotron-3-nano-30b-a3b:free', 
@@ -39,7 +76,16 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
     provider: 'openrouter', 
     description: 'NVIDIA - Supports extended reasoning flags.',
     size: 'large',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/8/8e/Logo-nvidia-transparent-PNG.png'
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/8/8e/Logo-nvidia-transparent-PNG.png',
+    isFree: true,
+    metadata: {
+      author: 'NVIDIA',
+      context: '128K',
+      inputPrice: '$0.00/M',
+      outputPrice: '$0.00/M',
+      latency: '1.40s',
+      throughput: '85tps'
+    }
   },
   { 
     id: 'openai/gpt-oss-20b:free', 
@@ -47,31 +93,98 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
     provider: 'openrouter', 
     description: 'OpenAI - Open architecture with reasoning support.',
     size: 'large',
-    logo: 'https://cdn.worldvectorlogo.com/logos/openai-2.svg'
+    logo: 'https://cdn.worldvectorlogo.com/logos/openai-2.svg',
+    isFree: true,
+    metadata: {
+      author: 'OpenAI',
+      context: '128K',
+      inputPrice: '$0.00/M',
+      outputPrice: '$0.00/M',
+      latency: '0.90s',
+      throughput: '110tps'
+    }
+  },
+
+  // --- PAID MODELS ---
+  { 
+    id: 'mistralai/ministral-8b', 
+    name: 'Ministral 8B', 
+    provider: 'openrouter', 
+    description: 'Mistral - Ultra-fast, high-throughput efficiency.',
+    size: 'small',
+    logo: 'https://avatars.githubusercontent.com/u/139365611?s=200&v=4',
+    metadata: {
+      author: 'Mistral',
+      context: '131K',
+      inputPrice: '$0.10/M',
+      outputPrice: '$0.10/M',
+      latency: '0.13s',
+      throughput: '163.1tps'
+    }
   },
   { 
-    id: 'google/gemma-3-12b-it:free', 
-    name: 'Gemma 3 12B', 
+    id: 'cohere/command-r7b-12-2024', 
+    name: 'Command R7B (12-2024)', 
     provider: 'openrouter', 
-    description: 'Google - Balanced efficiency for complex reasoning.',
-    size: 'large',
-    logo: 'https://registry.npmmirror.com/@lobehub/icons-static-png/latest/files/dark/gemma-color.png'
+    description: 'Cohere - Balanced performance and low latency.',
+    size: 'small',
+    logo: 'https://registry.npmmirror.com/@lobehub/icons-static-png/latest/files/dark/cohere-color.png',
+    metadata: {
+      author: 'Cohere',
+      context: '128K',
+      inputPrice: '$0.0375/M',
+      outputPrice: '$0.15/M',
+      latency: '0.19s',
+      throughput: '134.6tps'
+    }
   },
   { 
-    id: 'nex-agi/deepseek-v3.1-nex-n1:free', 
-    name: 'DeepSeek V3.1 Nex N1', 
+    id: 'qwen/qwen2.5-coder-7b-instruct', 
+    name: 'Qwen2.5 Coder 7B', 
     provider: 'openrouter', 
-    description: 'DeepSeek - High-capacity reasoning engine.',
-    size: 'large',
-    logo: 'https://images.seeklogo.com/logo-png/61/1/deepseek-ai-icon-logo-png_seeklogo-611473.png'
+    description: 'Qwen - Specialized instruct model with high throughput.',
+    size: 'small',
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Qwen_logo.svg/2048px-Qwen_logo.svg.png',
+    metadata: {
+      author: 'Qwen',
+      context: '33K',
+      inputPrice: '$0.03/M',
+      outputPrice: '$0.09/M',
+      latency: '0.33s',
+      throughput: '211.3tps'
+    }
   },
   { 
-    id: 'z-ai/glm-4.5-air:free', 
-    name: 'GLM 4.5 Air', 
+    id: 'nvidia/nemotron-nano-12b-v2-vl', 
+    name: 'Nemotron Nano 12B VL', 
     provider: 'openrouter', 
-    description: 'Z.AI - Advanced performance at efficiency.',
+    description: 'NVIDIA - Advanced Reasoning & Visual Understanding.',
     size: 'large',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/Z.ai_%28company_logo%29.svg/1200px-Z.ai_%28company_logo%29.svg.png'
+    logo: 'https://upload.wikimedia.org/wikipedia/commons/8/8e/Logo-nvidia-transparent-PNG.png',
+    metadata: {
+      author: 'NVIDIA',
+      context: '131K',
+      inputPrice: '$0.20/M',
+      outputPrice: '$0.60/M',
+      latency: '1.20s',
+      throughput: '105.7tps'
+    }
+  },
+  { 
+    id: 'openai/gpt-oss-safeguard-20b', 
+    name: 'GPT OSS Safeguard 20B', 
+    provider: 'openrouter', 
+    description: 'OpenAI - High-fidelity reasoning with safeguards.',
+    size: 'large',
+    logo: 'https://cdn.worldvectorlogo.com/logos/openai-2.svg',
+    metadata: {
+      author: 'OpenAI',
+      context: '131K',
+      inputPrice: '$0.075/M',
+      outputPrice: '$0.30/M',
+      latency: '0.11s',
+      throughput: '945.8tps'
+    }
   },
 ];
 
@@ -92,7 +205,9 @@ class ModelService {
 
     const reasoningModels = [
       'nvidia/nemotron-3-nano-30b-a3b:free',
-      'openai/gpt-oss-20b:free'
+      'openai/gpt-oss-20b:free',
+      'nvidia/nemotron-nano-12b-v2-vl',
+      'openai/gpt-oss-safeguard-20b'
     ];
     const isReasoningEnabled = reasoningModels.includes(params.modelId);
 
@@ -109,24 +224,37 @@ class ModelService {
       body.reasoning = { enabled: true };
     }
 
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${params.openRouterKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": window.location.origin,
-        "X-Title": "Dual-Brain RAG",
-      },
-      body: JSON.stringify(body)
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error?.message || `OpenRouter API error: ${response.status}`);
+    try {
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${params.openRouterKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": window.location.origin,
+          "X-Title": "Dual-Brain RAG",
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || `OpenRouter API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.choices[0]?.message?.content || "";
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        throw new Error('Request timed out after 60 seconds.');
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
     }
-
-    const data = await response.json();
-    return data.choices[0]?.message?.content || "";
   }
 
   public async run(params: ExecutionParams): Promise<string> {

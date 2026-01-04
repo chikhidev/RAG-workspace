@@ -5,7 +5,7 @@ import { RightSidebar } from './components/RightSidebar';
 import { AppState, Message, Document, Chunk, Toast } from './types';
 import { vectorService } from './services/vectorService';
 import { geminiRAG } from './services/geminiService';
-import { X, Key, Shield } from 'lucide-react';
+import { X, Key, Shield, ExternalLink } from 'lucide-react';
 
 const STORAGE_KEYS = {
   DOCUMENTS: 'gemini_rag_docs',
@@ -28,29 +28,44 @@ const ApiKeyModal: React.FC<{
       <div className="bg-white dark:bg-brand-darker w-full max-w-md rounded-2xl border border-gray-100 dark:border-brand-border shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
         <div className="px-6 py-4 border-b border-gray-100 dark:border-brand-border flex items-center justify-between bg-gray-50/50 dark:bg-brand-base/50">
           <div className="flex items-center gap-2">
-            <h3 className="text-[16px] font-serif italic font-bold text-gray-900 dark:text-gray-100">API Key Management</h3>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">API Key Management</h3>
           </div>
           <button onClick={onClose} className="p-1 hover:bg-gray-200 dark:hover:bg-brand-base rounded-lg transition-colors text-gray-400">
             <X size={18} />
           </button>
         </div>
         <div className="p-8 space-y-6">
-          <div className="space-y-3">
-            <label className="flex items-center gap-2 text-[10px] font-mono text-gray-400 dark:text-brand-muted uppercase tracking-widest">
-              <Key size={12} className="text-brand-accent" />
-              OpenRouter Key
-            </label>
-            <input 
-              type="password" 
-              value={openRouterKey} 
-              onChange={(e) => setOpenRouterKey(e.target.value)} 
-              placeholder="sk-or-v1-..."
-              className="w-full bg-gray-50 dark:bg-[#252525] border border-gray-100 dark:border-brand-border rounded-xl p-4 text-[13px] font-mono text-gray-700 dark:text-gray-200 outline-none focus:border-brand-accent/50 transition-all"
-            />
-            <p className="text-[10px] text-gray-400 dark:text-brand-muted leading-relaxed italic">
-              Your keys are stored locally in your browser and never sent to our servers.
-            </p>
+          <div className="space-y-4">
+            <div className="space-y-3">
+              <label className="flex items-center gap-2 text-[10px] font-mono text-gray-400 dark:text-brand-muted uppercase tracking-widest">
+                <Key size={12} className="text-brand-accent" />
+                OpenRouter Key
+              </label>
+              <input 
+                type="password" 
+                value={openRouterKey} 
+                onChange={(e) => setOpenRouterKey(e.target.value)} 
+                placeholder="sk-or-v1-..."
+                className="w-full bg-gray-50 dark:bg-[#252525] border border-gray-100 dark:border-brand-border rounded-xl p-4 text-[13px] font-mono text-gray-700 dark:text-gray-200 outline-none focus:border-brand-accent/50 transition-all"
+              />
+            </div>
+            
+            <div className="p-4 bg-gray-50 dark:bg-brand-base rounded-xl border border-gray-100 dark:border-brand-border space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-gray-500 dark:text-brand-muted uppercase tracking-widest">Platform Info</span>
+                <a href="https://openrouter.ai/models" target="_blank" rel="noopener noreferrer" className="text-[10px] text-brand-accent hover:underline flex items-center gap-1 font-bold">
+                  OpenRouter Models <ExternalLink size={10} />
+                </a>
+              </div>
+              <p className="text-[11px] text-gray-600 dark:text-gray-400 leading-relaxed">
+                OpenRouter provides access to hundreds of models. You can find both <span className="text-emerald-500 font-bold">Free</span> and <span className="text-brand-accent font-bold">Paid</span> models on their platform.
+              </p>
+              <p className="text-[10px] text-gray-400 dark:text-brand-muted italic">
+                Your keys are stored locally in your browser.
+              </p>
+            </div>
           </div>
+
           <button 
             onClick={onClose}
             className="w-full py-3.5 bg-brand-accent hover:bg-brand-accent/90 text-white rounded-xl text-[13px] font-bold tracking-wider transition-all"
@@ -73,11 +88,11 @@ const App: React.FC = () => {
     const stored = localStorage.getItem(STORAGE_KEYS.SETTINGS);
     const defaults = {
       useVault: true,
-      useContextHistory: false, // Defaulting to false as requested
+      useContextHistory: false,
       temperature: 0.7,
       theme: 'dark' as const,
-      expanderModel: 'nvidia/nemotron-nano-9b-v2:free', // Default small model for brain
-      reasonerModel: 'nex-agi/deepseek-v3.1-nex-n1:free' // Default large model for reasoning
+      expanderModel: 'nvidia/nemotron-nano-9b-v2:free',
+      reasonerModel: 'nex-agi/deepseek-v3.1-nex-n1:free'
     };
     return stored ? { ...defaults, ...JSON.parse(stored) } : defaults;
   };
@@ -108,7 +123,9 @@ const App: React.FC = () => {
   });
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [rightWidth, setRightWidth] = useState(320);
-  const isResizing = useRef(false);
+  const [leftWidth, setLeftWidth] = useState(288); // Default 72 (288px)
+  const isResizingRight = useRef(false);
+  const isResizingLeft = useRef(false);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.DOCUMENTS, JSON.stringify(state.documents));
@@ -144,25 +161,40 @@ const App: React.FC = () => {
     setState(prev => ({ ...prev, toasts: prev.toasts.filter(t => t.id !== id) }));
   };
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isResizing.current) return;
+  const handleMouseMoveRight = useCallback((e: MouseEvent) => {
+    if (!isResizingRight.current) return;
     const newWidth = window.innerWidth - e.clientX;
     if (newWidth > 240 && newWidth < 800) setRightWidth(newWidth);
   }, []);
 
+  const handleMouseMoveLeft = useCallback((e: MouseEvent) => {
+    if (!isResizingLeft.current) return;
+    const newWidth = e.clientX;
+    if (newWidth > 200 && newWidth < 500) setLeftWidth(newWidth);
+  }, []);
+
   const stopResizing = useCallback(() => {
-    isResizing.current = false;
-    document.removeEventListener('mousemove', handleMouseMove);
+    isResizingRight.current = false;
+    isResizingLeft.current = false;
+    document.removeEventListener('mousemove', handleMouseMoveRight);
+    document.removeEventListener('mousemove', handleMouseMoveLeft);
     document.removeEventListener('mouseup', stopResizing);
     document.body.style.cursor = 'default';
-  }, [handleMouseMove]);
+  }, [handleMouseMoveRight, handleMouseMoveLeft]);
 
-  const startResizing = useCallback(() => {
-    isResizing.current = true;
-    document.addEventListener('mousemove', handleMouseMove);
+  const startResizingRight = useCallback(() => {
+    isResizingRight.current = true;
+    document.addEventListener('mousemove', handleMouseMoveRight);
     document.addEventListener('mouseup', stopResizing);
     document.body.style.cursor = 'col-resize';
-  }, [handleMouseMove, stopResizing]);
+  }, [handleMouseMoveRight, stopResizing]);
+
+  const startResizingLeft = useCallback(() => {
+    isResizingLeft.current = true;
+    document.addEventListener('mousemove', handleMouseMoveLeft);
+    document.addEventListener('mouseup', stopResizing);
+    document.body.style.cursor = 'col-resize';
+  }, [handleMouseMoveLeft, stopResizing]);
 
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -193,6 +225,76 @@ const App: React.FC = () => {
     runIndexing();
   }, [state.documents]);
 
+  const processQuery = async (query: string, assistantId: string) => {
+    setState(prev => ({ ...prev, isProcessing: true }));
+    try {
+      let expandedQuery = '';
+      let sources: Chunk[] = [];
+      let expansionDuration = 0;
+      let searchDuration = 0;
+      let reasoningDuration = 0;
+      const activeDocs = state.documents.filter(d => d.enabled);
+      const hist = state.useContextHistory ? state.contextScript : "";
+
+      if (state.useVault && activeDocs.length > 0) {
+        // Phase 1: Expansion
+        setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, status: 'expanding' } : m) }));
+        const t1 = performance.now();
+        expandedQuery = await geminiRAG.expandQuery(
+          query, 
+          activeDocs.map(d => d.name), 
+          activeDocs.map(d => d.content.substring(0, 300)), 
+          state.temperature, 
+          hist, 
+          state.expanderModel,
+          state.openRouterKey
+        );
+        expansionDuration = (performance.now() - t1) / 1000;
+        
+        // Phase 2: Search
+        setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, expandedQuery, expansionDuration, status: 'searching' } : m) }));
+        const t2 = performance.now();
+        sources = await vectorService.search(expandedQuery);
+        searchDuration = (performance.now() - t2) / 1000;
+        
+        // Phase 3: Reasoning (Preparation)
+        setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, sources, searchDuration, status: 'reasoning' } : m) }));
+      } else {
+        setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, status: 'reasoning' } : m) }));
+      }
+
+      // Phase 4: Generate Final Answer
+      const t3 = performance.now();
+      const { answer } = await geminiRAG.generateAnswer(
+        query, expandedQuery, sources,
+        state.temperature, state.useVault, state.reasonerModel, hist, state.openRouterKey
+      );
+      reasoningDuration = (performance.now() - t3) / 1000;
+      
+      setState(prev => ({ 
+        ...prev, 
+        messages: prev.messages.map(m => m.id === assistantId ? { 
+          ...m, 
+          content: answer, 
+          status: 'completed', 
+          reasoningDuration,
+          expansionDuration,
+          searchDuration 
+        } : m) 
+      }));
+
+      if (state.useContextHistory) {
+        const scriptLine = await geminiRAG.generateSummary(query, answer, Array.from(new Set(sources.map(s => s.docName))), state.openRouterKey);
+        setState(prev => ({ ...prev, contextScript: prev.contextScript ? `${prev.contextScript}\n${scriptLine}` : scriptLine }));
+      }
+    } catch (err: any) {
+      addToast(err.message || "Pipeline error.");
+      setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, status: 'error' } : m) }));
+    } finally {
+      setState(prev => ({ ...prev, isProcessing: false }));
+    }
+  };
+
   const handleSend = useCallback(async () => {
     if (!inputValue.trim() || state.isProcessing) return;
     if (!state.openRouterKey) {
@@ -209,77 +311,61 @@ const App: React.FC = () => {
     const userMsg: Message = { id: Date.now().toString(), role: 'user', content: currentQuery, timestamp: new Date() };
     const placeholder: Message = { id: assistantId, role: 'assistant', content: '', status: state.useVault ? 'expanding' : 'reasoning', timestamp: new Date() };
 
-    setState(prev => ({ ...prev, messages: [...prev.messages, userMsg, placeholder], isProcessing: true }));
+    setState(prev => ({ ...prev, messages: [...prev.messages, userMsg, placeholder] }));
     setInputValue('');
 
-    try {
-      let expandedQuery = '';
-      let sources: Chunk[] = [];
-      const activeDocs = state.documents.filter(d => d.enabled);
-      const hist = state.useContextHistory ? state.contextScript : "";
-
-      if (state.useVault && activeDocs.length > 0) {
-        expandedQuery = await geminiRAG.expandQuery(
-          currentQuery, 
-          activeDocs.map(d => d.name), 
-          activeDocs.map(d => d.content.substring(0, 300)), 
-          state.temperature, 
-          hist, 
-          state.expanderModel,
-          state.openRouterKey
-        );
-        setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, expandedQuery, status: 'searching' } : m) }));
-        sources = await vectorService.search(expandedQuery);
-        setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, sources, status: 'reasoning' } : m) }));
-      }
-
-      const startTime = performance.now();
-      const { answer } = await geminiRAG.generateAnswer(
-        currentQuery, expandedQuery, sources,
-        state.temperature, state.useVault, state.reasonerModel, hist, state.openRouterKey
-      );
-      
-      const duration = (performance.now() - startTime) / 1000;
-      setState(prev => ({ 
-        ...prev, 
-        messages: prev.messages.map(m => m.id === assistantId ? { ...m, content: answer, status: 'completed', reasoningDuration: duration } : m) 
-      }));
-
-      if (state.useContextHistory) {
-        const scriptLine = await geminiRAG.generateSummary(currentQuery, answer, Array.from(new Set(sources.map(s => s.docName))), state.openRouterKey);
-        setState(prev => ({ ...prev, contextScript: prev.contextScript ? `${prev.contextScript}\n${scriptLine}` : scriptLine }));
-      }
-    } catch (err: any) {
-      addToast(err.message || "Pipeline error.");
-      setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, status: 'error' } : m) }));
-    } finally {
-      setState(prev => ({ ...prev, isProcessing: false }));
-    }
+    await processQuery(currentQuery, assistantId);
   }, [inputValue, state.isProcessing, state.temperature, state.documents, state.useVault, state.expanderModel, state.reasonerModel, state.contextScript, state.useContextHistory, state.openRouterKey]);
+
+  const handleRetry = useCallback(async (failedMessageId: string) => {
+    if (state.isProcessing) return;
+    
+    const msgIndex = state.messages.findIndex(m => m.id === failedMessageId);
+    if (msgIndex <= 0) return;
+    
+    const userMsg = state.messages[msgIndex - 1];
+    if (userMsg.role !== 'user') return;
+
+    // Reset the failed message state before retrying
+    setState(prev => ({
+      ...prev,
+      messages: prev.messages.map(m => m.id === failedMessageId ? { ...m, status: state.useVault ? 'expanding' : 'reasoning', content: '', expandedQuery: undefined, sources: undefined, expansionDuration: undefined, searchDuration: undefined, reasoningDuration: undefined } : m)
+    }));
+
+    await processQuery(userMsg.content, failedMessageId);
+  }, [state.messages, state.isProcessing, state.useVault, state.temperature, state.documents, state.expanderModel, state.reasonerModel, state.contextScript, state.useContextHistory, state.openRouterKey]);
+
+  const onClearChat = useCallback(() => {
+    setState(prev => ({ ...prev, messages: [], contextScript: "" }));
+  }, []);
 
   return (
     <div className={`flex h-screen bg-brand-base text-gray-100 transition-colors overflow-hidden ${state.theme}`}>
-      <DocumentList 
-        documents={state.documents} onUpload={handleFileUpload} 
-        onRemove={(id) => setState(prev => ({ ...prev, documents: prev.documents.filter(d => d.id !== id) }))} 
-        onToggle={(id) => setState(prev => ({ ...prev, documents: prev.documents.map(d => d.id === id ? { ...d, enabled: !d.enabled } : d) }))}
-        isIndexing={state.isIndexing}
-      />
+      <div className="shrink-0 flex" style={{ width: `${leftWidth}px` }}>
+        <DocumentList 
+          documents={state.documents} onUpload={handleFileUpload} 
+          onRemove={(id) => setState(prev => ({ ...prev, documents: prev.documents.filter(d => d.id !== id) }))} 
+          onToggle={(id) => setState(prev => ({ ...prev, documents: prev.documents.map(d => d.id === id ? { ...d, enabled: !d.enabled } : d) }))}
+          isIndexing={state.isIndexing}
+        />
+        <div onMouseDown={startResizingLeft} className="w-1.5 cursor-col-resize bg-gray-100 dark:bg-brand-border hover:bg-brand-accent transition-all flex flex-col items-center justify-center gap-1 group">
+          <div className="w-[1px] h-8 bg-gray-300 dark:bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
+          <div className="w-[1px] h-8 bg-gray-300 dark:bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
+        </div>
+      </div>
       
       <main className="flex-1 flex flex-col min-w-0 bg-[#F8F9FB] dark:bg-brand-base">
         <ChatInterface 
           messages={state.messages} 
           expanderModelId={state.expanderModel}
           reasonerModelId={state.reasonerModel}
+          onRetry={handleRetry}
+          onClearChat={onClearChat}
         />
       </main>
 
-      <div onMouseDown={startResizing} className="w-[1px] cursor-col-resize hover:bg-brand-accent transition-colors bg-brand-border z-20 relative group">
-        <div className="absolute inset-y-0 -left-1 w-2 bg-transparent group-hover:bg-brand-accent/20 transition-all"></div>
-      </div>
-
       <div style={{ width: `${rightWidth}px` }} className="shrink-0 flex">
-        <div onMouseDown={startResizing} className="w-1.5 cursor-col-resize bg-gray-100 dark:bg-brand-border hover:bg-brand-accent transition-all flex flex-col items-center justify-center gap-1 group">
+        <div onMouseDown={startResizingRight} className="w-1.5 cursor-col-resize bg-gray-100 dark:bg-brand-border hover:bg-brand-accent transition-all flex flex-col items-center justify-center gap-1 group">
           <div className="w-[1px] h-8 bg-gray-300 dark:bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
           <div className="w-[1px] h-8 bg-gray-300 dark:bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
         </div>
@@ -308,7 +394,7 @@ const App: React.FC = () => {
         setOpenRouterKey={(k) => setState(prev => ({ ...prev, openRouterKey: k }))}
       />
 
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex flex-col gap-3 z-50 pointer-events-none w-full max-w-sm">
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex flex-col gap-3 z-50 pointer-events-none w-full max-sm px-4">
         {state.toasts.map(toast => (
           <div key={toast.id} className="pointer-events-auto flex items-center gap-3 px-5 py-3.5 bg-white dark:bg-brand-darker message-shadow rounded-2xl border border-gray-100 dark:border-brand-border animate-blur-text w-full">
             <span className={`text-[11px] font-bold uppercase tracking-widest ${toast.type === 'error' ? 'text-red-500' : 'text-emerald-500'}`}>
