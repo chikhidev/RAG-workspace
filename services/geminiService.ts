@@ -97,11 +97,17 @@ export class GeminiRAGService {
     return { answer };
   }
 
-  public async generateSummary(userPrompt: string, aiResponse: string, usedFiles: string[], openRouterKey?: string): Promise<string> {
+  public async generateSummary(
+    userPrompt: string, 
+    aiResponse: string, 
+    usedFiles: string[], 
+    modelId: string, 
+    openRouterKey?: string
+  ): Promise<string> {
     const filesString = usedFiles.length > 0 ? usedFiles.join(', ') : 'No vault files';
     
     return modelService.run({
-      modelId: 'nvidia/nemotron-nano-9b-v2:free',
+      modelId,
       systemInstruction: `You are the "State Tracker" for a Dual-Brain system. Create a single-line summary script to maintain context for the next turn. 
       FORMAT: [Context: ${filesString}] Summary: [1 concise sentence describing the user's intent and the core of the AI's conclusion].`,
       prompt: `Input: ${userPrompt}\n\nResponse: ${aiResponse}`,

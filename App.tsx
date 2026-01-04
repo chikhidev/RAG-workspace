@@ -285,7 +285,14 @@ const App: React.FC = () => {
       }));
 
       if (state.useContextHistory) {
-        const scriptLine = await geminiRAG.generateSummary(query, answer, Array.from(new Set(sources.map(s => s.docName))), state.openRouterKey);
+        // Now the expander brain handles the summarization
+        const scriptLine = await geminiRAG.generateSummary(
+          query, 
+          answer, 
+          Array.from(new Set(sources.map(s => s.docName))), 
+          state.expanderModel, 
+          state.openRouterKey
+        );
         setState(prev => ({ ...prev, contextScript: prev.contextScript ? `${prev.contextScript}\n${scriptLine}` : scriptLine }));
       }
     } catch (err: any) {

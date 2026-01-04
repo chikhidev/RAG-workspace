@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { Send, Loader2, Sun, Moon, Terminal, Cpu, Eraser, Layers, Key, Settings2, Layout, Maximize2 } from 'lucide-react';
+import { Send, Loader2, Sun, Moon, Terminal, Cpu, Eraser, Layers, Key, Settings2, Layout, Maximize2, AlertCircle } from 'lucide-react';
 import { SUPPORTED_MODELS } from '../services/modelService';
 import { ModelDefinition } from '../types';
 
@@ -130,14 +131,24 @@ export const RightSidebar: React.FC<Props> = ({
             <h2 className="text-md text-white tracking-tight">Context expander Config</h2>
             <button onClick={onClearContext} className="p-1.5 hover:bg-brand-border rounded transition-colors text-gray-400 hover:text-brand-accent"><Eraser size={14} /></button>
           </div>
-          <div className="space-y-3">
-            <button onClick={() => setUseContextHistory(!useContextHistory)} className={toggleBtnClass}>
-              <div className="flex flex-col items-start">
-                <span className="text-[13px] font-bold text-gray-200">Context Continuity</span>
-                <span className="text-[10px] font-mono text-brand-muted uppercase tracking-tighter">{useContextHistory ? 'Learning Logs' : 'Isolated Turns'}</span>
-              </div>
-              <div className={`w-10 h-5 rounded-full relative transition-colors ${useContextHistory ? 'bg-brand-accent' : 'bg-brand-border'}`}><div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${useContextHistory ? 'left-6' : 'left-1'}`} /></div>
-            </button>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <button onClick={() => setUseContextHistory(!useContextHistory)} className={toggleBtnClass}>
+                <div className="flex flex-col items-start">
+                  <span className="text-[13px] font-bold text-gray-200">Context Continuity</span>
+                  <span className="text-[10px] font-mono text-brand-muted uppercase tracking-tighter">{useContextHistory ? 'Learning Logs' : 'Isolated Turns'}</span>
+                </div>
+                <div className={`w-10 h-5 rounded-full relative transition-colors ${useContextHistory ? 'bg-brand-accent' : 'bg-brand-border'}`}><div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${useContextHistory ? 'left-6' : 'left-1'}`} /></div>
+              </button>
+              {useContextHistory && (
+                <div className="px-3 flex items-start gap-2 animate-[fadeIn_0.3s_ease-out]">
+                  <p className="text-[10px] text-brand-muted leading-relaxed">
+                    Enabling continuity will cause a reasonable slowness in response time.
+                  </p>
+                </div>
+              )}
+            </div>
+            
             <button onClick={() => setUseVault(!useVault)} className={toggleBtnClass}>
               <div className="flex flex-col items-start">
                 <span className="text-[13px] font-bold text-gray-200">Knowledge Vault</span>
