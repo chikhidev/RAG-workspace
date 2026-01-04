@@ -209,7 +209,7 @@ export const ChatInterface: React.FC<Props> = ({
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = 'auto';
-      const newHeight = Math.min(textarea.scrollHeight, 240);
+      const newHeight = Math.min(textarea.scrollHeight, 280);
       textarea.style.height = `${newHeight}px`;
     }
   }, [inputValue]);
@@ -383,19 +383,19 @@ export const ChatInterface: React.FC<Props> = ({
           
           {/* FILE SUGGESTIONS PORTAL */}
           {showSuggestions && filteredDocs.length > 0 && (
-            <div className="absolute bottom-full left-0 mb-4 w-full bg-brand-darker border border-brand-border rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] overflow-hidden animate-in slide-in-from-bottom-2 duration-150 backdrop-blur-xl">
-              <div className="px-4 py-2 border-b border-brand-border flex items-center justify-between">
+            <div className="absolute bottom-full left-0 mb-4 w-full bg-brand-darker border border-brand-border rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] overflow-hidden animate-in slide-in-from-bottom-2 duration-150 backdrop-blur-xl">
+              <div className="px-5 py-3 border-b border-brand-border flex items-center justify-between bg-brand-base/50">
                 <span className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Knowledge Vault Suggestions</span>
-                <span className="text-[9px] px-1.5 py-0.5 bg-brand-accent/20 text-brand-accent rounded font-bold uppercase">Mention</span>
+                <span className="text-[9px] px-2 py-1 bg-brand-accent/20 text-brand-accent rounded font-bold uppercase">Priority Anchor</span>
               </div>
-              <div className="max-h-48 overflow-y-auto">
+              <div className="max-h-60 overflow-y-auto">
                 {filteredDocs.map((doc) => (
                   <button
                     key={doc.id}
                     onClick={() => insertTag(doc.name)}
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-brand-accent/10 border-b border-brand-border/30 last:border-0 transition-colors text-left group"
+                    className="w-full flex items-center gap-4 px-5 py-3.5 hover:bg-brand-accent/10 border-b border-brand-border/30 last:border-0 transition-colors text-left group"
                   >
-                    <div className="w-6 h-6 rounded flex items-center justify-center bg-brand-base border border-brand-border group-hover:border-brand-accent/50 transition-all">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-brand-base border border-brand-border group-hover:border-brand-accent/50 transition-all">
                       <FileText size={12} className="text-emerald-500" />
                     </div>
                     <span className="text-[13px] font-medium text-gray-300 group-hover:text-white transition-colors">
@@ -418,15 +418,15 @@ export const ChatInterface: React.FC<Props> = ({
               onKeyUp={(e) => setCursorPosition((e.target as any).selectionStart || 0)}
               onClick={(e) => setCursorPosition((e.target as any).selectionStart || 0)}
               onKeyDown={handleKeyDown}
-              placeholder="Deep reason on your data... Type @ to focus files"
-              className="flex-1 bg-transparent border-none text-[15px] font-medium p-3 resize-none outline-none text-gray-100 placeholder:text-brand-muted/50 min-h-[50px] overflow-y-auto scrollbar-hide"
-              style={{ height: '50px' }}
+              placeholder="Expand context... Type @ to focus files"
+              className="flex-1 bg-transparent border-none text-[14px] font-medium p-3 resize-none outline-none text-gray-100 placeholder:text-brand-muted/40 min-h-[52px] overflow-y-auto scrollbar-hide leading-relaxed"
+              style={{ height: '52px' }}
               rows={1}
             />
             <button
               onClick={() => onSend()}
               disabled={isProcessing || !inputValue.trim()}
-              className="shrink-0 h-10 w-10 flex items-center justify-center rounded-xl bg-brand-accent hover:bg-brand-accent/90 disabled:bg-brand-border disabled:text-brand-muted transition-all shadow-lg"
+              className="shrink-0 h-10 w-10 flex items-center justify-center rounded-xl bg-brand-accent hover:bg-brand-accent/90 disabled:bg-brand-border disabled:text-brand-muted transition-all shadow-lg mb-1 mr-1"
             >
               {isProcessing ? (
                 <Loader2 className="animate-spin text-white" size={18} />

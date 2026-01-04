@@ -399,6 +399,7 @@ const App: React.FC = () => {
           onOpenApiManagement={() => setState(prev => ({ ...prev, isApiKeyModalOpen: true }))}
           inputPosition={state.inputPosition}
           setInputPosition={(pos) => setState(prev => ({ ...prev, inputPosition: pos }))}
+          availableDocuments={state.documents.filter(d => d.enabled)}
         />
       </div>
 

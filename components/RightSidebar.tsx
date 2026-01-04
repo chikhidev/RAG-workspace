@@ -1,8 +1,8 @@
 
-import React from 'react';
-import { Send, Loader2, Sun, Moon, Terminal, Cpu, Eraser, Layers, Key, Settings2, Layout, Maximize2, AlertCircle } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Send, Loader2, Sun, Moon, Terminal, Cpu, Eraser, Layers, Key, Settings2, Layout, Maximize2, AlertCircle, FileText } from 'lucide-react';
 import { SUPPORTED_MODELS } from '../services/modelService';
-import { ModelDefinition } from '../types';
+import { ModelDefinition, Document } from '../types';
 
 interface Props {
   inputValue: string;
@@ -24,6 +24,7 @@ interface Props {
   onOpenApiManagement: () => void;
   inputPosition: 'floating' | 'sidebar';
   setInputPosition: (pos: 'floating' | 'sidebar') => void;
+  availableDocuments: Document[];
 }
 
 const ModelDetails: React.FC<{ model?: ModelDefinition }> = ({ model }) => {
@@ -58,9 +59,59 @@ export const RightSidebar: React.FC<Props> = ({
   inputValue, setInputValue, onSend, onHistoryNav, isProcessing,
   useVault, setUseVault, useContextHistory, setUseContextHistory,
   onClearContext, expanderModel, setExpanderModel, reasonerModel, setReasonerModel,
-  onOpenApiManagement, inputPosition, setInputPosition
+  onOpenApiManagement, inputPosition, setInputPosition, availableDocuments
 }) => {
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestionFilter, setSuggestionFilter] = useState('');
+  const [cursorPosition, setCursorPosition] = useState(0);
+  const sidebarTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Handle Tagging in Sidebar
+  useEffect(() => {
+    const lastAtPos = inputValue.lastIndexOf('@', cursorPosition - 1);
+    if (lastAtPos !== -1 && !inputValue.slice(lastAtPos, cursorPosition).includes(' ')) {
+      const filter = inputValue.slice(lastAtPos + 1, cursorPosition);
+      setSuggestionFilter(filter);
+      setShowSuggestions(true);
+    } else {
+      setShowSuggestions(false);
+    }
+  }, [inputValue, cursorPosition]);
+
+  const insertTag = (fileName: string) => {
+    const lastAtPos = inputValue.lastIndexOf('@', cursorPosition - 1);
+    const beforeAt = inputValue.slice(0, lastAtPos);
+    const afterAt = inputValue.slice(cursorPosition);
+    const newValue = `${beforeAt}@${fileName} ${afterAt}`;
+    setInputValue(newValue);
+    setShowSuggestions(false);
+    
+    setTimeout(() => {
+      if (sidebarTextareaRef.current) {
+        sidebarTextareaRef.current.focus();
+        const newPos = lastAtPos + fileName.length + 2;
+        sidebarTextareaRef.current.setSelectionRange(newPos, newPos);
+      }
+    }, 0);
+  };
+
+  const filteredDocs = availableDocuments.filter(doc => 
+    doc.name.toLowerCase().includes(suggestionFilter.toLowerCase())
+  );
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (showSuggestions && filteredDocs.length > 0) {
+      if (e.key === 'Tab' || e.key === 'Enter') {
+        e.preventDefault();
+        insertTag(filteredDocs[0].name);
+        return;
+      }
+      if (e.key === 'Escape') {
+        setShowSuggestions(false);
+        return;
+      }
+    }
+    
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       onSend();
@@ -77,7 +128,7 @@ export const RightSidebar: React.FC<Props> = ({
   const selectedReasoner = SUPPORTED_MODELS.find(m => m.id === reasonerModel);
 
   return (
-    <div className="flex flex-col h-full bg-brand-darker border-l border-transparent p-6 w-full transition-colors overflow-y-auto">
+    <div className="flex flex-col h-full bg-brand-darker border-l border-transparent p-6 w-full transition-colors overflow-y-auto relative">
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-2">
           <Terminal size={14} className="text-brand-accent" />
@@ -105,10 +156,42 @@ export const RightSidebar: React.FC<Props> = ({
         {inputPosition === 'sidebar' ? (
           <div className="relative group">
             <textarea
-              value={inputValue} onChange={(e) => setInputValue(e.target.value)} onKeyDown={handleKeyDown}
-              placeholder="Describe your reasoning task..."
-              className="w-full bg-brand-base border border-brand-border rounded-xl p-5 focus:border-brand-accent transition-all text-[14px] font-medium h-40 resize-none text-gray-200 outline-none leading-relaxed placeholder:text-brand-muted/50"
+              ref={sidebarTextareaRef}
+              value={inputValue} 
+              onChange={(e) => {
+                setInputValue(e.target.value);
+                setCursorPosition(e.target.selectionStart || 0);
+              }}
+              onKeyUp={(e) => setCursorPosition((e.target as any).selectionStart || 0)}
+              onClick={(e) => setCursorPosition((e.target as any).selectionStart || 0)}
+              onKeyDown={handleKeyDown}
+              placeholder="Describe task... Use @ for files"
+              className="w-full bg-brand-base border border-brand-border rounded-xl p-5 focus:border-brand-accent transition-all text-[14px] font-medium h-48 resize-none text-gray-200 outline-none leading-relaxed placeholder:text-brand-muted/50 shadow-inner"
             />
+            
+            {/* Sidebar Suggestions Portal (Now listing downwards) */}
+            {showSuggestions && filteredDocs.length > 0 && (
+              <div className="absolute top-full left-0 mt-2 w-full bg-brand-base border border-brand-border rounded-xl shadow-2xl overflow-hidden z-[60] backdrop-blur-md">
+                <div className="px-3 py-1.5 border-b border-brand-border flex items-center justify-between bg-brand-darker/50">
+                  <span className="text-[8px] font-mono text-brand-muted uppercase tracking-widest">Vault Matches</span>
+                </div>
+                <div className="max-h-48 overflow-y-auto">
+                  {filteredDocs.map((doc) => (
+                    <button
+                      key={doc.id}
+                      onClick={() => insertTag(doc.name)}
+                      className="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-brand-accent/10 border-b border-brand-border/30 last:border-0 transition-colors text-left group"
+                    >
+                      <FileText size={10} className="text-emerald-500" />
+                      <span className="text-[11px] font-medium text-gray-300 truncate">
+                        @{doc.name}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <button
               onClick={onSend} disabled={isProcessing || !inputValue.trim()}
               className="absolute bottom-4 right-4 bg-brand-accent hover:bg-brand-accent/90 disabled:bg-brand-border disabled:text-brand-muted h-10 w-10 flex items-center justify-center rounded-lg transition-all shadow-xl"
