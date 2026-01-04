@@ -1,7 +1,7 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { Message, PipelineStatus, Document } from '../types';
-import { Search, Bot, Loader2, CheckCircle2, ChevronDown, ChevronRight, FileText, Sparkles, Copy, Check, Zap, Cpu, RefreshCw, Trash2, Send, AtSign } from 'lucide-react';
+import { Search, Bot, Loader2, CheckCircle2, ChevronDown, ChevronRight, FileText, Sparkles, Copy, Check, Zap, Cpu, RefreshCw, Trash2, Send, AtSign, ArrowRight } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -209,7 +209,7 @@ export const ChatInterface: React.FC<Props> = ({
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = 'auto';
-      const newHeight = Math.min(textarea.scrollHeight, 280);
+      const newHeight = Math.min(textarea.scrollHeight, 240);
       textarea.style.height = `${newHeight}px`;
     }
   }, [inputValue]);
@@ -319,7 +319,7 @@ export const ChatInterface: React.FC<Props> = ({
         </div>
       </div>
 
-      <div ref={scrollRef} className={`flex-1 overflow-y-auto px-6 py-12 space-y-20 relative z-10 ${inputPosition === 'floating' ? 'pb-40' : ''}`}>
+      <div ref={scrollRef} className={`flex-1 overflow-y-auto px-6 py-12 space-y-20 relative z-10 ${inputPosition === 'floating' ? 'pb-32' : ''}`}>
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center px-12 pb-20">
             <h1 className="text-[32px] font-serif italic text-white tracking-tight mb-4 animate-blur-text">
@@ -379,23 +379,23 @@ export const ChatInterface: React.FC<Props> = ({
       </div>
 
       {inputPosition === 'floating' && (
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-3xl px-6 z-50">
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-2xl px-6 z-50">
           
           {/* FILE SUGGESTIONS PORTAL */}
           {showSuggestions && filteredDocs.length > 0 && (
-            <div className="absolute bottom-full left-0 mb-4 w-full bg-brand-darker border border-brand-border rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] overflow-hidden animate-in slide-in-from-bottom-2 duration-150 backdrop-blur-xl">
-              <div className="px-5 py-3 border-b border-brand-border flex items-center justify-between bg-brand-base/50">
-                <span className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Knowledge Vault Suggestions</span>
-                <span className="text-[9px] px-2 py-1 bg-brand-accent/20 text-brand-accent rounded font-bold uppercase">Priority Anchor</span>
+            <div className="absolute bottom-full left-0 mb-4 w-full bg-[#202020]/90 border border-white/10 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] overflow-hidden animate-in slide-in-from-bottom-2 duration-150 backdrop-blur-2xl">
+              <div className="px-5 py-3 border-b border-white/5 flex items-center justify-between bg-white/[0.03]">
+                <span className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Vault Suggestions</span>
+                <span className="text-[9px] px-2 py-1 bg-brand-accent/20 text-brand-accent rounded font-bold uppercase">Priority Link</span>
               </div>
-              <div className="max-h-60 overflow-y-auto">
+              <div className="max-h-52 overflow-y-auto scrollbar-hide">
                 {filteredDocs.map((doc) => (
                   <button
                     key={doc.id}
                     onClick={() => insertTag(doc.name)}
-                    className="w-full flex items-center gap-4 px-5 py-3.5 hover:bg-brand-accent/10 border-b border-brand-border/30 last:border-0 transition-colors text-left group"
+                    className="w-full flex items-center gap-4 px-5 py-3 hover:bg-white/[0.05] border-b border-white/5 last:border-0 transition-colors text-left group"
                   >
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-brand-base border border-brand-border group-hover:border-brand-accent/50 transition-all">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-brand-base border border-white/5 group-hover:border-brand-accent/50 transition-all">
                       <FileText size={12} className="text-emerald-500" />
                     </div>
                     <span className="text-[13px] font-medium text-gray-300 group-hover:text-white transition-colors">
@@ -407,7 +407,7 @@ export const ChatInterface: React.FC<Props> = ({
             </div>
           )}
 
-          <div className="relative group/input bg-brand-base/70 backdrop-blur-xl rounded-2xl border border-brand-border shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all focus-within:border-brand-accent/50 p-2 flex items-end gap-2">
+          <div className="relative group/input bg-white/[0.06] backdrop-blur-[40px] rounded-[32px] border border-white/[0.12] shadow-[0_20px_50px_rgba(0,0,0,0.4)] transition-all focus-within:border-brand-accent/40 p-2.5 flex items-end gap-2.5">
             <textarea
               ref={textareaRef}
               value={inputValue}
@@ -418,20 +418,20 @@ export const ChatInterface: React.FC<Props> = ({
               onKeyUp={(e) => setCursorPosition((e.target as any).selectionStart || 0)}
               onClick={(e) => setCursorPosition((e.target as any).selectionStart || 0)}
               onKeyDown={handleKeyDown}
-              placeholder="Expand context... Type @ to focus files"
-              className="flex-1 bg-transparent border-none text-[14px] font-medium p-3 resize-none outline-none text-gray-100 placeholder:text-brand-muted/40 min-h-[52px] overflow-y-auto scrollbar-hide leading-relaxed"
-              style={{ height: '52px' }}
+              placeholder="Expand context... Deep reason..."
+              className="flex-1 bg-transparent border-none text-[13px] font-medium px-4 py-3 resize-none outline-none text-gray-100 placeholder:text-gray-500 min-h-[48px] overflow-y-auto scrollbar-hide leading-relaxed"
+              style={{ height: '48px' }}
               rows={1}
             />
             <button
               onClick={() => onSend()}
               disabled={isProcessing || !inputValue.trim()}
-              className="shrink-0 h-10 w-10 flex items-center justify-center rounded-xl bg-brand-accent hover:bg-brand-accent/90 disabled:bg-brand-border disabled:text-brand-muted transition-all shadow-lg mb-1 mr-1"
+              className="shrink-0 h-9 w-16 flex items-center justify-center rounded-full bg-gradient-to-br from-brand-accent to-[#d4480e] hover:brightness-110 disabled:grayscale disabled:opacity-20 transition-all mb-1 mr-1.5"
             >
               {isProcessing ? (
-                <Loader2 className="animate-spin text-white" size={18} />
+                <Loader2 className="animate-spin text-white" size={16} />
               ) : (
-                <Send className="text-white" size={18} />
+                <ArrowRight className="text-white" size={16} strokeWidth={2.5} />
               )}
             </button>
           </div>
