@@ -6,22 +6,72 @@ import { AppState, Message, Document, Chunk } from './types';
 import { vectorService } from './services/vectorService';
 import { geminiRAG } from './services/geminiService';
 
+const STORAGE_KEYS = {
+  DOCUMENTS: 'gemini_rag_docs',
+  SETTINGS: 'gemini_rag_settings',
+  PROMPT_HISTORY: 'gemini_rag_history'
+};
+
 const App: React.FC = () => {
+  // Load initial state from localStorage
+  const loadInitialDocs = (): Document[] => {
+    const stored = localStorage.getItem(STORAGE_KEYS.DOCUMENTS);
+    return stored ? JSON.parse(stored) : [];
+  };
+
+  const loadInitialSettings = () => {
+    const stored = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+    const defaults = {
+      useVault: true,
+      useSmallModelForResponse: false,
+      temperature: 0.7,
+      theme: 'dark' as const
+    };
+    return stored ? { ...defaults, ...JSON.parse(stored) } : defaults;
+  };
+
+  const initialSettings = loadInitialSettings();
+
   const [state, setState] = useState<AppState>({
-    documents: [],
+    documents: loadInitialDocs(),
     messages: [],
     isIndexing: false,
     isProcessing: false,
     error: null,
-    temperature: 0.7,
-    theme: 'dark', // Default set to dark mode
-    useVault: true,
-    useSmallModelForResponse: false
+    temperature: initialSettings.temperature,
+    theme: initialSettings.theme,
+    useVault: initialSettings.useVault,
+    useSmallModelForResponse: initialSettings.useSmallModelForResponse
   });
 
   const [inputValue, setInputValue] = useState('');
+  const [promptHistory, setPromptHistory] = useState<string[]>(() => {
+    const stored = localStorage.getItem(STORAGE_KEYS.PROMPT_HISTORY);
+    return stored ? JSON.parse(stored) : [];
+  });
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [draftValue, setDraftValue] = useState('');
+
   const [rightWidth, setRightWidth] = useState(320);
   const isResizing = useRef(false);
+
+  // Persistence Effects
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.DOCUMENTS, JSON.stringify(state.documents));
+  }, [state.documents]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify({
+      useVault: state.useVault,
+      useSmallModelForResponse: state.useSmallModelForResponse,
+      temperature: state.temperature,
+      theme: state.theme
+    }));
+  }, [state.useVault, state.useSmallModelForResponse, state.temperature, state.theme]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.PROMPT_HISTORY, JSON.stringify(promptHistory));
+  }, [promptHistory]);
 
   useEffect(() => {
     if (state.theme === 'dark') {
@@ -104,7 +154,6 @@ const App: React.FC = () => {
     const runIndexing = async () => {
       setState(prev => ({ ...prev, isIndexing: true, error: null }));
       try {
-        // Only index enabled documents
         const enabledDocs = state.documents.filter(d => d.enabled);
         await vectorService.indexDocuments(enabledDocs);
       } catch (err: any) {
@@ -127,6 +176,15 @@ const App: React.FC = () => {
     if (!inputValue.trim() || state.isProcessing) return;
 
     const currentQuery = inputValue.trim();
+    
+    // Update prompt history
+    setPromptHistory(prev => {
+      const filtered = prev.filter(p => p !== currentQuery);
+      return [currentQuery, ...filtered].slice(0, 50); // Keep last 50
+    });
+    setHistoryIndex(-1);
+    setDraftValue('');
+
     const assistantId = (Date.now() + 1).toString();
     
     const userMessage: Message = {
@@ -156,7 +214,6 @@ const App: React.FC = () => {
       let expandedQuery = '';
       let sources: Chunk[] = [];
 
-      // Only use vault if global toggle is ON and there are enabled documents
       const activeDocs = state.documents.filter(d => d.enabled);
       
       if (state.useVault && activeDocs.length > 0) {
@@ -169,7 +226,6 @@ const App: React.FC = () => {
         sources = await vectorService.search(expandedQuery);
         updateMessage(assistantId, { sources, status: 'reasoning' });
       } else if (state.useVault && activeDocs.length === 0) {
-        // User has vault ON but all individual files are OFF
         updateMessage(assistantId, { status: 'reasoning' });
       }
 
@@ -198,22 +254,37 @@ const App: React.FC = () => {
     } catch (err: any) {
       console.error("Pipeline Error:", err);
       let errorMessage = "Infrastructure Sync Failure.";
-      
       if (err.message?.includes("429") || err.message?.includes("RESOURCE_EXHAUSTED")) {
-        errorMessage = "Cloud Quota Depleted. Please check your billing dashboard or switch to a paid API project.";
-      } else if (err.message?.includes("Requested entity was not found")) {
-        errorMessage = "Invalid API Key context. Please re-authenticate via Infrastructure settings.";
+        errorMessage = "Cloud Quota Depleted. Please check your billing dashboard.";
       }
-
       updateMessage(assistantId, { status: 'error' });
-      setState(prev => ({ 
-        ...prev, 
-        error: errorMessage 
-      }));
+      setState(prev => ({ ...prev, error: errorMessage }));
     } finally {
       setState(prev => ({ ...prev, isProcessing: false }));
     }
   }, [inputValue, state.isProcessing, state.temperature, state.documents, state.useVault, state.useSmallModelForResponse]);
+
+  // History Navigation Logic
+  const handleHistoryNav = useCallback((direction: 'up' | 'down') => {
+    if (direction === 'up') {
+      const nextIndex = historyIndex + 1;
+      if (nextIndex < promptHistory.length) {
+        if (historyIndex === -1) setDraftValue(inputValue);
+        setHistoryIndex(nextIndex);
+        setInputValue(promptHistory[nextIndex]);
+      }
+    } else {
+      const nextIndex = historyIndex - 1;
+      if (nextIndex >= -1) {
+        setHistoryIndex(nextIndex);
+        if (nextIndex === -1) {
+          setInputValue(draftValue);
+        } else {
+          setInputValue(promptHistory[nextIndex]);
+        }
+      }
+    }
+  }, [historyIndex, promptHistory, inputValue, draftValue]);
 
   return (
     <div className="flex h-screen bg-brand-base text-gray-100 transition-colors overflow-hidden">
@@ -233,9 +304,7 @@ const App: React.FC = () => {
             </span>
           </div>
         )}
-        <ChatInterface 
-          messages={state.messages}
-        />
+        <ChatInterface messages={state.messages} />
       </main>
 
       <div 
@@ -248,6 +317,7 @@ const App: React.FC = () => {
           inputValue={inputValue}
           setInputValue={setInputValue}
           onSend={handleSend}
+          onHistoryNav={handleHistoryNav}
           isProcessing={state.isProcessing}
           temperature={state.temperature}
           setTemperature={(t) => setState(prev => ({ ...prev, temperature: t }))}

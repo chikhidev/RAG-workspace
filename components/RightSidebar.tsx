@@ -5,6 +5,7 @@ interface Props {
   inputValue: string;
   setInputValue: (v: string) => void;
   onSend: () => void;
+  onHistoryNav: (direction: 'up' | 'down') => void;
   isProcessing: boolean;
   temperature: number;
   setTemperature: (t: number) => void;
@@ -20,6 +21,7 @@ export const RightSidebar: React.FC<Props> = ({
   inputValue,
   setInputValue,
   onSend,
+  onHistoryNav,
   isProcessing,
   temperature,
   setTemperature,
@@ -30,10 +32,22 @@ export const RightSidebar: React.FC<Props> = ({
   useSmallModel,
   setUseSmallModel
 }) => {
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       onSend();
+    } else if (e.key === 'ArrowUp') {
+      // Only navigate history if cursor is at the beginning
+      if (e.currentTarget.selectionStart === 0) {
+        e.preventDefault();
+        onHistoryNav('up');
+      }
+    } else if (e.key === 'ArrowDown') {
+      // Only navigate history if cursor is at the end
+      if (e.currentTarget.selectionStart === e.currentTarget.value.length) {
+        e.preventDefault();
+        onHistoryNav('down');
+      }
     }
   };
 
@@ -45,7 +59,6 @@ export const RightSidebar: React.FC<Props> = ({
     }
   };
 
-  // Base style for toggle containers: simple gray that matches the overall aesthetic
   const toggleBtnClass = "w-full flex items-center justify-between p-4 rounded-xl border border-gray-100 dark:border-brand-border bg-gray-50 dark:bg-[#252525] transition-all";
 
   return (
@@ -87,6 +100,9 @@ export const RightSidebar: React.FC<Props> = ({
             )}
           </button>
         </div>
+        <div className="mt-2 text-[9px] font-mono text-gray-400 dark:text-brand-muted uppercase tracking-wider text-right">
+          Use ↑ for history
+        </div>
       </div>
 
       <div className="mb-10 space-y-8">
@@ -95,7 +111,6 @@ export const RightSidebar: React.FC<Props> = ({
             Brain Config
           </h2>
           <div className="space-y-3">
-            {/* Vault Master Toggle - Simplified UI */}
             <button 
               onClick={() => setUseVault(!useVault)}
               className={toggleBtnClass}
@@ -111,7 +126,6 @@ export const RightSidebar: React.FC<Props> = ({
               </div>
             </button>
 
-            {/* Model Selection Toggle - Simplified UI */}
             <button 
               onClick={() => setUseSmallModel(!useSmallModel)}
               className={toggleBtnClass}

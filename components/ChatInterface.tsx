@@ -1,12 +1,58 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Message } from '../types';
-import { Search, Bot, Loader2, CheckCircle2, ChevronDown, ChevronRight, FileText, Sparkles } from 'lucide-react';
+import { Search, Bot, Loader2, CheckCircle2, ChevronDown, ChevronRight, FileText, Sparkles, Copy, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 interface Props {
   messages: Message[];
 }
+
+const CodeBlock = ({ children, className, ...props }: any) => {
+  const [copied, setCopied] = useState(false);
+  const match = /language-(\w+)/.exec(className || '');
+  const lang = match ? match[1] : '';
+  const codeContent = String(children).replace(/\n$/, '');
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(codeContent);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const isInline = !className;
+
+  if (isInline) {
+    return (
+      <code className="bg-gray-100 dark:bg-brand-border px-1.5 py-0.5 rounded text-brand-accent font-mono text-[0.9em]" {...props}>
+        {children}
+      </code>
+    );
+  }
+
+  return (
+    <div className="relative group my-6 rounded-xl overflow-hidden border border-gray-200 dark:border-brand-border shadow-sm">
+      <div className="flex items-center justify-between px-4 py-2 bg-gray-50 dark:bg-brand-darker border-b border-gray-200 dark:border-brand-border">
+        <span className="text-[10px] font-mono text-gray-400 dark:text-brand-muted uppercase tracking-wider">
+          {lang || 'code'}
+        </span>
+        <button 
+          onClick={handleCopy}
+          className="p-1 hover:bg-gray-200 dark:hover:bg-brand-base rounded transition-colors text-gray-400 hover:text-brand-accent"
+        >
+          {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+        </button>
+      </div>
+      <div className="overflow-x-auto bg-[#0d1117] p-4">
+        <pre className="m-0">
+          <code className={`${className} font-mono text-[13px] leading-relaxed text-[#e6edf3]`} {...props}>
+            {children}
+          </code>
+        </pre>
+      </div>
+    </div>
+  );
+};
 
 const PipelineDetails: React.FC<{ msg: Message }> = ({ msg }) => {
   const [isExpendedToggled, setIsExpandedToggled] = useState(false);
@@ -131,7 +177,12 @@ export const ChatInterface: React.FC<Props> = ({ messages }) => {
                 }`}>
                   {msg.status === 'completed' || msg.role === 'user' ? (
                      <div className={`prose dark:prose-invert ${msg.role === 'assistant' ? 'animate-blur-text' : ''}`}>
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        <ReactMarkdown 
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            code: CodeBlock
+                          }}
+                        >
                           {msg.content}
                         </ReactMarkdown>
                      </div>
