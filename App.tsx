@@ -2,18 +2,19 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { DocumentList } from './components/DocumentList';
 import { ChatInterface } from './components/ChatInterface';
 import { RightSidebar } from './components/RightSidebar';
-import { AppState, Message, Document, Chunk } from './types';
+import { AppState, Message, Document, Chunk, Toast } from './types';
 import { vectorService } from './services/vectorService';
 import { geminiRAG } from './services/geminiService';
+import { X } from 'lucide-react';
 
 const STORAGE_KEYS = {
   DOCUMENTS: 'gemini_rag_docs',
   SETTINGS: 'gemini_rag_settings',
-  PROMPT_HISTORY: 'gemini_rag_history'
+  PROMPT_HISTORY: 'gemini_rag_history',
+  CONTEXT_SCRIPT: 'gemini_rag_context_script'
 };
 
 const App: React.FC = () => {
-  // Load initial state from localStorage
   const loadInitialDocs = (): Document[] => {
     const stored = localStorage.getItem(STORAGE_KEYS.DOCUMENTS);
     return stored ? JSON.parse(stored) : [];
@@ -23,9 +24,11 @@ const App: React.FC = () => {
     const stored = localStorage.getItem(STORAGE_KEYS.SETTINGS);
     const defaults = {
       useVault: true,
-      useSmallModelForResponse: false,
+      useContextHistory: true,
       temperature: 0.7,
-      theme: 'dark' as const
+      theme: 'dark' as const,
+      expanderModel: 'gemini-3-flash-preview',
+      reasonerModel: 'gemini-3-pro-preview'
     };
     return stored ? { ...defaults, ...JSON.parse(stored) } : defaults;
   };
@@ -37,11 +40,14 @@ const App: React.FC = () => {
     messages: [],
     isIndexing: false,
     isProcessing: false,
-    error: null,
+    toasts: [],
     temperature: initialSettings.temperature,
     theme: initialSettings.theme,
     useVault: initialSettings.useVault,
-    useSmallModelForResponse: initialSettings.useSmallModelForResponse
+    useContextHistory: initialSettings.useContextHistory,
+    contextScript: localStorage.getItem(STORAGE_KEYS.CONTEXT_SCRIPT) || "",
+    expanderModel: initialSettings.expanderModel,
+    reasonerModel: initialSettings.reasonerModel
   });
 
   const [inputValue, setInputValue] = useState('');
@@ -51,11 +57,9 @@ const App: React.FC = () => {
   });
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [draftValue, setDraftValue] = useState('');
-
   const [rightWidth, setRightWidth] = useState(320);
   const isResizing = useRef(false);
 
-  // Persistence Effects
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.DOCUMENTS, JSON.stringify(state.documents));
   }, [state.documents]);
@@ -63,30 +67,33 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify({
       useVault: state.useVault,
-      useSmallModelForResponse: state.useSmallModelForResponse,
+      useContextHistory: state.useContextHistory,
       temperature: state.temperature,
-      theme: state.theme
+      theme: state.theme,
+      expanderModel: state.expanderModel,
+      reasonerModel: state.reasonerModel
     }));
-  }, [state.useVault, state.useSmallModelForResponse, state.temperature, state.theme]);
+    document.documentElement.classList.toggle('dark', state.theme === 'dark');
+  }, [state.useVault, state.useContextHistory, state.temperature, state.theme, state.expanderModel, state.reasonerModel]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.PROMPT_HISTORY, JSON.stringify(promptHistory));
-  }, [promptHistory]);
+    localStorage.setItem(STORAGE_KEYS.CONTEXT_SCRIPT, state.contextScript);
+  }, [state.contextScript]);
 
-  useEffect(() => {
-    if (state.theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [state.theme]);
+  const addToast = (message: string, type: Toast['type'] = 'error') => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setState(prev => ({ ...prev, toasts: [...prev.toasts, { id, message, type }] }));
+    setTimeout(() => removeToast(id), 5000);
+  };
+
+  const removeToast = (id: string) => {
+    setState(prev => ({ ...prev, toasts: prev.toasts.filter(t => t.id !== id) }));
+  };
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isResizing.current) return;
     const newWidth = window.innerWidth - e.clientX;
-    if (newWidth > 240 && newWidth < 800) {
-      setRightWidth(newWidth);
-    }
+    if (newWidth > 240 && newWidth < 800) setRightWidth(newWidth);
   }, []);
 
   const stopResizing = useCallback(() => {
@@ -94,7 +101,6 @@ const App: React.FC = () => {
     document.removeEventListener('mousemove', handleMouseMove);
     document.removeEventListener('mouseup', stopResizing);
     document.body.style.cursor = 'default';
-    document.body.style.userSelect = 'auto';
   }, [handleMouseMove]);
 
   const startResizing = useCallback(() => {
@@ -102,232 +108,147 @@ const App: React.FC = () => {
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', stopResizing);
     document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
   }, [handleMouseMove, stopResizing]);
 
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-
     if (state.documents.length + files.length > 10) {
-      setState(prev => ({ ...prev, error: "Maximum of 10 files allowed in the vault." }));
+      addToast("File limit reached (10 max).");
       return;
     }
-
     const newDocs: Document[] = [];
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+    // Fix: Cast the file list to a File array to resolve 'unknown' type issues in the iteration.
+    const fileArray = Array.from(files) as File[];
+    for (const file of fileArray) {
       try {
         const text = await file.text();
-        newDocs.push({
-          id: Math.random().toString(36).substring(2, 11),
-          name: file.name,
-          content: text,
-          enabled: true
-        });
-      } catch (err) {
-        console.error(`Error reading ${file.name}:`, err);
-      }
+        newDocs.push({ id: Math.random().toString(36).substring(2, 11), name: file.name, content: text, enabled: true });
+      } catch (err) { addToast(`Failed to read ${file.name}`); }
     }
-
-    setState(prev => ({
-      ...prev,
-      documents: [...prev.documents, ...newDocs],
-    }));
+    setState(prev => ({ ...prev, documents: [...prev.documents, ...newDocs] }));
   }, [state.documents]);
-
-  const handleRemoveDocument = useCallback((id: string) => {
-    setState(prev => ({
-      ...prev,
-      documents: prev.documents.filter(d => d.id !== id),
-    }));
-  }, []);
-
-  const handleToggleDocument = useCallback((id: string) => {
-    setState(prev => ({
-      ...prev,
-      documents: prev.documents.map(d => d.id === id ? { ...d, enabled: !d.enabled } : d),
-    }));
-  }, []);
 
   useEffect(() => {
     const runIndexing = async () => {
-      setState(prev => ({ ...prev, isIndexing: true, error: null }));
+      setState(prev => ({ ...prev, isIndexing: true }));
       try {
-        const enabledDocs = state.documents.filter(d => d.enabled);
-        await vectorService.indexDocuments(enabledDocs);
-      } catch (err: any) {
-        setState(prev => ({ ...prev, error: err.message || "Failed to index documents." }));
-      } finally {
-        setState(prev => ({ ...prev, isIndexing: false }));
-      }
+        await vectorService.indexDocuments(state.documents.filter(d => d.enabled));
+      } catch (err) { addToast("Indexing failure."); }
+      finally { setState(prev => ({ ...prev, isIndexing: false })); }
     };
     runIndexing();
   }, [state.documents]);
 
-  const updateMessage = (id: string, updates: Partial<Message>) => {
-    setState(prev => ({
-      ...prev,
-      messages: prev.messages.map(m => m.id === id ? { ...m, ...updates } : m)
-    }));
-  };
-
   const handleSend = useCallback(async () => {
     if (!inputValue.trim() || state.isProcessing) return;
-
     const currentQuery = inputValue.trim();
-    
-    // Update prompt history
-    setPromptHistory(prev => {
-      const filtered = prev.filter(p => p !== currentQuery);
-      return [currentQuery, ...filtered].slice(0, 50); // Keep last 50
-    });
+    setPromptHistory(prev => [currentQuery, ...prev.filter(p => p !== currentQuery)].slice(0, 50));
     setHistoryIndex(-1);
-    setDraftValue('');
-
-    const assistantId = (Date.now() + 1).toString();
     
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: currentQuery,
-      timestamp: new Date(),
-    };
+    const assistantId = Date.now().toString() + '-ai';
+    const userMsg: Message = { id: Date.now().toString(), role: 'user', content: currentQuery, timestamp: new Date() };
+    const placeholder: Message = { id: assistantId, role: 'assistant', content: '', status: state.useVault ? 'expanding' : 'reasoning', timestamp: new Date() };
 
-    const assistantPlaceholder: Message = {
-      id: assistantId,
-      role: 'assistant',
-      content: '',
-      status: state.useVault ? 'expanding' : 'reasoning',
-      timestamp: new Date(),
-    };
-
-    setState(prev => ({
-      ...prev,
-      messages: [...prev.messages, userMessage, assistantPlaceholder],
-      isProcessing: true,
-      error: null,
-    }));
+    setState(prev => ({ ...prev, messages: [...prev.messages, userMsg, placeholder], isProcessing: true }));
     setInputValue('');
 
     try {
       let expandedQuery = '';
       let sources: Chunk[] = [];
-
       const activeDocs = state.documents.filter(d => d.enabled);
-      
+      const hist = state.useContextHistory ? state.contextScript : "";
+
       if (state.useVault && activeDocs.length > 0) {
-        const fileNames = activeDocs.map(d => d.name);
-        const filePreviews = activeDocs.map(d => `[File: ${d.name}]\n${d.content.substring(0, 300)}...`);
-
-        expandedQuery = await geminiRAG.expandQuery(currentQuery, fileNames, filePreviews, state.temperature);
-        updateMessage(assistantId, { expandedQuery, status: 'searching' });
-
+        expandedQuery = await geminiRAG.expandQuery(
+          currentQuery, 
+          activeDocs.map(d => d.name), 
+          activeDocs.map(d => d.content.substring(0, 300)), 
+          state.temperature, 
+          hist, 
+          state.expanderModel
+        );
+        setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, expandedQuery, status: 'searching' } : m) }));
         sources = await vectorService.search(expandedQuery);
-        updateMessage(assistantId, { sources, status: 'reasoning' });
-      } else if (state.useVault && activeDocs.length === 0) {
-        updateMessage(assistantId, { status: 'reasoning' });
+        setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, sources, status: 'reasoning' } : m) }));
       }
 
-      const modelName = state.useSmallModelForResponse ? 'gemini-3-flash-preview' : 'gemini-3-pro-preview';
       const startTime = performance.now();
       const { answer } = await geminiRAG.generateAnswer(
-        currentQuery, 
-        expandedQuery, 
-        sources, 
-        activeDocs.map(d => d.name), 
-        activeDocs.map(d => `[File: ${d.name}]\n${d.content.substring(0, 300)}...`),
-        state.temperature,
-        state.useVault && activeDocs.length > 0,
-        modelName
+        currentQuery, expandedQuery, sources, activeDocs.map(d => d.name), [], 
+        state.temperature, state.useVault, state.reasonerModel, hist
       );
       
-      const endTime = performance.now();
-      const durationSeconds = (endTime - startTime) / 1000;
+      const duration = (performance.now() - startTime) / 1000;
+      setState(prev => ({ 
+        ...prev, 
+        messages: prev.messages.map(m => m.id === assistantId ? { ...m, content: answer, status: 'completed', reasoningDuration: duration } : m) 
+      }));
 
-      updateMessage(assistantId, { 
-        content: answer, 
-        status: 'completed',
-        reasoningDuration: durationSeconds
-      });
-
-    } catch (err: any) {
-      console.error("Pipeline Error:", err);
-      let errorMessage = "Infrastructure Sync Failure.";
-      if (err.message?.includes("429") || err.message?.includes("RESOURCE_EXHAUSTED")) {
-        errorMessage = "Cloud Quota Depleted. Please check your billing dashboard.";
+      if (state.useContextHistory) {
+        const scriptLine = await geminiRAG.generateSummary(currentQuery, answer, Array.from(new Set(sources.map(s => s.docName))));
+        setState(prev => ({ ...prev, contextScript: prev.contextScript ? `${prev.contextScript}\n${scriptLine}` : scriptLine }));
       }
-      updateMessage(assistantId, { status: 'error' });
-      setState(prev => ({ ...prev, error: errorMessage }));
+    } catch (err: any) {
+      addToast(err.message || "Pipeline error.");
+      setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, status: 'error' } : m) }));
     } finally {
       setState(prev => ({ ...prev, isProcessing: false }));
     }
-  }, [inputValue, state.isProcessing, state.temperature, state.documents, state.useVault, state.useSmallModelForResponse]);
-
-  // History Navigation Logic
-  const handleHistoryNav = useCallback((direction: 'up' | 'down') => {
-    if (direction === 'up') {
-      const nextIndex = historyIndex + 1;
-      if (nextIndex < promptHistory.length) {
-        if (historyIndex === -1) setDraftValue(inputValue);
-        setHistoryIndex(nextIndex);
-        setInputValue(promptHistory[nextIndex]);
-      }
-    } else {
-      const nextIndex = historyIndex - 1;
-      if (nextIndex >= -1) {
-        setHistoryIndex(nextIndex);
-        if (nextIndex === -1) {
-          setInputValue(draftValue);
-        } else {
-          setInputValue(promptHistory[nextIndex]);
-        }
-      }
-    }
-  }, [historyIndex, promptHistory, inputValue, draftValue]);
+  }, [inputValue, state.isProcessing, state.temperature, state.documents, state.useVault, state.expanderModel, state.reasonerModel, state.contextScript, state.useContextHistory]);
 
   return (
-    <div className="flex h-screen bg-brand-base text-gray-100 transition-colors overflow-hidden">
+    <div className={`flex h-screen bg-brand-base text-gray-100 transition-colors overflow-hidden ${state.theme}`}>
       <DocumentList 
-        documents={state.documents} 
-        onUpload={handleFileUpload} 
-        onRemove={handleRemoveDocument}
-        onToggle={handleToggleDocument}
+        documents={state.documents} onUpload={handleFileUpload} 
+        onRemove={(id) => setState(prev => ({ ...prev, documents: prev.documents.filter(d => d.id !== id) }))} 
+        onToggle={(id) => setState(prev => ({ ...prev, documents: prev.documents.map(d => d.id === id ? { ...d, enabled: !d.enabled } : d) }))}
         isIndexing={state.isIndexing}
       />
       
-      <main className="flex-1 flex flex-col min-w-0 bg-brand-base">
-        {state.error && (
-          <div className="bg-brand-accent/10 border-b border-brand-accent/20 p-3 text-center animate-[fadeIn_0.3s_ease-out]">
-            <span className="text-[10px] text-brand-accent font-bold uppercase tracking-[0.2em] font-mono">
-              Alert: {state.error}
-            </span>
-          </div>
-        )}
+      <main className="flex-1 flex flex-col min-w-0 bg-[#F8F9FB] dark:bg-brand-base">
         <ChatInterface messages={state.messages} />
       </main>
 
-      <div 
-        onMouseDown={startResizing}
-        className="w-[1px] cursor-col-resize hover:bg-brand-accent transition-colors bg-brand-border z-20"
-      />
+      <div onMouseDown={startResizing} className="w-[1px] cursor-col-resize hover:bg-brand-accent transition-colors bg-brand-border z-20 relative group">
+        <div className="absolute inset-y-0 -left-1 w-2 bg-transparent group-hover:bg-brand-accent/20 transition-all"></div>
+      </div>
 
-      <div style={{ width: `${rightWidth}px` }} className="shrink-0">
+      <div style={{ width: `${rightWidth}px` }} className="shrink-0 flex">
+        {/* The Draggable Border Handle */}
+        <div onMouseDown={startResizing} className="w-1.5 cursor-col-resize bg-gray-100 dark:bg-brand-border hover:bg-brand-accent transition-all flex flex-col items-center justify-center gap-1 group">
+          <div className="w-[1px] h-8 bg-gray-300 dark:bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
+          <div className="w-[1px] h-8 bg-gray-300 dark:bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
+        </div>
+
         <RightSidebar
-          inputValue={inputValue}
-          setInputValue={setInputValue}
-          onSend={handleSend}
-          onHistoryNav={handleHistoryNav}
+          inputValue={inputValue} setInputValue={setInputValue}
+          onSend={handleSend} onHistoryNav={(d) => {}}
           isProcessing={state.isProcessing}
           temperature={state.temperature}
           setTemperature={(t) => setState(prev => ({ ...prev, temperature: t }))}
-          theme={state.theme}
-          setTheme={(theme) => setState(prev => ({ ...prev, theme }))}
-          useVault={state.useVault}
-          setUseVault={(v) => setState(prev => ({ ...prev, useVault: v }))}
-          useSmallModel={state.useSmallModelForResponse}
-          setUseSmallModel={(v) => setState(prev => ({ ...prev, useSmallModelForResponse: v }))}
+          theme={state.theme} setTheme={(theme) => setState(prev => ({ ...prev, theme }))}
+          useVault={state.useVault} setUseVault={(v) => setState(prev => ({ ...prev, useVault: v }))}
+          useContextHistory={state.useContextHistory} setUseContextHistory={(v) => setState(prev => ({ ...prev, useContextHistory: v }))}
+          onClearContext={() => setState(prev => ({ ...prev, contextScript: "" }))}
+          expanderModel={state.expanderModel} setExpanderModel={(m) => setState(prev => ({ ...prev, expanderModel: m }))}
+          reasonerModel={state.reasonerModel} setReasonerModel={(m) => setState(prev => ({ ...prev, reasonerModel: m }))}
         />
+      </div>
+
+      {/* Floating Toasts */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex flex-col gap-3 z-50 pointer-events-none">
+        {state.toasts.map(toast => (
+          <div key={toast.id} className="pointer-events-auto flex items-center gap-3 px-5 py-3.5 bg-white dark:bg-brand-darker message-shadow rounded-2xl border border-gray-100 dark:border-brand-border animate-blur-text min-w-[320px]">
+            <span className={`text-[11px] font-bold uppercase tracking-widest ${toast.type === 'error' ? 'text-red-500' : 'text-emerald-500'}`}>
+              {toast.type}
+            </span>
+            <p className="flex-1 text-[13px] text-gray-700 dark:text-gray-300 font-medium">{toast.message}</p>
+            <button onClick={() => removeToast(toast.id)} className="text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+              <X size={14} />
+            </button>
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -26,14 +26,23 @@ export interface Message {
   timestamp: Date;
 }
 
+export interface Toast {
+  id: string;
+  message: string;
+  type: 'error' | 'success' | 'info';
+}
+
 export interface AppState {
   documents: Document[];
   messages: Message[];
   isIndexing: boolean;
   isProcessing: boolean;
-  error: string | null;
+  toasts: Toast[];
   temperature: number;
   theme: 'light' | 'dark';
   useVault: boolean;
-  useSmallModelForResponse: boolean;
+  useContextHistory: boolean;
+  contextScript: string;
+  expanderModel: string;
+  reasonerModel: string;
 }
