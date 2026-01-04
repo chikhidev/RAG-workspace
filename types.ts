@@ -32,6 +32,17 @@ export interface Toast {
   type: 'error' | 'success' | 'info';
 }
 
+export type ModelProviderId = 'google' | 'openrouter';
+
+export interface ModelDefinition {
+  id: string;
+  name: string;
+  provider: ModelProviderId;
+  description: string;
+  size: 'small' | 'large';
+  logo: string;
+}
+
 export interface AppState {
   documents: Document[];
   messages: Message[];
@@ -45,4 +56,5 @@ export interface AppState {
   contextScript: string;
   expanderModel: string;
   reasonerModel: string;
+  openRouterKey: string;
 }

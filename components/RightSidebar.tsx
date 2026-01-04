@@ -1,5 +1,6 @@
 import React from 'react';
-import { Send, Loader2, Sun, Moon, Terminal, Cpu, Eraser, Layers } from 'lucide-react';
+import { Send, Loader2, Sun, Moon, Terminal, Cpu, Eraser, Layers, Key, Settings2 } from 'lucide-react';
+import { SUPPORTED_MODELS } from '../services/modelService';
 
 interface Props {
   inputValue: string;
@@ -20,20 +21,17 @@ interface Props {
   setExpanderModel: (m: string) => void;
   reasonerModel: string;
   setReasonerModel: (m: string) => void;
+  openRouterKey: string;
+  setOpenRouterKey: (k: string) => void;
+  onOpenApiManagement: () => void;
 }
-
-const SUPPORTED_MODELS = [
-  { id: 'gemini-3-flash-preview', name: 'Gemini 3 Flash' },
-  { id: 'gemini-3-pro-preview', name: 'Gemini 3 Pro' },
-  { id: 'gemini-flash-lite-latest', name: 'Flash Lite' },
-  { id: 'gemini-2.5-flash-native-audio-preview-09-2025', name: 'Native Audio' },
-];
 
 export const RightSidebar: React.FC<Props> = ({
   inputValue, setInputValue, onSend, onHistoryNav, isProcessing,
   temperature, setTemperature, theme, setTheme,
   useVault, setUseVault, useContextHistory, setUseContextHistory,
-  onClearContext, expanderModel, setExpanderModel, reasonerModel, setReasonerModel
+  onClearContext, expanderModel, setExpanderModel, reasonerModel, setReasonerModel,
+  onOpenApiManagement
 }) => {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -42,8 +40,14 @@ export const RightSidebar: React.FC<Props> = ({
     }
   };
 
-  const toggleBtnClass = "w-full flex items-center justify-between p-4 rounded-xl border border-gray-100 dark:border-brand-border bg-gray-50 dark:bg-[#252525] transition-all";
-  const selectClass = "w-full bg-gray-50 dark:bg-[#252525] border border-gray-100 dark:border-brand-border rounded-xl p-3 text-[13px] font-bold text-gray-700 dark:text-gray-200 outline-none focus:border-brand-accent/50 appearance-none cursor-pointer";
+  const toggleBtnClass = "w-full flex items-center justify-between p-4 rounded-xl border border-gray-100 dark:border-brand-border bg-gray-50 dark:bg-[#252525] transition-all hover:bg-gray-100 dark:hover:bg-brand-border/50";
+  const selectClass = "w-full bg-gray-50 dark:bg-[#252525] border border-gray-100 dark:border-brand-border rounded-xl p-3 text-[13px] font-bold text-gray-700 dark:text-gray-200 outline-none focus:border-brand-accent/50 appearance-none cursor-pointer hover:border-brand-accent/30 transition-all pl-10";
+
+  const smallModels = SUPPORTED_MODELS.filter(m => m.size === 'small');
+  const largeModels = SUPPORTED_MODELS.filter(m => m.size === 'large');
+
+  const selectedExpander = SUPPORTED_MODELS.find(m => m.id === expanderModel);
+  const selectedReasoner = SUPPORTED_MODELS.find(m => m.id === reasonerModel);
 
   return (
     <div className="flex flex-col h-full bg-white dark:bg-brand-darker border-l border-transparent p-6 w-full transition-colors overflow-y-auto">
@@ -110,21 +114,72 @@ export const RightSidebar: React.FC<Props> = ({
         </div>
       </div>
 
-      <div className="mt-4 pt-10 border-t border-gray-100 dark:border-brand-border">
-        <h2 className="text-[26px] font-serif italic text-gray-900 dark:text-white mb-6 tracking-tight">Infrastructure</h2>
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 text-[10px] font-mono text-gray-400 dark:text-brand-muted uppercase tracking-widest"><Layers size={12} className="text-brand-accent" /> Brain (Expander)</label>
-            <select value={expanderModel} onChange={(e) => setExpanderModel(e.target.value)} className={selectClass}>
-              {SUPPORTED_MODELS.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-            </select>
+      <div className="mt-4 pt-10 border-t border-gray-100 dark:border-brand-border space-y-10">
+        <div>
+          <h2 className="text-[26px] font-serif italic text-gray-900 dark:text-white mb-6 tracking-tight">Infrastructure</h2>
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-[10px] font-mono text-gray-400 dark:text-brand-muted uppercase tracking-widest">Brain (Expander)</label>
+              <div className="relative group/select">
+                {selectedExpander && (
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center z-10 pointer-events-none">
+                    <img src={selectedExpander.logo} alt="" className="max-w-full max-h-full object-contain filter grayscale group-hover/select:grayscale-0 transition-all opacity-70 group-hover/select:opacity-100" />
+                  </div>
+                )}
+                <select value={expanderModel} onChange={(e) => setExpanderModel(e.target.value)} className={selectClass}>
+                  {smallModels.map(m => (
+                    <option key={m.id} value={m.id} title={m.description}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+                <Settings2 size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover/select:text-brand-accent transition-colors" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-[10px] font-mono text-gray-400 dark:text-brand-muted uppercase tracking-widest">Synthesizer (Reasoner)</label>
+              <div className="relative group/select">
+                {selectedReasoner && (
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center z-10 pointer-events-none">
+                    <img src={selectedReasoner.logo} alt="" className="max-w-full max-h-full object-contain filter grayscale group-hover/select:grayscale-0 transition-all opacity-70 group-hover/select:opacity-100" />
+                  </div>
+                )}
+                <select value={reasonerModel} onChange={(e) => setReasonerModel(e.target.value)} className={selectClass}>
+                  {largeModels.map(m => (
+                    <option key={m.id} value={m.id} title={m.description}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
+                <Settings2 size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover/select:text-brand-accent transition-colors" />
+              </div>
+            </div>
           </div>
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 text-[10px] font-mono text-gray-400 dark:text-brand-muted uppercase tracking-widest"><Cpu size={12} className="text-brand-accent" /> Synthesizer (Reasoner)</label>
-            <select value={reasonerModel} onChange={(e) => setReasonerModel(e.target.value)} className={selectClass}>
-              {SUPPORTED_MODELS.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-            </select>
+        </div>
+
+        <div>
+          <h2 className="text-[26px] font-serif italic text-gray-900 dark:text-white mb-6 tracking-tight">API Management</h2>
+          <div className="space-y-3">
+             <button 
+              onClick={onOpenApiManagement}
+              className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-brand-base border border-gray-100 dark:border-brand-border hover:border-brand-accent/50 rounded-xl transition-all group"
+            >
+              <div className="flex flex-col items-start gap-0.5">
+                <span className="text-[12px] font-bold text-gray-800 dark:text-gray-200 group-hover:text-brand-accent transition-colors">Configure Access</span>
+                <span className="text-[9px] font-mono text-gray-400 dark:text-brand-muted uppercase tracking-tighter">OpenRouter & Credentials</span>
+              </div>
+              <Key size={14} className="text-gray-400 dark:text-brand-muted group-hover:text-brand-accent transition-colors" />
+            </button>
           </div>
+        </div>
+      </div>
+
+      <div className="mt-auto pt-8 flex flex-col items-center gap-3">
+        <p className="text-[9px] font-mono text-gray-400 dark:text-brand-muted uppercase tracking-[0.4em]">Integrated Synthesis Engine</p>
+        <div className="flex gap-1.5">
+          <div className="w-1 h-1 bg-brand-accent rounded-full animate-pulse"></div>
+          <div className="w-1 h-1 bg-brand-accent/40 rounded-full animate-pulse [animation-delay:0.2s]"></div>
+          <div className="w-1 h-1 bg-brand-accent/20 rounded-full animate-pulse [animation-delay:0.4s]"></div>
         </div>
       </div>
     </div>
