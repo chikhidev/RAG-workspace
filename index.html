@@ -5,18 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Gemini Dual-Brain RAG</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet">
     <script>
       tailwind.config = {
         darkMode: 'class',
         theme: {
           extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              mono: ['JetBrains Mono', 'monospace'],
+              serif: ['"Instrument Serif"', 'serif'],
+            },
             colors: {
               brand: {
                 accent: '#F25912',
-                base: '#000000',
-                darker: '#080808',
-                border: '#1a1a1a',
+                base: '#191919', // User requested "Dark Slate Gray" as #191919
+                darker: '#111111', // Slightly darker for depth
+                border: '#2A2A2A', // Cohesive border for #191919 base
+                muted: '#666666', // Muted text for dark theme
               }
             }
           }
@@ -26,7 +32,12 @@
     <style>
       body {
         font-family: 'Inter', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
         transition: background-color 0.3s ease, color 0.3s ease;
+      }
+      .font-serif {
+        font-family: 'Instrument Serif', serif;
       }
       .font-mono {
         font-family: 'JetBrains Mono', monospace;
@@ -38,18 +49,37 @@
         background: transparent;
       }
       ::-webkit-scrollbar-thumb {
-        background: #222;
+        background: rgba(255, 255, 255, 0.1);
         border-radius: 10px;
       }
       .dark ::-webkit-scrollbar-thumb {
-        background: #333;
+        background: rgba(255, 255, 255, 0.15);
       }
       .grid-bg {
         background-image: 
-          linear-gradient(rgba(26, 26, 26, 0.5) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(26, 26, 26, 0.5) 1px, transparent 1px);
-        background-size: 40px 40px;
+          linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        background-size: 32px 32px;
       }
+      
+      /* Blur Text Animation */
+      @keyframes blurText {
+        0% {
+          filter: blur(12px);
+          opacity: 0;
+          transform: translateY(8px) scale(0.98);
+        }
+        100% {
+          filter: blur(0);
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+      
+      .animate-blur-text {
+        animation: blurText 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+
       .fade-in {
         animation: fadeIn 0.4s ease-out;
       }
@@ -58,7 +88,7 @@
         to { opacity: 1; transform: translateY(0); }
       }
       .shimmer {
-        background: linear-gradient(90deg, #111 0%, #1a1a1a 50%, #111 100%);
+        background: linear-gradient(90deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.02) 100%);
         background-size: 200% 100%;
         animation: shimmer 2s infinite;
       }
@@ -66,10 +96,20 @@
         0% { background-position: 200% 0; }
         100% { background-position: -200% 0; }
       }
-      .prose { max-width: none; }
-      .dark .prose { color: #e5e5e5; }
+      .prose { 
+        max-width: none; 
+        line-height: 1.75;
+      }
+      .dark .prose { color: #d1d1d1; }
+      .dark .prose h1, .dark .prose h2, .dark .prose h3 { 
+        font-family: 'Instrument Serif', serif;
+        color: #ffffff; 
+        letter-spacing: -0.01em;
+        font-weight: 400;
+        font-style: italic;
+      }
       .message-shadow {
-        box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+        box-shadow: 0 4px 30px rgba(0,0,0,0.5);
       }
     </style>
   <script type="importmap">
@@ -86,7 +126,7 @@
 }
 </script>
 </head>
-  <body class="bg-[#F8F9FB] dark:bg-brand-base text-gray-800 dark:text-gray-100">
+  <body class="bg-white dark:bg-brand-base text-gray-900 dark:text-gray-100 selection:bg-brand-accent selection:text-white transition-colors duration-300">
     <div id="root"></div>
   </body>
 </html>

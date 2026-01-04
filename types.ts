@@ -2,6 +2,7 @@ export interface Document {
   id: string;
   name: string;
   content: string;
+  enabled: boolean;
   tokens?: number;
 }
 
@@ -33,4 +34,6 @@ export interface AppState {
   error: string | null;
   temperature: number;
   theme: 'light' | 'dark';
+  useVault: boolean;
+  useSmallModelForResponse: boolean;
 }

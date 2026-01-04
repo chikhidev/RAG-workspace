@@ -6,23 +6,36 @@ interface Props {
   documents: Document[];
   onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onRemove: (id: string) => void;
+  onToggle: (id: string) => void;
   isIndexing: boolean;
 }
 
-export const DocumentList: React.FC<Props> = ({ documents, onUpload, onRemove, isIndexing }) => {
+export const DocumentList: React.FC<Props> = ({ documents, onUpload, onRemove, onToggle, isIndexing }) => {
+  const isAtLimit = documents.length >= 10;
+
   return (
     <div className="flex flex-col h-full bg-white dark:bg-brand-darker border-r border-gray-100 dark:border-brand-border p-6 w-72 transition-colors shrink-0">
-      <div className="flex items-center justify-between mb-10">
+      <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-3">
           <Box size={18} className="text-gray-900 dark:text-gray-100" />
-          <h2 className="text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500 dark:text-gray-500">
-            Resource Vault
+          <h2 className="text-[20px] font-serif italic text-gray-900 dark:text-gray-100 tracking-tight">
+            Knowledge Vault
           </h2>
         </div>
-        <label className="cursor-pointer text-gray-400 hover:text-brand-accent transition-colors p-1.5 hover:bg-gray-100 dark:hover:bg-brand-border rounded-lg">
+        <label className={`p-1.5 rounded-lg transition-colors ${
+          isAtLimit 
+            ? 'text-gray-300 cursor-not-allowed' 
+            : 'cursor-pointer text-gray-400 hover:text-brand-accent hover:bg-gray-100 dark:hover:bg-brand-border'
+        }`}>
           <Upload size={16} />
-          <input type="file" multiple accept=".txt" onChange={onUpload} className="hidden" />
+          {!isAtLimit && <input type="file" multiple accept=".txt" onChange={onUpload} className="hidden" />}
         </label>
+      </div>
+      
+      <div className="mb-8 flex justify-between items-center">
+        <span className={`text-[9px] font-mono uppercase tracking-widest ${isAtLimit ? 'text-brand-accent font-bold' : 'text-gray-400'}`}>
+          {documents.length} / 10 Files
+        </span>
       </div>
 
       <div className="flex-1 overflow-y-auto space-y-2">
@@ -34,17 +47,35 @@ export const DocumentList: React.FC<Props> = ({ documents, onUpload, onRemove, i
           documents.map((doc) => (
             <div 
               key={doc.id} 
-              className="group flex items-center justify-between p-3 bg-transparent hover:bg-gray-50 dark:hover:bg-brand-border rounded-lg border border-transparent hover:border-gray-200 dark:hover:border-white/5 transition-all"
+              className={`group flex items-center justify-between p-3 rounded-lg border transition-all ${
+                doc.enabled 
+                  ? 'bg-gray-50 dark:bg-brand-base border-gray-200 dark:border-brand-border/50' 
+                  : 'bg-transparent border-transparent opacity-60'
+              }`}
             >
-              <div className="flex items-center gap-3 overflow-hidden">
-                <FileText size={14} className="text-gray-400 dark:text-gray-500 shrink-0" />
-                <span className="text-[13px] font-medium truncate text-gray-700 dark:text-gray-300">
-                  {doc.name}
-                </span>
+              <div className="flex items-center gap-3 overflow-hidden flex-1">
+                {/* Switch Toggle for Files */}
+                <button 
+                  onClick={() => onToggle(doc.id)}
+                  className={`shrink-0 w-7 h-4 rounded-full relative transition-colors ${
+                    doc.enabled ? 'bg-brand-accent' : 'bg-gray-200 dark:bg-brand-border'
+                  }`}
+                >
+                  <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${
+                    doc.enabled ? 'left-3.5' : 'left-0.5'
+                  }`} />
+                </button>
+                
+                <div className="flex items-center gap-2 overflow-hidden">
+                  <FileText size={14} className="text-gray-400 dark:text-gray-500 shrink-0" />
+                  <span className="text-[12px] font-medium truncate text-gray-700 dark:text-gray-300">
+                    {doc.name}
+                  </span>
+                </div>
               </div>
               <button 
                 onClick={() => onRemove(doc.id)}
-                className="text-gray-300 dark:text-gray-600 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="text-gray-300 dark:text-gray-600 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2"
               >
                 <Trash2 size={13} />
               </button>

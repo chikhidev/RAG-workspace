@@ -23,7 +23,7 @@ const PipelineDetails: React.FC<{ msg: Message }> = ({ msg }) => {
           onClick={() => setIsExpandedToggled(!isExpendedToggled)}
           className="w-full flex items-center justify-between p-3.5 hover:bg-gray-50 dark:hover:bg-brand-base transition-colors"
         >
-          <div className="flex items-center gap-3 text-[10px] font-bold text-gray-500 dark:text-gray-500 uppercase tracking-[0.15em]">
+          <div className="flex items-center gap-3 text-[10px] font-serif font-bold text-gray-500 dark:text-gray-500 uppercase tracking-[0.15em]">
             Query Expansion
           </div>
           <div className="flex items-center gap-3">
@@ -51,7 +51,7 @@ const PipelineDetails: React.FC<{ msg: Message }> = ({ msg }) => {
             onClick={() => setIsFilesToggled(!isFilesToggled)}
             className="w-full flex items-center justify-between p-3.5 hover:bg-gray-50 dark:hover:bg-brand-base transition-colors"
           >
-            <div className="flex items-center gap-3 text-[10px] font-bold text-gray-500 dark:text-gray-500 uppercase tracking-[0.15em]">
+            <div className="flex items-center gap-3 text-[10px] font-serif font-bold font-bold text-gray-500 dark:text-gray-500 uppercase tracking-[0.15em]">
               Vault Search
             </div>
             <div className="flex items-center gap-3">
@@ -88,9 +88,9 @@ const PipelineDetails: React.FC<{ msg: Message }> = ({ msg }) => {
 
       {(msg.sources && (msg.status === 'reasoning' || msg.status === 'completed')) && (
         <div className="bg-white dark:bg-brand-darker border border-gray-100 dark:border-brand-border p-3.5 flex items-center justify-between animate-[fadeIn_0.5s_ease-out] rounded-xl">
-          <div className="flex items-center gap-3 text-[10px] font-bold text-gray-500 dark:text-brand-accent uppercase tracking-[0.15em]">
+          <div className="flex items-center gap-3 text-[10px] font-serif font-bold text-gray-500 dark:text-brand-accent uppercase tracking-[0.15em]">
             {msg.status === 'completed' && msg.reasoningDuration 
-              ? `Reasoning Core: ${msg.reasoningDuration.toFixed(1)}s` 
+              ? `Reasoning : ${msg.reasoningDuration.toFixed(1)}s` 
               : 'Synthesizing Response...'}
           </div>
           {msg.status === 'reasoning' ? (
@@ -117,16 +117,8 @@ export const ChatInterface: React.FC<Props> = ({ messages }) => {
       
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-12 space-y-20 relative z-10">
         {messages.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-gray-400 dark:text-gray-600 space-y-10">
-            <div className="p-10 rounded-full bg-white dark:bg-brand-darker border border-gray-100 dark:border-brand-border relative">
-              <Sparkles size={48} className="text-gray-200 dark:text-brand-accent opacity-30" />
-            </div>
-            <div className="text-center space-y-2">
-              <p className="text-lg font-light tracking-tight text-gray-800 dark:text-gray-200">Workspace Initialized</p>
-              <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-gray-400 dark:text-gray-600">
-                Ready for query synthesis
-              </p>
-            </div>
+          <div className="h-full flex flex-col items-center justify-center opacity-0">
+            {/* Minimal background placeholder */}
           </div>
         ) : (
           messages.map((msg) => (
@@ -138,7 +130,7 @@ export const ChatInterface: React.FC<Props> = ({ messages }) => {
                     : 'bg-white dark:bg-brand-darker text-gray-800 dark:text-gray-200 w-full border border-gray-100 dark:border-brand-border'
                 }`}>
                   {msg.status === 'completed' || msg.role === 'user' ? (
-                     <div className="prose dark:prose-invert">
+                     <div className={`prose dark:prose-invert ${msg.role === 'assistant' ? 'animate-blur-text' : ''}`}>
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>
                           {msg.content}
                         </ReactMarkdown>
