@@ -1,7 +1,6 @@
-
 import React, { useRef, useEffect, useState } from 'react';
-import { Message, PipelineStatus, Document } from '../types';
-import { Search, Box, Loader2, CheckCircle2, ChevronDown, ChevronRight, FileText, Sparkles, Copy, Check, Zap, Cpu, RefreshCw, Trash2, Send, AtSign, ArrowRight } from 'lucide-react';
+import { Message, PipelineStatus, Document, Chunk } from '../types';
+import { Search, Box, Loader2, CheckCircle2, ChevronDown, ChevronRight, FileText, Sparkles, Copy, Check, Zap, Cpu, RefreshCw, Trash2, Send, AtSign, ArrowRight, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -12,6 +11,8 @@ interface Props {
   expanderModelId: string;
   reasonerModelId: string;
   onRetry: (id: string) => void;
+  onRegenerate: (id: string) => void;
+  onUpdateSources: (id: string, sources: Chunk[]) => void;
   onClearChat: () => void;
   inputPosition: 'floating' | 'sidebar';
   inputValue: string;
@@ -95,7 +96,78 @@ const CodeBlock = ({ children, className, ...props }: any) => {
   );
 };
 
-const PipelineDetails: React.FC<{ msg: Message }> = ({ msg }) => {
+const ContextModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  fileName: string;
+  chunks: Chunk[];
+  onRemoveChunk: (index: number) => void;
+  onRegenerate: () => void;
+}> = ({ isOpen, onClose, fileName, chunks, onRemoveChunk, onRegenerate }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="bg-brand-darker w-[90vw] max-w-[1400px] h-[85vh] rounded-2xl border border-brand-border shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col">
+        <div className="px-6 py-4 border-b border-brand-border flex items-center justify-between bg-brand-base/50 shrink-0">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-bold text-gray-100">Contexts from {fileName}</h3>
+          </div>
+          <button onClick={onClose} className="p-1 hover:bg-brand-base rounded-lg transition-colors text-gray-400">
+            <X size={18} />
+          </button>
+        </div>
+        
+        <div className="p-6 overflow-y-auto flex-1">
+          {chunks.length === 0 ? (
+            <div className="text-center text-gray-500 py-8 text-sm">No contexts used from this file.</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {chunks.map((chunk, i) => (
+                <div key={i} className="bg-brand-base border border-brand-border rounded-xl p-4 group relative hover:border-brand-accent/30 transition-colors h-full flex flex-col">
+                  <div className="flex-1 overflow-y-auto max-h-[300px] scrollbar-thin scrollbar-thumb-brand-border scrollbar-track-transparent pr-2">
+                    <p className="text-[13px] text-gray-300 leading-relaxed font-mono whitespace-pre-wrap">{chunk.text}</p>
+                  </div>
+                  <button 
+                    onClick={() => onRemoveChunk(i)}
+                    className="absolute top-2 right-2 p-1.5 bg-brand-darker border border-brand-border rounded-lg text-gray-400 hover:text-red-400 hover:border-red-400/30 transition-all opacity-0 group-hover:opacity-100 shadow-lg"
+                    title="Remove this context chunk"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="p-4 border-t border-brand-border bg-brand-base/50 shrink-0 flex justify-end gap-3">
+          <button 
+            onClick={onClose}
+            className="px-4 py-2 text-[12px] font-bold text-gray-400 hover:text-white transition-colors"
+          >
+            Cancel
+          </button>
+          <button 
+            onClick={() => {
+              onRegenerate();
+              onClose();
+            }}
+            className="px-4 py-2 bg-brand-accent hover:bg-brand-accent/90 text-white rounded-lg text-[12px] font-bold transition-all flex items-center gap-2"
+          >
+            <RefreshCw size={14} />
+            Regenerate Response
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const PipelineDetails: React.FC<{ 
+  msg: Message; 
+  onViewContexts: (fileName: string, sources: Chunk[], messageId: string) => void;
+}> = ({ msg, onViewContexts }) => {
   const [isExpendedToggled, setIsExpandedToggled] = useState(false);
 
   if (!msg.status || msg.role === 'user') return null;
@@ -103,8 +175,9 @@ const PipelineDetails: React.FC<{ msg: Message }> = ({ msg }) => {
   const usedFiles = msg.sources ? Array.from(new Set(msg.sources.map(s => s.docName))) : [];
 
   return (
-    <div className="w-full max-w-2xl space-y-2 mt-2">
-      <div className="transition-all duration-300">
+    <>
+      <div className="w-full max-w-2xl space-y-2 mt-2">
+        <div className="transition-all duration-300">
         <div className="w-full flex items-center justify-between py-2">
           <button 
             onClick={() => setIsExpandedToggled(!isExpendedToggled)}
@@ -139,10 +212,14 @@ const PipelineDetails: React.FC<{ msg: Message }> = ({ msg }) => {
           {usedFiles.length > 0 && (
             <div className="flex flex-wrap gap-2 mr-auto">
               {usedFiles.map((name, i) => (
-                <div key={i} className="flex items-center gap-1.5 px-2 py-1 bg-brand-base rounded border border-brand-border text-[11px] text-gray-400 font-medium">
+                <button 
+                  key={i} 
+                  onClick={() => msg.sources && onViewContexts(name, msg.sources, msg.id)}
+                  className="flex items-center gap-1.5 px-2 py-1 bg-brand-base rounded border border-brand-border text-[11px] text-gray-400 font-medium hover:border-brand-accent hover:text-brand-accent transition-all"
+                >
                   <FileText size={10} className="text-brand-accent" />
                   {name}
-                </div>
+                </button>
               ))}
             </div>
           )}
@@ -155,18 +232,48 @@ const PipelineDetails: React.FC<{ msg: Message }> = ({ msg }) => {
           )}
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 
 export const ChatInterface: React.FC<Props> = ({ 
-  messages, expanderModelId, reasonerModelId, onRetry, onClearChat, 
+  messages, expanderModelId, reasonerModelId, onRetry, onRegenerate, onUpdateSources, onClearChat, 
   inputPosition, inputValue, setInputValue, onSend, onStop, isProcessing, availableDocuments 
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [suggestionFilter, setSuggestionFilter] = useState('');
+  const [viewContextState, setViewContextState] = useState<{
+    fileName: string;
+    sources: Chunk[];
+    messageId: string;
+  } | null>(null);
+
+  const handleViewContexts = (fileName: string, sources: Chunk[], messageId: string) => {
+    setViewContextState({ fileName, sources, messageId });
+  };
+
+  const handleRemoveChunk = (chunkIndexInFile: number) => {
+    if (!viewContextState) return;
+    
+    const { fileName, sources, messageId } = viewContextState;
+    const fileChunks = sources.filter(s => s.docName === fileName);
+    const chunkToRemove = fileChunks[chunkIndexInFile];
+    const newSources = sources.filter(s => s !== chunkToRemove);
+    
+    onUpdateSources(messageId, newSources);
+    
+    // Update local state if we still have chunks for this file, otherwise close or update
+    if (newSources.filter(s => s.docName === fileName).length === 0) {
+        setViewContextState(null);
+    } else {
+        setViewContextState({ ...viewContextState, sources: newSources });
+    }
+  };            <FileText size={16} className="text-brand-accent" />
+
+  const [suggestionFilter, setSuggestionFilter] = useState('');            <FileText size={16} className="text-brand-accent" />
+
   const [cursorPosition, setCursorPosition] = useState(0);
 
   useEffect(() => {
@@ -349,7 +456,10 @@ export const ChatInterface: React.FC<Props> = ({
                     </div>
                   )}
                 </div>
-                <PipelineDetails msg={msg} />
+                <PipelineDetails 
+                  msg={msg} 
+                  onViewContexts={handleViewContexts}
+                />
               </div>
             </div>
           </div>
@@ -419,6 +529,20 @@ export const ChatInterface: React.FC<Props> = ({
             </button>
           </div>
         </div>
+      )}
+
+      {viewContextState && (
+        <ContextModal 
+          isOpen={!!viewContextState}
+          onClose={() => setViewContextState(null)}
+          fileName={viewContextState.fileName}
+          chunks={viewContextState.sources.filter(s => s.docName === viewContextState.fileName)}
+          onRemoveChunk={handleRemoveChunk}
+          onRegenerate={() => {
+            onRegenerate(viewContextState.messageId);
+            setViewContextState(null);
+          }}
+        />
       )}
     </div>
   );

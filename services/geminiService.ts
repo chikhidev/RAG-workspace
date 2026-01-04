@@ -21,7 +21,10 @@ export class GeminiRAGService {
       : "";
 
     const priorityBlock = taggedFileNames.length > 0
-      ? `\nCRITICAL PRIORITY: The user has explicitly tagged the following files as high-priority: [${taggedFileNames.join(', ')}]. You MUST extract specific terminology and semantic links from these files above all others.\n`
+      ? `\nCRITICAL INSTRUCTION: The user has explicitly tagged these files: [${taggedFileNames.join(', ')}]. 
+      - You MUST focus your expansion primarily on concepts found in these files.
+      - Ignore unrelated content from other files if it conflicts with the tagged files.
+      - Ensure the generated keywords are highly specific to the content of these tagged files.`
       : "";
 
     const systemInstruction = `You are the "Expansion Brain" in a high-fidelity Dual-Brain RAG architecture.

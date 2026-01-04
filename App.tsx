@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { DocumentList } from './components/DocumentList';
 import { ChatInterface } from './components/ChatInterface';
@@ -366,6 +365,70 @@ const App: React.FC = () => {
     await processQuery(userMsg.content, failedMessageId);
   }, [state.messages, state.isProcessing, state.useVault, state.documents, state.expanderModel, state.reasonerModel, state.contextScript, state.useContextHistory, state.openRouterKey]);
 
+  const handleUpdateSources = useCallback((messageId: string, newSources: Chunk[]) => {
+    setState(prev => ({
+      ...prev,
+      messages: prev.messages.map(m => m.id === messageId ? { ...m, sources: newSources } : m)
+    }));
+  }, []);
+
+  const handleRegenerate = useCallback(async (messageId: string) => {
+    if (state.isProcessing) return;
+    
+    const msgIndex = state.messages.findIndex(m => m.id === messageId);
+    if (msgIndex <= 0) return;
+    
+    const userMsg = state.messages[msgIndex - 1];
+    const targetMsg = state.messages[msgIndex];
+    if (userMsg.role !== 'user' || targetMsg.role !== 'assistant') return;
+
+    setState(prev => ({ ...prev, isProcessing: true }));
+    abortControllerRef.current = new AbortController();
+
+    try {
+        setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === messageId ? { ...m, status: 'reasoning', content: '' } : m) }));
+        
+        const hist = state.useContextHistory ? state.contextScript : "";
+        const expandedQuery = targetMsg.expandedQuery || userMsg.content;
+        const sources = targetMsg.sources || [];
+        const taggedFileNames = state.documents
+            .filter(d => userMsg.content.includes(`@${d.name}`))
+            .map(d => d.name);
+
+        const t3 = performance.now();
+        const { answer } = await geminiRAG.generateAnswer(
+            userMsg.content, expandedQuery, sources,
+            0.7, 
+            state.useVault, state.reasonerModel, hist, state.openRouterKey,
+            taggedFileNames
+        );
+        const reasoningDuration = (performance.now() - t3) / 1000;
+
+        if (abortControllerRef.current.signal.aborted) throw new Error("Aborted");
+
+        setState(prev => ({ 
+            ...prev, 
+            messages: prev.messages.map(m => m.id === messageId ? { 
+            ...m, 
+            content: answer, 
+            status: 'completed', 
+            reasoningDuration
+            } : m) 
+        }));
+
+    } catch (err: any) {
+         if (err.message === "Aborted") {
+            setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === messageId ? { ...m, status: 'error', content: 'Generation stopped by user.' } : m) }));
+        } else {
+            addToast(err.message || "Regeneration error.");
+            setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === messageId ? { ...m, status: 'error' } : m) }));
+        }
+    } finally {
+        setState(prev => ({ ...prev, isProcessing: false }));
+        abortControllerRef.current = null;
+    }
+  }, [state.messages, state.isProcessing, state.useVault, state.reasonerModel, state.contextScript, state.useContextHistory, state.openRouterKey, state.documents]);
+
   const onClearChat = useCallback(() => {
     setState(prev => ({ ...prev, messages: [], contextScript: "" }));
   }, []);
@@ -393,6 +456,8 @@ const App: React.FC = () => {
           expanderModelId={state.expanderModel}
           reasonerModelId={state.reasonerModel}
           onRetry={handleRetry}
+          onRegenerate={handleRegenerate}
+          onUpdateSources={handleUpdateSources}
           onClearChat={onClearChat}
           inputPosition={state.inputPosition}
           inputValue={inputValue}
