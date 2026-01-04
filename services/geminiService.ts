@@ -7,22 +7,29 @@ export class GeminiRAGService {
     filePreviews: string[], 
     temperature: number = 0.1,
     contextScript: string = "",
-    modelId: string = 'nvidia/nemotron-nano-9b-v2:free',
+    modelId: string = 'cohere/command-r7b-12-2024',
     openRouterKey?: string
   ): Promise<string> {
     const vaultContext = filePreviews.length > 0 
-      ? `VAULT CONTENT PREVIEWS:\n${filePreviews.join('\n\n')}`
+      ? `KNOWLEDGE VAULT SNAPSHOT:\n${filePreviews.join('\n\n')}`
       : "The vault is currently empty.";
 
     const historySection = contextScript 
-      ? `HISTORICAL CONTEXT:\n${contextScript}\n\n`
+      ? `CONVERSATION LOGS:\n${contextScript}\n\n`
       : "";
 
-    const systemInstruction = `You are a high-speed query expansion engine. 
-    TASK:
-    1. Use the "HISTORICAL CONTEXT" for follow-ups.
-    2. Extract 5-8 search keywords likely found in files: ${availableFileNames.join(', ')}.
-    3. Return ONLY a comma-separated list. No preamble.`;
+    const systemInstruction = `You are the "Expansion Brain" in a high-fidelity Dual-Brain RAG architecture.
+    
+    ROLE: 
+    Your specific role is to bridge the gap between a user's natural language and the semantic index of our "Knowledge Vault". You are working in tandem with a secondary "Reasoning Brain" that will synthesize your findings.
+    
+    STRATEGY:
+    1. Analyze the "CONVERSATION LOGS" for context if this is a follow-up.
+    2. Review the "KNOWLEDGE VAULT SNAPSHOT" to understand the technical language used in the documents.
+    3. Generate 5-8 dense, descriptive search keywords or phrases optimized for finding relevant segments in files: ${availableFileNames.join(', ')}.
+    
+    OUTPUT:
+    Return ONLY a comma-separated list of keywords. No preamble, no explanation. Your output is the direct input for the retrieval engine.`;
 
     const prompt = `${historySection}User Query: ${userQuery}\n\n${vaultContext}`;
 
@@ -41,26 +48,36 @@ export class GeminiRAGService {
     contextChunks: any[],
     temperature: number = 0.7,
     useVault: boolean = true,
-    modelId: string = 'google/gemma-3-12b-it:free',
+    modelId: string = 'openai/gpt-oss-safeguard-20b',
     contextScript: string = "",
     openRouterKey?: string
   ): Promise<{ answer: string }> {
     const hasContext = contextChunks.length > 0;
     const contextText = hasContext
       ? contextChunks
-          .map((c, i) => `[Source ${i+1}: ${c.docName}]\n${c.text}`)
+          .map((c, i) => `[Document: ${c.docName} | Segment ${i+1}]\n${c.text}`)
           .join('\n\n')
-      : "NO SPECIFIC RELEVANT CONTEXT CHUNKS FOUND.";
+      : "NO RELEVANT FRAGMENTS RETRIEVED FROM VAULT.";
 
     const historySection = contextScript 
-      ? `PAST INTERACTION LOGS:\n${contextScript}\n\n`
+      ? `HISTORICAL SESSION CONTEXT:\n${contextScript}\n\n`
       : "";
 
-    const systemInstruction = `You are "The Expert Assistant". 
-    Cite sources using [Source X]. Use emojis. 
-    ${useVault ? 'Use provided vault context.' : 'Vault disabled.'}`;
+    const systemInstruction = `You are the "Expert Reasoner," the primary intelligence in a Dual-Brain RAG system.
+    
+    CONTEXT:
+    A specialized "Expansion Brain" has already processed the user's query into the following search vector: "${expandedQuery}". Using this, we have retrieved the most relevant technical fragments from our "Knowledge Vault".
+    
+    YOUR TASK:
+    1. Synthesize a definitive answer using ONLY the "KNOWLEDGE VAULT" fragments provided below.
+    2. If the fragments are insufficient, acknowledge the limitation but provide the best possible reasoning based on session history.
+    3. Use technical precision. Cite your sources using [Document: Name].
+    4. Maintain the persona of a highly sophisticated synthesis engine.
+    
+    VAULT DATA:
+    ${contextText}`;
 
-    const prompt = `${historySection}User Query: ${userQuery}${useVault ? `\n\nSearch Keywords: ${expandedQuery}\n\nSPECIFIC MATCHING CHUNKS:\n${contextText}` : ''}`;
+    const prompt = `${historySection}User Query: ${userQuery}`;
 
     const answer = await modelService.run({
       modelId,
@@ -78,7 +95,8 @@ export class GeminiRAGService {
     
     return modelService.run({
       modelId: 'nvidia/nemotron-nano-9b-v2:free',
-      systemInstruction: `Create a single-line summary script. FORMAT: [Files: ${filesString}] Summary: [1 concise sentence].`,
+      systemInstruction: `You are the "State Tracker" for a Dual-Brain system. Create a single-line summary script to maintain context for the next turn. 
+      FORMAT: [Context: ${filesString}] Summary: [1 concise sentence describing the user's intent and the core of the AI's conclusion].`,
       prompt: `Input: ${userPrompt}\n\nResponse: ${aiResponse}`,
       temperature: 0.1,
       openRouterKey

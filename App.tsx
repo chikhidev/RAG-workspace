@@ -91,8 +91,8 @@ const App: React.FC = () => {
       useContextHistory: false,
       temperature: 0.7,
       theme: 'dark' as const,
-      expanderModel: 'nvidia/nemotron-nano-9b-v2:free',
-      reasonerModel: 'nex-agi/deepseek-v3.1-nex-n1:free'
+      expanderModel: 'cohere/command-r7b-12-2024',
+      reasonerModel: 'openai/gpt-oss-safeguard-20b'
     };
     return stored ? { ...defaults, ...JSON.parse(stored) } : defaults;
   };
@@ -123,7 +123,7 @@ const App: React.FC = () => {
   });
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [rightWidth, setRightWidth] = useState(320);
-  const [leftWidth, setLeftWidth] = useState(288); // Default 72 (288px)
+  const [leftWidth, setLeftWidth] = useState(288);
   const isResizingRight = useRef(false);
   const isResizingLeft = useRef(false);
 
@@ -237,7 +237,6 @@ const App: React.FC = () => {
       const hist = state.useContextHistory ? state.contextScript : "";
 
       if (state.useVault && activeDocs.length > 0) {
-        // Phase 1: Expansion
         setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, status: 'expanding' } : m) }));
         const t1 = performance.now();
         expandedQuery = await geminiRAG.expandQuery(
@@ -251,19 +250,16 @@ const App: React.FC = () => {
         );
         expansionDuration = (performance.now() - t1) / 1000;
         
-        // Phase 2: Search
         setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, expandedQuery, expansionDuration, status: 'searching' } : m) }));
         const t2 = performance.now();
         sources = await vectorService.search(expandedQuery);
         searchDuration = (performance.now() - t2) / 1000;
         
-        // Phase 3: Reasoning (Preparation)
         setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, sources, searchDuration, status: 'reasoning' } : m) }));
       } else {
         setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, status: 'reasoning' } : m) }));
       }
 
-      // Phase 4: Generate Final Answer
       const t3 = performance.now();
       const { answer } = await geminiRAG.generateAnswer(
         query, expandedQuery, sources,
@@ -326,7 +322,6 @@ const App: React.FC = () => {
     const userMsg = state.messages[msgIndex - 1];
     if (userMsg.role !== 'user') return;
 
-    // Reset the failed message state before retrying
     setState(prev => ({
       ...prev,
       messages: prev.messages.map(m => m.id === failedMessageId ? { ...m, status: state.useVault ? 'expanding' : 'reasoning', content: '', expandedQuery: undefined, sources: undefined, expansionDuration: undefined, searchDuration: undefined, reasoningDuration: undefined } : m)

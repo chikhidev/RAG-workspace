@@ -1,5 +1,5 @@
 import React from 'react';
-import { Send, Loader2, Sun, Moon, Terminal, Cpu, Eraser, Layers, Key, Settings2, Sparkles } from 'lucide-react';
+import { Send, Loader2, Sun, Moon, Terminal, Cpu, Eraser, Layers, Key, Settings2 } from 'lucide-react';
 import { SUPPORTED_MODELS } from '../services/modelService';
 import { ModelDefinition } from '../types';
 
