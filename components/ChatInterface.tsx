@@ -396,7 +396,7 @@ export const ChatInterface: React.FC<Props> = ({
         </div>
       </div>
 
-      <div ref={scrollRef} className={`flex-1 overflow-y-auto px-6 py-12 space-y-20 relative z-10 ${inputPosition === 'floating' ? 'pb-32' : ''}`}>
+      <div ref={scrollRef} className={`flex-1 overflow-y-auto px-6 py-12 space-y-20 relative z-10 ${inputPosition === 'floating' ? 'pb-72' : ''}`}>
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center px-12 pb-20">
             <h1 className="text-[32px] font-serif italic text-white tracking-tight mb-4 animate-blur-text">
@@ -468,7 +468,9 @@ export const ChatInterface: React.FC<Props> = ({
       </div>
 
       {inputPosition === 'floating' && (
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-2xl px-6 z-50">
+        <>
+          <div className="absolute bottom-0 left-0 w-full h-64 bg-gradient-to-t from-brand-base via-brand-base/95 to-transparent pointer-events-none z-40" />
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-4xl px-6 z-50">
           
           {/* FILE SUGGESTIONS PORTAL */}
           {showSuggestions && filteredDocs.length > 0 && (
@@ -529,6 +531,7 @@ export const ChatInterface: React.FC<Props> = ({
             </button>
           </div>
         </div>
+        </>
       )}
 
       {viewContextState && (

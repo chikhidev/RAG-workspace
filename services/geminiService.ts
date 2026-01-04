@@ -20,22 +20,33 @@ export class GeminiRAGService {
       ? `CONVERSATION LOGS:\n${contextScript}\n\n`
       : "";
 
-    const priorityBlock = taggedFileNames.length > 0
-      ? `\nCRITICAL INSTRUCTION: The user has explicitly tagged these files: [${taggedFileNames.join(', ')}]. 
-      - You MUST focus your expansion primarily on concepts found in these files.
-      - Ignore unrelated content from other files if it conflicts with the tagged files.
-      - Ensure the generated keywords are highly specific to the content of these tagged files.`
-      : "";
+    // const priorityBlock = taggedFileNames.length > 0
+    //   ? `\nCRITICAL INSTRUCTION: The user has explicitly tagged these files: [${taggedFileNames.join(', ')}]. 
+    //   - You MUST focus your expansion primarily on concepts found in these files.
+    //   - Ignore unrelated content from other files if it conflicts with the tagged files.
+    //   - Ensure the generated keywords are highly specific to the content of these tagged files.`
+    //   : "";
 
     const systemInstruction = `You are the "Expansion Brain" in a high-fidelity Dual-Brain RAG architecture.
     
     ROLE: 
     Your specific role is to bridge the gap between a user's natural language and the semantic index of our "Knowledge Vault". 
     
+    KNOWLEDGE VAULT SNAPSHOT = [${availableFileNames.join(', ')}]
+
+    CRITICAL INSTRUCTION ON @ TAGS:
+    The user may explicitly tag files using the "@" symbol (e.g., "@report.pdf", "@notes.txt").
+    Even if these are not formally passed as parameters, you MUST parse the User Query for any tokens starting with "@".
+    
+    IF YOU SEE AN @ TAG IN THE QUERY:
+    1. Treat that file as the PRIMARY source of truth.
+    2. Generate keywords that are specifically targeted to extract content from that file.
+    3. Do not dilute the search with unrelated concepts if a specific file is requested.
+
     STRATEGY:
     1. Analyze the "CONVERSATION LOGS" for context.
-    2. Review the "KNOWLEDGE VAULT SNAPSHOT". ${priorityBlock}
-    3. Generate 5-8 dense, descriptive search keywords optimized for finding relevant segments in: ${availableFileNames.join(', ')}.
+    2. Check the User Query for @mentions.
+    3. Generate 5-8 dense, descriptive search keywords optimized for finding relevant segments in the target files.
     
     OUTPUT:
     Return ONLY a comma-separated list of keywords. No preamble.`;
