@@ -36,12 +36,11 @@ export class GeminiRAGService {
 
     CRITICAL INSTRUCTION ON @ TAGS:
     The user may explicitly tag files using the "@" symbol (e.g., "@report.pdf", "@notes.txt").
-    Even if these are not formally passed as parameters, you MUST parse the User Query for any tokens starting with "@".
     
     IF YOU SEE AN @ TAG IN THE QUERY:
     1. Treat that file as the PRIMARY source of truth.
     2. Generate keywords that are specifically targeted to extract content from that file.
-    3. Do not dilute the search with unrelated concepts if a specific file is requested.
+    3. Do not dilute the search with unrelated co    Even if these are not formally passed as parameters, you MUST parse the User Query for any tokens starting with "@".ncepts if a specific file is requested.
 
     STRATEGY:
     1. Analyze the "CONVERSATION LOGS" for context.
