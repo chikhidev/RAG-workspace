@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { DocumentList } from './components/DocumentList';
 import { ChatInterface } from './components/ChatInterface';
@@ -224,6 +225,11 @@ const App: React.FC = () => {
   const processQuery = async (query: string, assistantId: string) => {
     setState(prev => ({ ...prev, isProcessing: true }));
     try {
+      // EXTRACT TAGS: Find @FileName mentions in the prompt
+      const taggedFileNames = state.documents
+        .filter(d => query.includes(`@${d.name}`))
+        .map(d => d.name);
+
       let expandedQuery = '';
       let sources: Chunk[] = [];
       let expansionDuration = 0;
@@ -239,16 +245,17 @@ const App: React.FC = () => {
           query, 
           activeDocs.map(d => d.name), 
           activeDocs.map(d => d.content.substring(0, 300)), 
-          0.1, // Fixed expansion temperature
+          0.1, 
           hist, 
           state.expanderModel,
-          state.openRouterKey
+          state.openRouterKey,
+          taggedFileNames
         );
         expansionDuration = (performance.now() - t1) / 1000;
         
         setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, expandedQuery, expansionDuration, status: 'searching' } : m) }));
         const t2 = performance.now();
-        sources = await vectorService.search(expandedQuery);
+        sources = await vectorService.search(expandedQuery, 5, taggedFileNames);
         searchDuration = (performance.now() - t2) / 1000;
         
         setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, sources, searchDuration, status: 'reasoning' } : m) }));
@@ -259,8 +266,9 @@ const App: React.FC = () => {
       const t3 = performance.now();
       const { answer } = await geminiRAG.generateAnswer(
         query, expandedQuery, sources,
-        0.7, // Fixed reasoning temperature
-        state.useVault, state.reasonerModel, hist, state.openRouterKey
+        0.7, 
+        state.useVault, state.reasonerModel, hist, state.openRouterKey,
+        taggedFileNames
       );
       reasoningDuration = (performance.now() - t3) / 1000;
       
@@ -361,6 +369,7 @@ const App: React.FC = () => {
           setInputValue={setInputValue}
           onSend={handleSend}
           isProcessing={state.isProcessing}
+          availableDocuments={state.documents.filter(d => d.enabled)}
         />
       </main>
 

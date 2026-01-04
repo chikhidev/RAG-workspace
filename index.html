@@ -107,6 +107,40 @@
         font-weight: 400;
         font-style: italic;
       }
+      
+      /* Table High-Fidelity Styles */
+      .prose table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1.5rem 0;
+        font-size: 0.95rem;
+        border: 1px solid #2A2A2A;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .prose th {
+        background-color: #252525;
+        color: #F25912;
+        padding: 0.75rem 1rem;
+        text-align: left;
+        border: 1px solid #2A2A2A;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.7rem;
+        letter-spacing: 0.1em;
+      }
+      .prose td {
+        padding: 0.75rem 1rem;
+        border: 1px solid #2A2A2A;
+        color: #d1d1d1;
+      }
+      .prose tr:nth-child(even) {
+        background-color: rgba(255, 255, 255, 0.01);
+      }
+      .prose tr:hover {
+        background-color: rgba(242, 89, 18, 0.03);
+      }
+
       .message-shadow {
         box-shadow: 0 4px 30px rgba(0,0,0,0.5);
       }
@@ -120,7 +154,8 @@
     "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
     "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
     "react-markdown": "https://esm.sh/react-markdown@^9.0.1",
-    "remark-gfm": "https://esm.sh/remark-gfm@^4.0.0"
+    "remark-gfm": "https://esm.sh/remark-gfm@^4.0.0",
+    "rehype-raw": "https://esm.sh/rehype-raw@^7.0.0"
   }
 }
 </script>

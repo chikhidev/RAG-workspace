@@ -1,8 +1,10 @@
+
 import React, { useRef, useEffect, useState } from 'react';
-import { Message, PipelineStatus } from '../types';
-import { Search, Bot, Loader2, CheckCircle2, ChevronDown, ChevronRight, FileText, Sparkles, Copy, Check, Zap, Cpu, RefreshCw, Trash2, Send } from 'lucide-react';
+import { Message, PipelineStatus, Document } from '../types';
+import { Search, Bot, Loader2, CheckCircle2, ChevronDown, ChevronRight, FileText, Sparkles, Copy, Check, Zap, Cpu, RefreshCw, Trash2, Send, AtSign } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { SUPPORTED_MODELS } from '../services/modelService';
 
 interface Props {
@@ -16,6 +18,7 @@ interface Props {
   setInputValue: (v: string) => void;
   onSend: (customValue?: string) => void;
   isProcessing: boolean;
+  availableDocuments: Document[];
 }
 
 const LiveTimer: React.FC<{ status: PipelineStatus; activeAt: PipelineStatus; finalDuration?: number }> = ({ status, activeAt, finalDuration }) => {
@@ -188,9 +191,13 @@ const PipelineDetails: React.FC<{ msg: Message }> = ({ msg }) => {
 
 export const ChatInterface: React.FC<Props> = ({ 
   messages, expanderModelId, reasonerModelId, onRetry, onClearChat, 
-  inputPosition, inputValue, setInputValue, onSend, isProcessing 
+  inputPosition, inputValue, setInputValue, onSend, isProcessing, availableDocuments 
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestionFilter, setSuggestionFilter] = useState('');
+  const [cursorPosition, setCursorPosition] = useState(0);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -198,10 +205,65 @@ export const ChatInterface: React.FC<Props> = ({
     }
   }, [messages]);
 
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      const newHeight = Math.min(textarea.scrollHeight, 240);
+      textarea.style.height = `${newHeight}px`;
+    }
+  }, [inputValue]);
+
+  // HANDLE @ TAGGING
+  useEffect(() => {
+    const lastAtPos = inputValue.lastIndexOf('@', cursorPosition - 1);
+    if (lastAtPos !== -1 && !inputValue.slice(lastAtPos, cursorPosition).includes(' ')) {
+      const filter = inputValue.slice(lastAtPos + 1, cursorPosition);
+      setSuggestionFilter(filter);
+      setShowSuggestions(true);
+    } else {
+      setShowSuggestions(false);
+    }
+  }, [inputValue, cursorPosition]);
+
+  const insertTag = (fileName: string) => {
+    const lastAtPos = inputValue.lastIndexOf('@', cursorPosition - 1);
+    const beforeAt = inputValue.slice(0, lastAtPos);
+    const afterAt = inputValue.slice(cursorPosition);
+    const newValue = `${beforeAt}@${fileName} ${afterAt}`;
+    setInputValue(newValue);
+    setShowSuggestions(false);
+    
+    // Position cursor after inserted tag
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        const newPos = lastAtPos + fileName.length + 2;
+        textareaRef.current.setSelectionRange(newPos, newPos);
+      }
+    }, 0);
+  };
+
+  const filteredDocs = availableDocuments.filter(doc => 
+    doc.name.toLowerCase().includes(suggestionFilter.toLowerCase())
+  );
+
   const expanderModel = SUPPORTED_MODELS.find(m => m.id === expanderModelId);
   const reasonerModel = SUPPORTED_MODELS.find(m => m.id === reasonerModelId);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (showSuggestions && filteredDocs.length > 0) {
+      if (e.key === 'Tab' || e.key === 'Enter') {
+        e.preventDefault();
+        insertTag(filteredDocs[0].name);
+        return;
+      }
+      if (e.key === 'Escape') {
+        setShowSuggestions(false);
+        return;
+      }
+    }
+    
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       onSend();
@@ -264,7 +326,7 @@ export const ChatInterface: React.FC<Props> = ({
                The Synthesis Engine is ready.
             </h1>
             <p className="text-[14px] text-brand-muted max-w-sm leading-relaxed animate-blur-text [animation-delay:0.2s]">
-               Provide documents in the Knowledge Vault and start a reasoned conversation.
+               Provide documents in the Knowledge Vault and start a reasoned conversation. Type <span className="text-brand-accent font-bold">@</span> to tag specific files.
             </p>
           </div>
         ) : (
@@ -280,6 +342,7 @@ export const ChatInterface: React.FC<Props> = ({
                      <div className={`prose dark:prose-invert ${msg.role === 'assistant' ? 'animate-blur-text' : ''}`}>
                         <ReactMarkdown 
                           remarkPlugins={[remarkGfm]}
+                          rehypePlugins={[rehypeRaw]}
                           components={{
                             code: CodeBlock
                           }}
@@ -317,14 +380,47 @@ export const ChatInterface: React.FC<Props> = ({
 
       {inputPosition === 'floating' && (
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-3xl px-6 z-50">
+          
+          {/* FILE SUGGESTIONS PORTAL */}
+          {showSuggestions && filteredDocs.length > 0 && (
+            <div className="absolute bottom-full left-0 mb-4 w-full bg-brand-darker border border-brand-border rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] overflow-hidden animate-in slide-in-from-bottom-2 duration-150 backdrop-blur-xl">
+              <div className="px-4 py-2 border-b border-brand-border flex items-center justify-between">
+                <span className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Knowledge Vault Suggestions</span>
+                <span className="text-[9px] px-1.5 py-0.5 bg-brand-accent/20 text-brand-accent rounded font-bold uppercase">Mention</span>
+              </div>
+              <div className="max-h-48 overflow-y-auto">
+                {filteredDocs.map((doc) => (
+                  <button
+                    key={doc.id}
+                    onClick={() => insertTag(doc.name)}
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-brand-accent/10 border-b border-brand-border/30 last:border-0 transition-colors text-left group"
+                  >
+                    <div className="w-6 h-6 rounded flex items-center justify-center bg-brand-base border border-brand-border group-hover:border-brand-accent/50 transition-all">
+                      <FileText size={12} className="text-emerald-500" />
+                    </div>
+                    <span className="text-[13px] font-medium text-gray-300 group-hover:text-white transition-colors">
+                      @{doc.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="relative group/input bg-brand-base/70 backdrop-blur-xl rounded-2xl border border-brand-border shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all focus-within:border-brand-accent/50 p-2 flex items-end gap-2">
             <textarea
+              ref={textareaRef}
               value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
+              onChange={(e) => {
+                setInputValue(e.target.value);
+                setCursorPosition(e.target.selectionStart || 0);
+              }}
+              onKeyUp={(e) => setCursorPosition((e.target as any).selectionStart || 0)}
+              onClick={(e) => setCursorPosition((e.target as any).selectionStart || 0)}
               onKeyDown={handleKeyDown}
-              placeholder="Deep reason on your data..."
-              className="flex-1 bg-transparent border-none text-[15px] font-medium p-3 resize-none outline-none text-gray-100 placeholder:text-brand-muted/50 max-h-40 min-h-[50px] overflow-y-auto"
-              style={{ height: 'auto' }}
+              placeholder="Deep reason on your data... Type @ to focus files"
+              className="flex-1 bg-transparent border-none text-[15px] font-medium p-3 resize-none outline-none text-gray-100 placeholder:text-brand-muted/50 min-h-[50px] overflow-y-auto scrollbar-hide"
+              style={{ height: '50px' }}
               rows={1}
             />
             <button

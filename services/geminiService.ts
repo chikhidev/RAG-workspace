@@ -1,3 +1,4 @@
+
 import { modelService } from "./modelService";
 
 export class GeminiRAGService {
@@ -8,7 +9,8 @@ export class GeminiRAGService {
     temperature: number = 0.1,
     contextScript: string = "",
     modelId: string = 'cohere/command-r7b-12-2024',
-    openRouterKey?: string
+    openRouterKey?: string,
+    taggedFileNames: string[] = []
   ): Promise<string> {
     const vaultContext = filePreviews.length > 0 
       ? `KNOWLEDGE VAULT SNAPSHOT:\n${filePreviews.join('\n\n')}`
@@ -18,18 +20,22 @@ export class GeminiRAGService {
       ? `CONVERSATION LOGS:\n${contextScript}\n\n`
       : "";
 
+    const priorityBlock = taggedFileNames.length > 0
+      ? `\nCRITICAL PRIORITY: The user has explicitly tagged the following files as high-priority: [${taggedFileNames.join(', ')}]. You MUST extract specific terminology and semantic links from these files above all others.\n`
+      : "";
+
     const systemInstruction = `You are the "Expansion Brain" in a high-fidelity Dual-Brain RAG architecture.
     
     ROLE: 
-    Your specific role is to bridge the gap between a user's natural language and the semantic index of our "Knowledge Vault". You are working in tandem with a secondary "Reasoning Brain" that will synthesize your findings.
+    Your specific role is to bridge the gap between a user's natural language and the semantic index of our "Knowledge Vault". 
     
     STRATEGY:
-    1. Analyze the "CONVERSATION LOGS" for context if this is a follow-up.
-    2. Review the "KNOWLEDGE VAULT SNAPSHOT" to understand the technical language used in the documents.
-    3. Generate 5-8 dense, descriptive search keywords or phrases optimized for finding relevant segments in files: ${availableFileNames.join(', ')}.
+    1. Analyze the "CONVERSATION LOGS" for context.
+    2. Review the "KNOWLEDGE VAULT SNAPSHOT". ${priorityBlock}
+    3. Generate 5-8 dense, descriptive search keywords optimized for finding relevant segments in: ${availableFileNames.join(', ')}.
     
     OUTPUT:
-    Return ONLY a comma-separated list of keywords. No preamble, no explanation. Your output is the direct input for the retrieval engine.`;
+    Return ONLY a comma-separated list of keywords. No preamble.`;
 
     const prompt = `${historySection}User Query: ${userQuery}\n\n${vaultContext}`;
 
@@ -50,7 +56,8 @@ export class GeminiRAGService {
     useVault: boolean = true,
     modelId: string = 'openai/gpt-oss-safeguard-20b',
     contextScript: string = "",
-    openRouterKey?: string
+    openRouterKey?: string,
+    taggedFileNames: string[] = []
   ): Promise<{ answer: string }> {
     const hasContext = contextChunks.length > 0;
     const contextText = hasContext
@@ -63,16 +70,16 @@ export class GeminiRAGService {
       ? `HISTORICAL SESSION CONTEXT:\n${contextScript}\n\n`
       : "";
 
+    const priorityNote = taggedFileNames.length > 0
+      ? `\nNote: The user highlighted ${taggedFileNames.join(', ')} as primary sources.\n`
+      : "";
+
     const systemInstruction = `You are the "Expert Reasoner," the primary intelligence in a Dual-Brain RAG system.
     
-    CONTEXT:
-    A specialized "Expansion Brain" has already processed the user's query into the following search vector: "${expandedQuery}". Using this, we have retrieved the most relevant technical fragments from our "Knowledge Vault".
-    
-    YOUR TASK:
-    1. Synthesize a definitive answer using ONLY the "KNOWLEDGE VAULT" fragments provided below.
-    2. If the fragments are insufficient, acknowledge the limitation but provide the best possible reasoning based on session history.
-    3. Use technical precision. Cite your sources using [Document: Name].
-    4. Maintain the persona of a highly sophisticated synthesis engine.
+    TASK:
+    1. Synthesize a definitive answer using ONLY the "KNOWLEDGE VAULT" fragments provided. ${priorityNote}
+    2. Cite sources using [Document: Name].
+    3. If the user query mentions specific files using @ notation, ensure you verify claims against those documents primarily.
     
     VAULT DATA:
     ${contextText}`;

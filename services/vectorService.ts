@@ -1,15 +1,6 @@
 
 import { Document, Chunk } from '../types';
 
-/**
- * A lightweight vector service. 
- * Since true ChromaDB is a server-side DB, we implement a functional 
- * browser-equivalent using simple keyword weighting and TF-IDF style 
- * similarity for this demonstration, as loading full 500MB+ Sentence Transformer 
- * models in-browser can be brittle without specialized setup.
- * 
- * In a production environment, this would call a ChromaDB REST API.
- */
 export class VectorService {
   private chunks: Chunk[] = [];
 
@@ -19,8 +10,6 @@ export class VectorService {
       const docChunks = this.splitIntoChunks(doc);
       this.chunks.push(...docChunks);
     }
-    // In a real RAG, we'd generate embeddings here.
-    // For this prototype, we'll use an optimized keyword-overlap search.
   }
 
   private splitIntoChunks(doc: Document): Chunk[] {
@@ -42,10 +31,9 @@ export class VectorService {
     return chunks;
   }
 
-  public async search(expandedQuery: string, limit: number = 4): Promise<Chunk[]> {
+  public async search(expandedQuery: string, limit: number = 4, taggedFileNames: string[] = []): Promise<Chunk[]> {
     if (this.chunks.length === 0) return [];
 
-    // Simulate vector search by scoring chunks based on query keywords
     const keywords = expandedQuery.toLowerCase().split(/[\s,.-]+/).filter(k => k.length > 2);
     
     const scored = this.chunks.map(chunk => {
@@ -59,6 +47,11 @@ export class VectorService {
           score += matches.length;
         }
       });
+
+      // APPLY TAG BOOST: Multiplier for files explicitly mentioned by the user
+      if (taggedFileNames.some(tagged => chunk.docName.toLowerCase() === tagged.toLowerCase())) {
+        score *= 5.0; 
+      }
 
       return { chunk, score };
     });
