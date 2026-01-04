@@ -38,7 +38,6 @@ const ApiKeyModal: React.FC<{
           <div className="space-y-4">
             <div className="space-y-3">
               <label className="flex items-center gap-2 text-[10px] font-mono text-brand-muted uppercase tracking-widest">
-                <Key size={12} className="text-brand-accent" />
                 OpenRouter Key
               </label>
               <input 
@@ -50,20 +49,7 @@ const ApiKeyModal: React.FC<{
               />
             </div>
             
-            <div className="p-4 bg-brand-base rounded-xl border border-brand-border space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-brand-muted uppercase tracking-widest">Platform Info</span>
-                <a href="https://openrouter.ai/models" target="_blank" rel="noopener noreferrer" className="text-[10px] text-brand-accent hover:underline flex items-center gap-1 font-bold">
-                  OpenRouter Models <ExternalLink size={10} />
-                </a>
-              </div>
-              <p className="text-[11px] text-gray-400 leading-relaxed">
-                OpenRouter provides access to hundreds of models. You can find both <span className="text-emerald-500 font-bold">Free</span> and <span className="text-brand-accent font-bold">Paid</span> models on their platform.
-              </p>
-              <p className="text-[10px] text-brand-muted italic">
-                Your keys are stored locally in your browser.
-              </p>
-            </div>
+           
           </div>
 
           <button 
@@ -172,7 +158,7 @@ const App: React.FC = () => {
   });
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [rightWidth, setRightWidth] = useState(450);
-  const [leftWidth, setLeftWidth] = useState(288);
+  const [leftWidth, setLeftWidth] = useState(350);
   const isResizingRight = useRef(false);
   const isResizingLeft = useRef(false);
 

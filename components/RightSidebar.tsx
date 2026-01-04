@@ -132,7 +132,6 @@ export const RightSidebar: React.FC<Props> = ({
     <div className="flex flex-col h-full bg-brand-darker border-l border-transparent p-6 w-full transition-colors overflow-y-auto relative">
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-2">
-          <Terminal size={14} className="text-brand-accent" />
           <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-brand-muted">Studio Controller</span>
         </div>
       </div>
@@ -322,14 +321,6 @@ export const RightSidebar: React.FC<Props> = ({
         </div>
       </div>
 
-      <div className="mt-auto pt-8 flex flex-col items-center gap-3">
-        <p className="text-[9px] font-mono text-brand-muted uppercase tracking-[0.4em]">Integrated Synthesis Engine</p>
-        <div className="flex gap-1.5">
-          <div className="w-1 h-1 bg-brand-accent rounded-full animate-pulse"></div>
-          <div className="w-1 h-1 bg-brand-accent/40 rounded-full animate-pulse [animation-delay:0.2s]"></div>
-          <div className="w-1 h-1 bg-brand-accent/20 rounded-full animate-pulse [animation-delay:0.4s]"></div>
-        </div>
-      </div>
     </div>
   );
 };
