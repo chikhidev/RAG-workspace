@@ -14,33 +14,33 @@ export const DocumentList: React.FC<Props> = ({ documents, onUpload, onRemove, o
   const isAtLimit = documents.length >= 10;
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-brand-darker border-r border-gray-100 dark:border-brand-border p-6 w-full transition-colors shrink-0">
-      <div className="flex items-center justify-between mb-2 overflow-hidden">
+    <div className="flex flex-col h-full bg-brand-darker p-6 w-full transition-colors overflow-hidden">
+      <div className="flex items-center justify-between mb-2 overflow-hidden shrink-0">
         <div className="flex items-center gap-3 min-w-0">
-          <Box size={18} className="text-gray-900 dark:text-gray-100 shrink-0" />
-          <h2 className="text-[20px] font-serif italic text-gray-900 dark:text-gray-100 tracking-tight truncate">
+          <Box size={18} className="text-gray-100 shrink-0" />
+          <h2 className="text-[20px] font-serif italic text-gray-100 tracking-tight truncate">
             Knowledge Vault
           </h2>
         </div>
         <label className={`p-1.5 rounded-lg transition-colors shrink-0 ${
           isAtLimit 
-            ? 'text-gray-300 cursor-not-allowed' 
-            : 'cursor-pointer text-gray-400 hover:text-brand-accent hover:bg-gray-100 dark:hover:bg-brand-border'
+            ? 'text-brand-muted cursor-not-allowed' 
+            : 'cursor-pointer text-gray-400 hover:text-brand-accent hover:bg-brand-border'
         }`}>
           <Upload size={16} />
           {!isAtLimit && <input type="file" multiple accept=".txt" onChange={onUpload} className="hidden" />}
         </label>
       </div>
       
-      <div className="mb-8 flex justify-between items-center">
-        <span className={`text-[9px] font-mono uppercase tracking-widest ${isAtLimit ? 'text-brand-accent font-bold' : 'text-gray-400'}`}>
+      <div className="mb-8 flex justify-between items-center shrink-0">
+        <span className={`text-[9px] font-mono uppercase tracking-widest ${isAtLimit ? 'text-brand-accent font-bold' : 'text-brand-muted'}`}>
           {documents.length} / 10 Files
         </span>
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-2">
+      <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
         {documents.length === 0 ? (
-          <div className="text-gray-400 dark:text-gray-600 text-center py-20 italic text-[11px] px-6 leading-relaxed border border-dashed border-gray-200 dark:border-brand-border rounded-xl">
+          <div className="text-brand-muted text-center py-20 italic text-[11px] px-6 leading-relaxed border border-dashed border-brand-border rounded-xl">
             Drop context files to begin indexing.
           </div>
         ) : (
@@ -49,16 +49,15 @@ export const DocumentList: React.FC<Props> = ({ documents, onUpload, onRemove, o
               key={doc.id} 
               className={`group flex items-center justify-between p-3 rounded-lg border transition-all ${
                 doc.enabled 
-                  ? 'bg-gray-50 dark:bg-brand-base border-gray-200 dark:border-brand-border/50' 
+                  ? 'bg-brand-base border-brand-border/50' 
                   : 'bg-transparent border-transparent opacity-60'
               }`}
             >
               <div className="flex items-center gap-3 overflow-hidden flex-1">
-                {/* Switch Toggle for Files */}
                 <button 
                   onClick={() => onToggle(doc.id)}
                   className={`shrink-0 w-7 h-4 rounded-full relative transition-colors ${
-                    doc.enabled ? 'bg-brand-accent' : 'bg-gray-200 dark:bg-brand-border'
+                    doc.enabled ? 'bg-brand-accent' : 'bg-brand-border'
                   }`}
                 >
                   <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${
@@ -67,15 +66,15 @@ export const DocumentList: React.FC<Props> = ({ documents, onUpload, onRemove, o
                 </button>
                 
                 <div className="flex items-center gap-2 overflow-hidden">
-                  <FileText size={14} className="text-gray-400 dark:text-gray-500 shrink-0" />
-                  <span className="text-[12px] font-medium truncate text-gray-700 dark:text-gray-300">
+                  <FileText size={14} className="text-gray-500 shrink-0" />
+                  <span className="text-[12px] font-medium truncate text-gray-300">
                     {doc.name}
                   </span>
                 </div>
               </div>
               <button 
                 onClick={() => onRemove(doc.id)}
-                className="text-gray-300 dark:text-gray-600 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2"
+                className="text-gray-600 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2 shrink-0"
               >
                 <Trash2 size={13} />
               </button>
@@ -85,12 +84,12 @@ export const DocumentList: React.FC<Props> = ({ documents, onUpload, onRemove, o
       </div>
 
       {isIndexing && (
-        <div className="mt-6 p-4 border border-gray-100 dark:border-brand-border rounded-xl">
-          <div className="text-[9px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-widest mb-2 flex justify-between">
+        <div className="mt-6 p-4 border border-brand-border rounded-xl shrink-0">
+          <div className="text-[9px] text-brand-muted font-bold uppercase tracking-widest mb-2 flex justify-between">
             <span>Syncing</span>
             <span className="animate-pulse">Active</span>
           </div>
-          <div className="h-[2px] bg-gray-100 dark:bg-brand-border rounded-full overflow-hidden">
+          <div className="h-[2px] bg-brand-border rounded-full overflow-hidden">
             <div className="h-full bg-brand-accent w-1/3 animate-[shimmer_1.5s_infinite_linear]"></div>
           </div>
         </div>

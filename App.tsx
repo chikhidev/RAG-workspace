@@ -25,19 +25,19 @@ const ApiKeyModal: React.FC<{
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white dark:bg-brand-darker w-full max-w-md rounded-2xl border border-gray-100 dark:border-brand-border shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-        <div className="px-6 py-4 border-b border-gray-100 dark:border-brand-border flex items-center justify-between bg-gray-50/50 dark:bg-brand-base/50">
+      <div className="bg-brand-darker w-full max-w-md rounded-2xl border border-brand-border shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="px-6 py-4 border-b border-brand-border flex items-center justify-between bg-brand-base/50">
           <div className="flex items-center gap-2">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">API Key Management</h3>
+            <h3 className="text-lg font-bold text-gray-100">API Key Management</h3>
           </div>
-          <button onClick={onClose} className="p-1 hover:bg-gray-200 dark:hover:bg-brand-base rounded-lg transition-colors text-gray-400">
+          <button onClick={onClose} className="p-1 hover:bg-brand-base rounded-lg transition-colors text-gray-400">
             <X size={18} />
           </button>
         </div>
         <div className="p-8 space-y-6">
           <div className="space-y-4">
             <div className="space-y-3">
-              <label className="flex items-center gap-2 text-[10px] font-mono text-gray-400 dark:text-brand-muted uppercase tracking-widest">
+              <label className="flex items-center gap-2 text-[10px] font-mono text-brand-muted uppercase tracking-widest">
                 <Key size={12} className="text-brand-accent" />
                 OpenRouter Key
               </label>
@@ -46,21 +46,21 @@ const ApiKeyModal: React.FC<{
                 value={openRouterKey} 
                 onChange={(e) => setOpenRouterKey(e.target.value)} 
                 placeholder="sk-or-v1-..."
-                className="w-full bg-gray-50 dark:bg-[#252525] border border-gray-100 dark:border-brand-border rounded-xl p-4 text-[13px] font-mono text-gray-700 dark:text-gray-200 outline-none focus:border-brand-accent/50 transition-all"
+                className="w-full bg-[#252525] border border-brand-border rounded-xl p-4 text-[13px] font-mono text-gray-200 outline-none focus:border-brand-accent/50 transition-all"
               />
             </div>
             
-            <div className="p-4 bg-gray-50 dark:bg-brand-base rounded-xl border border-gray-100 dark:border-brand-border space-y-2">
+            <div className="p-4 bg-brand-base rounded-xl border border-brand-border space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-gray-500 dark:text-brand-muted uppercase tracking-widest">Platform Info</span>
+                <span className="text-[10px] font-bold text-brand-muted uppercase tracking-widest">Platform Info</span>
                 <a href="https://openrouter.ai/models" target="_blank" rel="noopener noreferrer" className="text-[10px] text-brand-accent hover:underline flex items-center gap-1 font-bold">
                   OpenRouter Models <ExternalLink size={10} />
                 </a>
               </div>
-              <p className="text-[11px] text-gray-600 dark:text-gray-400 leading-relaxed">
+              <p className="text-[11px] text-gray-400 leading-relaxed">
                 OpenRouter provides access to hundreds of models. You can find both <span className="text-emerald-500 font-bold">Free</span> and <span className="text-brand-accent font-bold">Paid</span> models on their platform.
               </p>
-              <p className="text-[10px] text-gray-400 dark:text-brand-muted italic">
+              <p className="text-[10px] text-brand-muted italic">
                 Your keys are stored locally in your browser.
               </p>
             </div>
@@ -89,10 +89,9 @@ const App: React.FC = () => {
     const defaults = {
       useVault: true,
       useContextHistory: false,
-      temperature: 0.7,
-      theme: 'dark' as const,
       expanderModel: 'cohere/command-r7b-12-2024',
-      reasonerModel: 'openai/gpt-oss-safeguard-20b'
+      reasonerModel: 'openai/gpt-oss-safeguard-20b',
+      inputPosition: 'floating' as const
     };
     return stored ? { ...defaults, ...JSON.parse(stored) } : defaults;
   };
@@ -105,14 +104,13 @@ const App: React.FC = () => {
     isIndexing: false,
     isProcessing: false,
     toasts: [],
-    temperature: initialSettings.temperature,
-    theme: initialSettings.theme,
     useVault: initialSettings.useVault,
     useContextHistory: initialSettings.useContextHistory,
     contextScript: localStorage.getItem(STORAGE_KEYS.CONTEXT_SCRIPT) || "",
     expanderModel: initialSettings.expanderModel,
     reasonerModel: initialSettings.reasonerModel,
     openRouterKey: localStorage.getItem(STORAGE_KEYS.OPENROUTER_KEY) || "",
+    inputPosition: initialSettings.inputPosition,
     isApiKeyModalOpen: false
   });
 
@@ -135,13 +133,11 @@ const App: React.FC = () => {
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify({
       useVault: state.useVault,
       useContextHistory: state.useContextHistory,
-      temperature: state.temperature,
-      theme: state.theme,
       expanderModel: state.expanderModel,
-      reasonerModel: state.reasonerModel
+      reasonerModel: state.reasonerModel,
+      inputPosition: state.inputPosition
     }));
-    document.documentElement.classList.toggle('dark', state.theme === 'dark');
-  }, [state.useVault, state.useContextHistory, state.temperature, state.theme, state.expanderModel, state.reasonerModel]);
+  }, [state.useVault, state.useContextHistory, state.expanderModel, state.reasonerModel, state.inputPosition]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.OPENROUTER_KEY, state.openRouterKey);
@@ -243,7 +239,7 @@ const App: React.FC = () => {
           query, 
           activeDocs.map(d => d.name), 
           activeDocs.map(d => d.content.substring(0, 300)), 
-          state.temperature, 
+          0.1, // Fixed expansion temperature
           hist, 
           state.expanderModel,
           state.openRouterKey
@@ -263,7 +259,8 @@ const App: React.FC = () => {
       const t3 = performance.now();
       const { answer } = await geminiRAG.generateAnswer(
         query, expandedQuery, sources,
-        state.temperature, state.useVault, state.reasonerModel, hist, state.openRouterKey
+        0.7, // Fixed reasoning temperature
+        state.useVault, state.reasonerModel, hist, state.openRouterKey
       );
       reasoningDuration = (performance.now() - t3) / 1000;
       
@@ -291,15 +288,16 @@ const App: React.FC = () => {
     }
   };
 
-  const handleSend = useCallback(async () => {
-    if (!inputValue.trim() || state.isProcessing) return;
+  const handleSend = useCallback(async (customValue?: string) => {
+    const valToUse = customValue ?? inputValue;
+    if (!valToUse.trim() || state.isProcessing) return;
     if (!state.openRouterKey) {
       setState(prev => ({ ...prev, isApiKeyModalOpen: true }));
       addToast("Please set your OpenRouter API Key first.");
       return;
     }
 
-    const currentQuery = inputValue.trim();
+    const currentQuery = valToUse.trim();
     setPromptHistory(prev => [currentQuery, ...prev.filter(p => p !== currentQuery)].slice(0, 50));
     setHistoryIndex(-1);
     
@@ -311,7 +309,7 @@ const App: React.FC = () => {
     setInputValue('');
 
     await processQuery(currentQuery, assistantId);
-  }, [inputValue, state.isProcessing, state.temperature, state.documents, state.useVault, state.expanderModel, state.reasonerModel, state.contextScript, state.useContextHistory, state.openRouterKey]);
+  }, [inputValue, state.isProcessing, state.documents, state.useVault, state.expanderModel, state.reasonerModel, state.contextScript, state.useContextHistory, state.openRouterKey]);
 
   const handleRetry = useCallback(async (failedMessageId: string) => {
     if (state.isProcessing) return;
@@ -328,50 +326,54 @@ const App: React.FC = () => {
     }));
 
     await processQuery(userMsg.content, failedMessageId);
-  }, [state.messages, state.isProcessing, state.useVault, state.temperature, state.documents, state.expanderModel, state.reasonerModel, state.contextScript, state.useContextHistory, state.openRouterKey]);
+  }, [state.messages, state.isProcessing, state.useVault, state.documents, state.expanderModel, state.reasonerModel, state.contextScript, state.useContextHistory, state.openRouterKey]);
 
   const onClearChat = useCallback(() => {
     setState(prev => ({ ...prev, messages: [], contextScript: "" }));
   }, []);
 
   return (
-    <div className={`flex h-screen bg-brand-base text-gray-100 transition-colors overflow-hidden ${state.theme}`}>
+    <div className="flex h-screen bg-brand-base text-gray-100 transition-colors overflow-hidden dark">
       <div className="shrink-0 flex" style={{ width: `${leftWidth}px` }}>
-        <DocumentList 
-          documents={state.documents} onUpload={handleFileUpload} 
-          onRemove={(id) => setState(prev => ({ ...prev, documents: prev.documents.filter(d => d.id !== id) }))} 
-          onToggle={(id) => setState(prev => ({ ...prev, documents: prev.documents.map(d => d.id === id ? { ...d, enabled: !d.enabled } : d) }))}
-          isIndexing={state.isIndexing}
-        />
-        <div onMouseDown={startResizingLeft} className="w-1.5 cursor-col-resize bg-gray-100 dark:bg-brand-border hover:bg-brand-accent transition-all flex flex-col items-center justify-center gap-1 group">
-          <div className="w-[1px] h-8 bg-gray-300 dark:bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
-          <div className="w-[1px] h-8 bg-gray-300 dark:bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
+        <div className="flex-1 min-w-0 h-full overflow-hidden">
+          <DocumentList 
+            documents={state.documents} onUpload={handleFileUpload} 
+            onRemove={(id) => setState(prev => ({ ...prev, documents: prev.documents.filter(d => d.id !== id) }))} 
+            onToggle={(id) => setState(prev => ({ ...prev, documents: prev.documents.map(d => d.id === id ? { ...d, enabled: !d.enabled } : d) }))}
+            isIndexing={state.isIndexing}
+          />
+        </div>
+        <div onMouseDown={startResizingLeft} className="w-1.5 cursor-col-resize bg-brand-border hover:bg-brand-accent transition-all flex flex-col items-center justify-center gap-1 group shrink-0">
+          <div className="w-[1px] h-8 bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
+          <div className="w-[1px] h-8 bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
         </div>
       </div>
       
-      <main className="flex-1 flex flex-col min-w-0 bg-[#F8F9FB] dark:bg-brand-base">
+      <main className="flex-1 flex flex-col min-w-0 bg-brand-base relative">
         <ChatInterface 
           messages={state.messages} 
           expanderModelId={state.expanderModel}
           reasonerModelId={state.reasonerModel}
           onRetry={handleRetry}
           onClearChat={onClearChat}
+          inputPosition={state.inputPosition}
+          inputValue={inputValue}
+          setInputValue={setInputValue}
+          onSend={handleSend}
+          isProcessing={state.isProcessing}
         />
       </main>
 
       <div style={{ width: `${rightWidth}px` }} className="shrink-0 flex">
-        <div onMouseDown={startResizingRight} className="w-1.5 cursor-col-resize bg-gray-100 dark:bg-brand-border hover:bg-brand-accent transition-all flex flex-col items-center justify-center gap-1 group">
-          <div className="w-[1px] h-8 bg-gray-300 dark:bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
-          <div className="w-[1px] h-8 bg-gray-300 dark:bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
+        <div onMouseDown={startResizingRight} className="w-1.5 cursor-col-resize bg-brand-border hover:bg-brand-accent transition-all flex flex-col items-center justify-center gap-1 group shrink-0">
+          <div className="w-[1px] h-8 bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
+          <div className="w-[1px] h-8 bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
         </div>
 
         <RightSidebar
           inputValue={inputValue} setInputValue={setInputValue}
           onSend={handleSend} onHistoryNav={(d) => {}}
           isProcessing={state.isProcessing}
-          temperature={state.temperature}
-          setTemperature={(t) => setState(prev => ({ ...prev, temperature: t }))}
-          theme={state.theme} setTheme={(theme) => setState(prev => ({ ...prev, theme }))}
           useVault={state.useVault} setUseVault={(v) => setState(prev => ({ ...prev, useVault: v }))}
           useContextHistory={state.useContextHistory} setUseContextHistory={(v) => setState(prev => ({ ...prev, useContextHistory: v }))}
           onClearContext={() => setState(prev => ({ ...prev, contextScript: "" }))}
@@ -379,6 +381,8 @@ const App: React.FC = () => {
           reasonerModel={state.reasonerModel} setReasonerModel={(m) => setState(prev => ({ ...prev, reasonerModel: m }))}
           openRouterKey={state.openRouterKey} setOpenRouterKey={(k) => setState(prev => ({ ...prev, openRouterKey: k }))}
           onOpenApiManagement={() => setState(prev => ({ ...prev, isApiKeyModalOpen: true }))}
+          inputPosition={state.inputPosition}
+          setInputPosition={(pos) => setState(prev => ({ ...prev, inputPosition: pos }))}
         />
       </div>
 
@@ -391,12 +395,12 @@ const App: React.FC = () => {
 
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex flex-col gap-3 z-50 pointer-events-none w-full max-sm px-4">
         {state.toasts.map(toast => (
-          <div key={toast.id} className="pointer-events-auto flex items-center gap-3 px-5 py-3.5 bg-white dark:bg-brand-darker message-shadow rounded-2xl border border-gray-100 dark:border-brand-border animate-blur-text w-full">
+          <div key={toast.id} className="pointer-events-auto flex items-center gap-3 px-5 py-3.5 bg-brand-darker message-shadow rounded-2xl border border-brand-border animate-blur-text w-full">
             <span className={`text-[11px] font-bold uppercase tracking-widest ${toast.type === 'error' ? 'text-red-500' : 'text-emerald-500'}`}>
               {toast.type}
             </span>
-            <p className="flex-1 text-[13px] text-gray-700 dark:text-gray-300 font-medium">{toast.message}</p>
-            <button onClick={() => removeToast(toast.id)} className="text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <p className="flex-1 text-[13px] text-gray-300 font-medium">{toast.message}</p>
+            <button onClick={() => removeToast(toast.id)} className="text-gray-400 hover:text-white transition-colors">
               <X size={14} />
             </button>
           </div>

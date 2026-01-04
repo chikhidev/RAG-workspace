@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -19,10 +19,10 @@
             colors: {
               brand: {
                 accent: '#F25912',
-                base: '#191919', // User requested "Dark Slate Gray" as #191919
-                darker: '#111111', // Slightly darker for depth
-                border: '#2A2A2A', // Cohesive border for #191919 base
-                muted: '#666666', // Muted text for dark theme
+                base: '#191919', // Dark Slate Gray
+                darker: '#111111',
+                border: '#2A2A2A',
+                muted: '#666666',
               }
             }
           }
@@ -34,7 +34,8 @@
         font-family: 'Inter', sans-serif;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
-        transition: background-color 0.3s ease, color 0.3s ease;
+        background-color: #191919;
+        color: #f3f4f6;
       }
       .font-serif {
         font-family: 'Instrument Serif', serif;
@@ -62,7 +63,6 @@
         background-size: 32px 32px;
       }
       
-      /* Blur Text Animation */
       @keyframes blurText {
         0% {
           filter: blur(12px);
@@ -100,8 +100,8 @@
         max-width: none; 
         line-height: 1.75;
       }
-      .dark .prose { color: #d1d1d1; }
-      .dark .prose h1, .dark .prose h2, .dark .prose h3 { 
+      .prose { color: #d1d1d1; }
+      .prose h1, .prose h2, .prose h3 { 
         color: #ffffff; 
         letter-spacing: -0.01em;
         font-weight: 400;
@@ -125,7 +125,7 @@
 }
 </script>
 </head>
-  <body class="bg-white dark:bg-brand-base text-gray-900 dark:text-gray-100 selection:bg-brand-accent selection:text-white transition-colors duration-300">
+  <body class="selection:bg-brand-accent selection:text-white">
     <div id="root"></div>
   </body>
 </html>

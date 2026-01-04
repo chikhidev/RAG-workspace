@@ -62,12 +62,11 @@ export interface AppState {
   isIndexing: boolean;
   isProcessing: boolean;
   toasts: Toast[];
-  temperature: number;
-  theme: 'light' | 'dark';
   useVault: boolean;
   useContextHistory: boolean;
   contextScript: string;
   expanderModel: string;
   reasonerModel: string;
   openRouterKey: string;
+  inputPosition: 'floating' | 'sidebar';
 }
