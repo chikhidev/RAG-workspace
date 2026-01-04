@@ -95,7 +95,7 @@ export const DocumentList: React.FC<Props> = ({ documents, onUpload, onRemove, o
         </div>
       )}
 
-      <a 
+      {/* <a 
         href="https://buymeacoffee.com/chikhidevA" 
         target="_blank" 
         rel="noopener noreferrer"
@@ -107,7 +107,7 @@ export const DocumentList: React.FC<Props> = ({ documents, onUpload, onRemove, o
           className="w-6 h-6 rounded-full group-hover:scale-110 transition-transform"
         />
         <span className="text-[12px] font-bold tracking-wide">Buy me a coffee</span>
-      </a>
+      </a> */}
     </div>
   );
 };

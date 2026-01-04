@@ -78,6 +78,51 @@ const ApiKeyModal: React.FC<{
   );
 };
 
+const ConfirmationModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: string;
+  message: string;
+}> = ({ isOpen, onClose, onConfirm, title, message }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-brand-darker w-full max-w-sm rounded-2xl border border-brand-border shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="px-6 py-4 border-b border-brand-border flex items-center justify-between bg-brand-base/50">
+          <h3 className="text-sm font-bold text-gray-100">{title}</h3>
+          <button onClick={onClose} className="p-1 hover:bg-brand-base rounded-lg transition-colors text-gray-400">
+            <X size={16} />
+          </button>
+        </div>
+        <div className="p-6 space-y-4">
+          <p className="text-[13px] text-gray-300 leading-relaxed">
+            {message}
+          </p>
+          <div className="flex gap-3 pt-2">
+            <button 
+              onClick={onClose}
+              className="flex-1 py-2.5 bg-brand-base hover:bg-brand-border text-gray-300 rounded-xl text-[12px] font-bold transition-all border border-brand-border"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={() => {
+                onConfirm();
+                onClose();
+              }}
+              className="flex-1 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl text-[12px] font-bold transition-all"
+            >
+              Confirm
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const App: React.FC = () => {
   const loadInitialDocs = (): Document[] => {
     const stored = localStorage.getItem(STORAGE_KEYS.DOCUMENTS);
@@ -115,6 +160,12 @@ const App: React.FC = () => {
   });
 
   const [inputValue, setInputValue] = useState('');
+  const [confirmationState, setConfirmationState] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
   const [promptHistory, setPromptHistory] = useState<string[]>(() => {
     const stored = localStorage.getItem(STORAGE_KEYS.PROMPT_HISTORY);
     return stored ? JSON.parse(stored) : [];
@@ -430,7 +481,12 @@ const App: React.FC = () => {
   }, [state.messages, state.isProcessing, state.useVault, state.reasonerModel, state.contextScript, state.useContextHistory, state.openRouterKey, state.documents]);
 
   const onClearChat = useCallback(() => {
-    setState(prev => ({ ...prev, messages: [], contextScript: "" }));
+    setConfirmationState({
+      isOpen: true,
+      title: "Clear Conversation",
+      message: "Are you sure you want to clear the entire conversation history? This action cannot be undone.",
+      onConfirm: () => setState(prev => ({ ...prev, messages: [], contextScript: "" }))
+    });
   }, []);
 
   return (
@@ -481,7 +537,12 @@ const App: React.FC = () => {
           isProcessing={state.isProcessing}
           useVault={state.useVault} setUseVault={(v) => setState(prev => ({ ...prev, useVault: v }))}
           useContextHistory={state.useContextHistory} setUseContextHistory={(v) => setState(prev => ({ ...prev, useContextHistory: v }))}
-          onClearContext={() => setState(prev => ({ ...prev, contextScript: "" }))}
+          onClearContext={() => setConfirmationState({
+            isOpen: true,
+            title: "Clear Context History",
+            message: "Are you sure you want to clear the context history? This will reset the conversation memory.",
+            onConfirm: () => setState(prev => ({ ...prev, contextScript: "" }))
+          })}
           expanderModel={state.expanderModel} setExpanderModel={(m) => setState(prev => ({ ...prev, expanderModel: m }))}
           reasonerModel={state.reasonerModel} setReasonerModel={(m) => setState(prev => ({ ...prev, reasonerModel: m }))}
           openRouterKey={state.openRouterKey} setOpenRouterKey={(k) => setState(prev => ({ ...prev, openRouterKey: k }))}
@@ -498,6 +559,16 @@ const App: React.FC = () => {
         openRouterKey={state.openRouterKey}
         setOpenRouterKey={(k) => setState(prev => ({ ...prev, openRouterKey: k }))}
       />
+
+      {confirmationState && (
+        <ConfirmationModal
+          isOpen={confirmationState.isOpen}
+          onClose={() => setConfirmationState(null)}
+          onConfirm={confirmationState.onConfirm}
+          title={confirmationState.title}
+          message={confirmationState.message}
+        />
+      )}
 
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex flex-col gap-3 z-50 pointer-events-none w-full max-sm px-4">
         {state.toasts.map(toast => (

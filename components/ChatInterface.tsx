@@ -399,9 +399,6 @@ export const ChatInterface: React.FC<Props> = ({
       <div ref={scrollRef} className={`flex-1 overflow-y-auto px-6 py-12 space-y-20 relative z-10 ${inputPosition === 'floating' ? 'pb-72' : ''}`}>
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center px-12 pb-20">
-            <h1 className="text-[32px] font-serif italic text-white tracking-tight mb-4 animate-blur-text">
-               The Synthesis Engine is ready.
-            </h1>
             <p className="text-[14px] text-brand-muted max-w-sm leading-relaxed animate-blur-text [animation-delay:0.2s]">
                Provide documents in the Knowledge Vault and start a reasoned conversation. Type <span className="text-brand-accent font-bold">@</span> to tag specific files.
             </p>
