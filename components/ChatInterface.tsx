@@ -1,11 +1,14 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Message } from '../types';
-import { Search, Bot, Loader2, CheckCircle2, ChevronDown, ChevronRight, FileText, Sparkles, Copy, Check } from 'lucide-react';
+import { Search, Bot, Loader2, CheckCircle2, ChevronDown, ChevronRight, FileText, Sparkles, Copy, Check, Zap, Cpu } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { SUPPORTED_MODELS } from '../services/modelService';
 
 interface Props {
   messages: Message[];
+  expanderModelId: string;
+  reasonerModelId: string;
 }
 
 const CodeBlock = ({ children, className, ...props }: any) => {
@@ -148,7 +151,7 @@ const PipelineDetails: React.FC<{ msg: Message }> = ({ msg }) => {
   );
 };
 
-export const ChatInterface: React.FC<Props> = ({ messages }) => {
+export const ChatInterface: React.FC<Props> = ({ messages, expanderModelId, reasonerModelId }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -157,14 +160,59 @@ export const ChatInterface: React.FC<Props> = ({ messages }) => {
     }
   }, [messages]);
 
+  const expanderModel = SUPPORTED_MODELS.find(m => m.id === expanderModelId);
+  const reasonerModel = SUPPORTED_MODELS.find(m => m.id === reasonerModelId);
+
   return (
     <div className="flex flex-col h-full bg-[#F8F9FB] dark:bg-brand-base flex-1 transition-colors relative">
       <div className="absolute inset-0 grid-bg pointer-events-none opacity-40"></div>
       
+      {/* Top Bar for active models */}
+      <div className="sticky top-0 z-50 w-full h-16 bg-white/70 dark:bg-brand-base/70 backdrop-blur-md border-b border-gray-100 dark:border-brand-border flex items-center justify-center px-8 transition-all">
+        <div className="flex items-center gap-8 max-w-4xl w-full justify-between">
+           <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                 <div className="w-8 h-8 rounded-lg bg-gray-50 dark:bg-brand-darker border border-gray-100 dark:border-brand-border flex items-center justify-center overflow-hidden p-1.5 transition-transform hover:scale-105">
+                    {expanderModel && <img src={expanderModel.logo} alt="" className="max-w-full max-h-full object-contain" />}
+                 </div>
+                 <div className="flex flex-col">
+                    <span className="text-[9px] font-mono uppercase tracking-widest text-gray-500 font-bold leading-none mb-1 flex items-center gap-1">
+                       Brain
+                    </span>
+                    <span className="text-[11px] font-medium text-gray-600 dark:text-gray-300 leading-none truncate max-w-[120px]">
+                       {expanderModel?.name || 'Unknown'}
+                    </span>
+                 </div>
+              </div>
+
+              <div className="h-6 w-[1px] bg-gray-200 dark:bg-brand-border mx-2"></div>
+
+              <div className="flex items-center gap-2">
+                 <div className="w-8 h-8 rounded-lg bg-gray-50 dark:bg-brand-darker border border-gray-100 dark:border-brand-border flex items-center justify-center overflow-hidden p-1.5 transition-transform hover:scale-105">
+                    {reasonerModel && <img src={reasonerModel.logo} alt="" className="max-w-full max-h-full object-contain" />}
+                 </div>
+                 <div className="flex flex-col">
+                    <span className="text-[9px] font-mono uppercase tracking-widest text-gray-500 font-bold leading-none mb-1 flex items-center gap-1">
+                       Reasoner
+                    </span>
+                    <span className="text-[11px] font-medium text-gray-600 dark:text-gray-300 leading-none truncate max-w-[120px]">
+                       {reasonerModel?.name || 'Unknown'}
+                    </span>
+                 </div>
+              </div>
+           </div>
+        </div>
+      </div>
+
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-12 space-y-20 relative z-10">
         {messages.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center opacity-0">
-            {/* Minimal background placeholder */}
+          <div className="h-full flex flex-col items-center justify-center text-center px-12 pb-20">
+            <h1 className="text-[32px] font-serif italic text-gray-900 dark:text-white tracking-tight mb-4 animate-blur-text">
+               The Synthesis Engine is ready.
+            </h1>
+            <p className="text-[14px] text-gray-400 dark:text-brand-muted max-w-sm leading-relaxed animate-blur-text [animation-delay:0.2s]">
+               Provide documents in the Knowledge Vault and start a reasoned conversation.
+            </p>
           </div>
         ) : (
           messages.map((msg) => (

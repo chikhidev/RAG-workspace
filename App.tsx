@@ -267,7 +267,11 @@ const App: React.FC = () => {
       />
       
       <main className="flex-1 flex flex-col min-w-0 bg-[#F8F9FB] dark:bg-brand-base">
-        <ChatInterface messages={state.messages} />
+        <ChatInterface 
+          messages={state.messages} 
+          expanderModelId={state.expanderModel}
+          reasonerModelId={state.reasonerModel}
+        />
       </main>
 
       <div onMouseDown={startResizing} className="w-[1px] cursor-col-resize hover:bg-brand-accent transition-colors bg-brand-border z-20 relative group">
