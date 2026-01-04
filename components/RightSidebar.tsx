@@ -8,6 +8,7 @@ interface Props {
   inputValue: string;
   setInputValue: (v: string) => void;
   onSend: () => void;
+  onStop: () => void;
   onHistoryNav: (direction: 'up' | 'down') => void;
   isProcessing: boolean;
   useVault: boolean;
@@ -56,7 +57,7 @@ const ModelDetails: React.FC<{ model?: ModelDefinition }> = ({ model }) => {
 };
 
 export const RightSidebar: React.FC<Props> = ({
-  inputValue, setInputValue, onSend, onHistoryNav, isProcessing,
+  inputValue, setInputValue, onSend, onStop, onHistoryNav, isProcessing,
   useVault, setUseVault, useContextHistory, setUseContextHistory,
   onClearContext, expanderModel, setExpanderModel, reasonerModel, setReasonerModel,
   onOpenApiManagement, inputPosition, setInputPosition, availableDocuments
@@ -193,10 +194,15 @@ export const RightSidebar: React.FC<Props> = ({
             )}
 
             <button
-              onClick={onSend} disabled={isProcessing || !inputValue.trim()}
-              className="absolute bottom-4 right-4 bg-brand-accent hover:bg-brand-accent/90 disabled:bg-brand-border disabled:text-brand-muted h-10 w-10 flex items-center justify-center rounded-lg transition-all shadow-xl"
+              onClick={() => isProcessing ? onStop() : onSend()} 
+              disabled={!isProcessing && !inputValue.trim()}
+              className={`absolute bottom-4 right-4 h-10 w-10 flex items-center justify-center rounded-lg transition-all shadow-xl ${
+                isProcessing 
+                  ? 'bg-red-500 hover:bg-red-600' 
+                  : 'bg-brand-accent hover:bg-brand-accent/90 disabled:bg-brand-border disabled:text-brand-muted'
+              }`}
             >
-              {isProcessing ? <Loader2 className="animate-spin text-white" size={16} /> : <Send className="text-white" size={16} />}
+              {isProcessing ? <div className="w-3 h-3 bg-white rounded-sm" /> : <Send className="text-white" size={16} />}
             </button>
           </div>
         ) : (

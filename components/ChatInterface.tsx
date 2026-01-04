@@ -1,7 +1,7 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { Message, PipelineStatus, Document } from '../types';
-import { Search, Bot, Loader2, CheckCircle2, ChevronDown, ChevronRight, FileText, Sparkles, Copy, Check, Zap, Cpu, RefreshCw, Trash2, Send, AtSign, ArrowRight } from 'lucide-react';
+import { Search, Box, Loader2, CheckCircle2, ChevronDown, ChevronRight, FileText, Sparkles, Copy, Check, Zap, Cpu, RefreshCw, Trash2, Send, AtSign, ArrowRight } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -17,6 +17,7 @@ interface Props {
   inputValue: string;
   setInputValue: (v: string) => void;
   onSend: (customValue?: string) => void;
+  onStop: () => void;
   isProcessing: boolean;
   availableDocuments: Document[];
 }
@@ -96,16 +97,15 @@ const CodeBlock = ({ children, className, ...props }: any) => {
 
 const PipelineDetails: React.FC<{ msg: Message }> = ({ msg }) => {
   const [isExpendedToggled, setIsExpandedToggled] = useState(false);
-  const [isFilesToggled, setIsFilesToggled] = useState(false);
 
   if (!msg.status || msg.role === 'user') return null;
 
   const usedFiles = msg.sources ? Array.from(new Set(msg.sources.map(s => s.docName))) : [];
 
   return (
-    <div className="w-full max-w-2xl space-y-2 mt-6">
-      <div className="bg-brand-darker border border-brand-border rounded-xl overflow-hidden transition-all duration-300">
-        <div className="w-full flex items-center justify-between p-3.5">
+    <div className="w-full max-w-2xl space-y-2 mt-2">
+      <div className="transition-all duration-300">
+        <div className="w-full flex items-center justify-between py-2">
           <button 
             onClick={() => setIsExpandedToggled(!isExpendedToggled)}
             className="flex items-center gap-3 text-[10px] font-serif font-bold text-gray-500 uppercase tracking-[0.15em] hover:text-brand-accent transition-colors"
@@ -114,13 +114,15 @@ const PipelineDetails: React.FC<{ msg: Message }> = ({ msg }) => {
             {isExpendedToggled ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400" />}
           </button>
           <div className="flex items-center gap-3">
-            <LiveTimer status={msg.status} activeAt="expanding" finalDuration={msg.expansionDuration} />
-            {msg.expandedQuery ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Loader2 size={14} className="animate-spin text-brand-accent" />}
+            {msg.status === 'expanding' && (
+              <LiveTimer status={msg.status} activeAt="expanding" finalDuration={msg.expansionDuration} />
+            )}
+            {msg.expandedQuery ? null : <Loader2 size={14} className="animate-spin text-brand-accent" />}
           </div>
         </div>
         
         {isExpendedToggled && (
-          <div className="px-3.5 pb-3.5 animate-[fadeIn_0.2s_ease-out]">
+          <div className="pb-2 animate-[fadeIn_0.2s_ease-out]">
             {msg.expandedQuery ? (
               <div className="text-[12px] font-mono text-gray-400 bg-brand-base p-3 border border-brand-border rounded-lg">
                 {msg.expandedQuery}
@@ -132,57 +134,25 @@ const PipelineDetails: React.FC<{ msg: Message }> = ({ msg }) => {
         )}
       </div>
 
-      {(msg.expandedQuery || msg.status === 'searching') && (
-        <div className="bg-brand-darker border border-brand-border rounded-xl overflow-hidden animate-[fadeIn_0.5s_ease-out]">
-          <div className="w-full flex items-center justify-between p-3.5">
-            <button 
-              onClick={() => setIsFilesToggled(!isFilesToggled)}
-              className="flex items-center gap-3 text-[10px] font-serif font-bold text-gray-500 uppercase tracking-[0.15em] hover:text-brand-accent transition-colors"
-            >
-              Vault Search
-              {usedFiles.length > 0 && (
-                isFilesToggled ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400" />
-              )}
-            </button>
-            <div className="flex items-center gap-3">
-              <LiveTimer status={msg.status} activeAt="searching" finalDuration={msg.searchDuration} />
-              {msg.sources ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-[9px] text-emerald-500 font-bold px-1.5 py-0.5 rounded border border-emerald-500/20">
-                    {msg.sources.length} matches
-                  </span>
-                  <CheckCircle2 size={14} className="text-emerald-500" />
+      {(msg.status === 'reasoning' || msg.status === 'completed' || usedFiles.length > 0) && (
+        <div className="flex items-center justify-end gap-3 py-1 animate-[fadeIn_0.5s_ease-out] flex-wrap">
+          {usedFiles.length > 0 && (
+            <div className="flex flex-wrap gap-2 mr-auto">
+              {usedFiles.map((name, i) => (
+                <div key={i} className="flex items-center gap-1.5 px-2 py-1 bg-brand-base rounded border border-brand-border text-[11px] text-gray-400 font-medium">
+                  <FileText size={10} className="text-brand-accent" />
+                  {name}
                 </div>
-              ) : (
-                <Loader2 size={14} className="animate-spin text-brand-muted" />
-              )}
-            </div>
-          </div>
-          
-          {isFilesToggled && usedFiles.length > 0 && (
-            <div className="px-3.5 pb-3.5 border-t border-brand-border pt-3 animate-[fadeIn_0.2s_ease-out]">
-              <div className="flex flex-wrap gap-2">
-                {usedFiles.map((name, i) => (
-                  <div key={i} className="flex items-center gap-1.5 px-2 py-1 bg-brand-base rounded border border-brand-border text-[11px] text-gray-400 font-medium">
-                    <FileText size={10} className="text-brand-accent" />
-                    {name}
-                  </div>
-                ))}
-              </div>
+              ))}
             </div>
           )}
-        </div>
-      )}
-
-      {(msg.status === 'reasoning' || msg.status === 'completed') && (
-        <div className="bg-brand-darker border border-brand-border p-3.5 flex items-center justify-between animate-[fadeIn_0.5s_ease-out] rounded-xl">
-          <div className="flex items-center gap-3 text-[10px] font-serif font-bold text-brand-accent uppercase tracking-[0.15em]">
-            {msg.status === 'completed' ? 'Synthesis Complete' : 'Synthesizing Response'}
-          </div>
-          <div className="flex items-center gap-3">
-            <LiveTimer status={msg.status} activeAt="reasoning" finalDuration={msg.reasoningDuration} />
-            {msg.status === 'completed' ? <CheckCircle2 size={14} className="text-emerald-500" /> : <Loader2 size={14} className="animate-spin text-brand-accent" />}
-          </div>
+          
+          {(msg.status === 'reasoning' || msg.status === 'completed') && (
+            <div className="flex items-center gap-3">
+              <LiveTimer status={msg.status} activeAt="reasoning" finalDuration={msg.reasoningDuration} />
+              {msg.status === 'completed' ? null : <Loader2 size={14} className="animate-spin text-brand-accent" />}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -191,7 +161,7 @@ const PipelineDetails: React.FC<{ msg: Message }> = ({ msg }) => {
 
 export const ChatInterface: React.FC<Props> = ({ 
   messages, expanderModelId, reasonerModelId, onRetry, onClearChat, 
-  inputPosition, inputValue, setInputValue, onSend, isProcessing, availableDocuments 
+  inputPosition, inputValue, setInputValue, onSend, onStop, isProcessing, availableDocuments 
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -332,12 +302,20 @@ export const ChatInterface: React.FC<Props> = ({
         ) : (
           messages.map((msg) => (
             <div key={msg.id} className="max-w-4xl mx-auto w-full fade-in">
-              <div className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} space-y-3`}>
-                <div className={`px-7 py-6 rounded-xl leading-relaxed text-[15px] ${
-                  msg.role === 'user' 
-                    ? 'text-gray-300 max-w-xl' 
-                    : 'bg-brand-darker text-gray-200 w-full border border-brand-border'
-                }`}>
+              <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start gap-4'}`}>
+                
+                {msg.role === 'assistant' && (
+                   <div className="w-8 h-8 rounded-lg bg-white border border-brand-border flex items-center justify-center overflow-hidden p-1.5 shrink-0 mt-1">
+                      {reasonerModel && <img src={reasonerModel.logo} alt="" className="max-w-full max-h-full object-contain" />}
+                   </div>
+                )}
+
+                <div className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} w-full space-y-2`}>
+                  <div className={`px-7 py-3 rounded-xl leading-relaxed text-[15px] ${
+                    msg.role === 'user' 
+                      ? 'bg-brand-darker text-gray-200 text-gray-300 max-w-xl' 
+                      : 'bg-brand-darker text-gray-200 w-full border border-brand-border'
+                  }`}>
                   {msg.status === 'completed' || msg.role === 'user' ? (
                      <div className={`prose dark:prose-invert ${msg.role === 'assistant' ? 'animate-blur-text' : ''}`}>
                         <ReactMarkdown 
@@ -374,6 +352,7 @@ export const ChatInterface: React.FC<Props> = ({
                 <PipelineDetails msg={msg} />
               </div>
             </div>
+          </div>
           ))
         )}
       </div>
@@ -418,18 +397,22 @@ export const ChatInterface: React.FC<Props> = ({
               onKeyUp={(e) => setCursorPosition((e.target as any).selectionStart || 0)}
               onClick={(e) => setCursorPosition((e.target as any).selectionStart || 0)}
               onKeyDown={handleKeyDown}
-              placeholder="Expand context... Deep reason..."
-              className="flex-1 bg-transparent border-none text-[13px] font-medium px-4 py-3 resize-none outline-none text-gray-100 placeholder:text-gray-500 min-h-[48px] overflow-y-auto scrollbar-hide leading-relaxed"
-              style={{ height: '48px' }}
+              placeholder="Expand context... Deep reason... Use @ to focus on specific files"
+              className="flex-1 bg-transparent border-none text-[13px] font-medium px-4 py-3 resize-none outline-none text-gray-100 placeholder:text-gray-500 min-h-[63px] overflow-y-auto scrollbar-hide leading-relaxed"
+              style={{ height: '63px' }}
               rows={1}
             />
             <button
-              onClick={() => onSend()}
-              disabled={isProcessing || !inputValue.trim()}
-              className="shrink-0 h-9 w-16 flex items-center justify-center rounded-full bg-gradient-to-br from-brand-accent to-[#d4480e] hover:brightness-110 disabled:grayscale disabled:opacity-20 transition-all mb-1 mr-1.5"
+              onClick={() => isProcessing ? onStop() : onSend()}
+              disabled={!isProcessing && !inputValue.trim()}
+              className={`shrink-0 h-9 w-16 flex items-center justify-center rounded-full transition-all mb-1 mr-1.5 ${
+                isProcessing 
+                  ? 'bg-red-500 hover:bg-red-600' 
+                  : 'bg-gradient-to-br from-brand-accent to-[#d4480e] hover:brightness-110 disabled:grayscale disabled:opacity-20'
+              }`}
             >
               {isProcessing ? (
-                <Loader2 className="animate-spin text-white" size={16} />
+                <div className="w-3 h-3 bg-white rounded-sm" />
               ) : (
                 <ArrowRight className="text-white" size={16} strokeWidth={2.5} />
               )}

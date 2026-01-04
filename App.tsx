@@ -121,10 +121,12 @@ const App: React.FC = () => {
     return stored ? JSON.parse(stored) : [];
   });
   const [historyIndex, setHistoryIndex] = useState(-1);
-  const [rightWidth, setRightWidth] = useState(320);
+  const [rightWidth, setRightWidth] = useState(450);
   const [leftWidth, setLeftWidth] = useState(288);
   const isResizingRight = useRef(false);
   const isResizingLeft = useRef(false);
+
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.DOCUMENTS, JSON.stringify(state.documents));
@@ -224,6 +226,8 @@ const App: React.FC = () => {
 
   const processQuery = async (query: string, assistantId: string) => {
     setState(prev => ({ ...prev, isProcessing: true }));
+    abortControllerRef.current = new AbortController();
+    
     try {
       // EXTRACT TAGS: Find @FileName mentions in the prompt
       const taggedFileNames = state.documents
@@ -237,6 +241,8 @@ const App: React.FC = () => {
       let reasoningDuration = 0;
       const activeDocs = state.documents.filter(d => d.enabled);
       const hist = state.useContextHistory ? state.contextScript : "";
+
+      if (abortControllerRef.current.signal.aborted) throw new Error("Aborted");
 
       if (state.useVault && activeDocs.length > 0) {
         setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, status: 'expanding' } : m) }));
@@ -253,6 +259,8 @@ const App: React.FC = () => {
         );
         expansionDuration = (performance.now() - t1) / 1000;
         
+        if (abortControllerRef.current.signal.aborted) throw new Error("Aborted");
+
         setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, expandedQuery, expansionDuration, status: 'searching' } : m) }));
         const t2 = performance.now();
         sources = await vectorService.search(expandedQuery, 5, taggedFileNames);
@@ -263,6 +271,8 @@ const App: React.FC = () => {
         setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, status: 'reasoning' } : m) }));
       }
 
+      if (abortControllerRef.current.signal.aborted) throw new Error("Aborted");
+
       const t3 = performance.now();
       const { answer } = await geminiRAG.generateAnswer(
         query, expandedQuery, sources,
@@ -272,6 +282,8 @@ const App: React.FC = () => {
       );
       reasoningDuration = (performance.now() - t3) / 1000;
       
+      if (abortControllerRef.current.signal.aborted) throw new Error("Aborted");
+
       setState(prev => ({ 
         ...prev, 
         messages: prev.messages.map(m => m.id === assistantId ? { 
@@ -296,12 +308,23 @@ const App: React.FC = () => {
         setState(prev => ({ ...prev, contextScript: prev.contextScript ? `${prev.contextScript}\n${scriptLine}` : scriptLine }));
       }
     } catch (err: any) {
-      addToast(err.message || "Pipeline error.");
-      setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, status: 'error' } : m) }));
+      if (err.message === "Aborted") {
+        setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, status: 'error', content: 'Generation stopped by user.' } : m) }));
+      } else {
+        addToast(err.message || "Pipeline error.");
+        setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, status: 'error' } : m) }));
+      }
     } finally {
       setState(prev => ({ ...prev, isProcessing: false }));
+      abortControllerRef.current = null;
     }
   };
+
+  const handleStop = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+  }, []);
 
   const handleSend = useCallback(async (customValue?: string) => {
     const valToUse = customValue ?? inputValue;
@@ -375,6 +398,7 @@ const App: React.FC = () => {
           inputValue={inputValue}
           setInputValue={setInputValue}
           onSend={handleSend}
+          onStop={handleStop}
           isProcessing={state.isProcessing}
           availableDocuments={state.documents.filter(d => d.enabled)}
         />
@@ -388,7 +412,7 @@ const App: React.FC = () => {
 
         <RightSidebar
           inputValue={inputValue} setInputValue={setInputValue}
-          onSend={handleSend} onHistoryNav={(d) => {}}
+          onSend={handleSend} onStop={handleStop} onHistoryNav={(d) => {}}
           isProcessing={state.isProcessing}
           useVault={state.useVault} setUseVault={(v) => setState(prev => ({ ...prev, useVault: v }))}
           useContextHistory={state.useContextHistory} setUseContextHistory={(v) => setState(prev => ({ ...prev, useContextHistory: v }))}
