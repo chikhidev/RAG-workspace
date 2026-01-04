@@ -94,6 +94,20 @@ export const DocumentList: React.FC<Props> = ({ documents, onUpload, onRemove, o
           </div>
         </div>
       )}
+
+      <a 
+        href="https://buymeacoffee.com/chikhidevA" 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="mt-4 flex items-center gap-3 py-3 px-4 hover:bg-white/5 text-gray-300 hover:text-white rounded-xl transition-all group shrink-0 border border-transparent hover:border-white/10"
+      >
+        <img 
+          src="https://play-lh.googleusercontent.com/aMb_Qiolzkq8OxtQZ3Af2j8Zsp-ZZcNetR9O4xSjxH94gMA5c5gpRVbpg-3f_0L7vlo=w240-h480-rw" 
+          alt="Buy Me A Coffee" 
+          className="w-6 h-6 rounded-full group-hover:scale-110 transition-transform"
+        />
+        <span className="text-[12px] font-bold tracking-wide">Buy me a coffee</span>
+      </a>
     </div>
   );
 };

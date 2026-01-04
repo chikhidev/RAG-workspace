@@ -48,6 +48,9 @@ export class GeminiRAGService {
     2. Check the User Query for @mentions.
     3. Generate 5-8 dense, descriptive search keywords optimized for finding relevant segments in the target files.
     
+    UP TO DATE DATA:
+    - now's date is ${new Date().toDateString()}.
+
     OUTPUT:
     Return ONLY a comma-separated list of keywords. No preamble.`;
 
@@ -95,6 +98,9 @@ export class GeminiRAGService {
     2. Cite sources using [Document: Name].
     3. If the user query mentions specific files using @ notation, ensure you verify claims against those documents primarily.
     
+    UP TO DATE DATA:
+    - now's date is ${new Date().toDateString()}.
+
     VAULT DATA:
     ${contextText}`;
 
