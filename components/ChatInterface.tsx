@@ -481,7 +481,6 @@ export const ChatInterface: React.FC<Props> = ({
                     ) : (
                       <div className="flex items-center gap-3 py-2 px-1">
                         <div className="text-[10px] font-mono text-brand-muted tracking-[0.2em] flex items-center gap-2">
-                          Researching
                           <LiveTimer status={msg.status} activeAt="thinking" finalDuration={msg.thinkingDuration} />
                         </div>
                       </div>

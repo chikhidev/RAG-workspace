@@ -9,9 +9,16 @@ YOUR REASONING PROCESS:
 3. Decide the SINGLE NEXT BEST ACTION to take.
 
 ACTION TYPES:
-- **search**: Execute a targeted search in the Knowledge Vault to gather more evidence.
+- **search**: Execute a targeted search in the Knowledge Vault to gather more evidence. If specific files are targeted (e.g. "@file.txt"), treat this as a "read_file" or "cat" command to retrieve that file's full content.
 - **clarify**: If the user's intent is ambiguous OR if you are missing critical context that ONLY the user can provide (e.g., preference between conflicting versions), stop and ask a direct Yes/No or short-answer question.
 - **conclude**: If you have sufficient information to answer definitively, signal that the research phase is complete.
+
+### CRITICAL PROTOCOL: @ MENTIONS (FOCUS MODE)
+If your input contains "DETECTED @ TAGS":
+1. YOU MUST execute a 'search' action targeting these files to retrieve their FULL content.
+2. DO NOT rely on the "FILE PREVIEWS" to answer questions about these files. The preview is truncated and insufficient.
+3. Your understanding must state: "User wants to read @[file], so I must retrieve its full text."
+4. If you have not yet executed a specific search for the tagged file in this session, you CANNOT conclude.
 
 ### CRITICAL PROTOCOL: FUZZY CLARIFICATION (ANTI-TYPO)
 If a user query mentions a term (like "Meren") that appears once or has zero matches:
@@ -241,6 +248,11 @@ export class GeminiRAGService {
     3. If the user query mentions specific files using @ notation, ensure you verify claims against those documents primarily.
     ${thinkerNote}
     
+    FORMATTING RULES (CRITICAL):
+    - Use "Airy Formatting": Insert DOUBLE NEWLINES between every paragraph and list item.
+    - Avoid dense walls of text.
+    - Ensure citations [Document: ...] are clearly separated from the text they support.
+    
     UP TO DATE DATA:
     - now's date is ${new Date().toDateString()}.
 
@@ -332,22 +344,39 @@ Based on what we know so far, decide the SINGLE next action.
 - If we have enough: type="conclude"
 `.trim();
 
-    try {
-      const response = await modelService.run({
-        modelId,
-        systemInstruction,
-        prompt,
-        temperature: 0.2,
-        openRouterKey,
-        googleKey
-      });
+    let currentPrompt = prompt;
+    let lastError: Error | null = null;
+    const MAX_RETRIES = 1;
 
-      const parsed = this.cleanAndParseJSON(response);
-      return parsed;
-    } catch (e) {
-      console.error("Agent decision failed:", e);
-      throw new Error("Agent decision failed. Stopping process.");
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const response = await modelService.run({
+          modelId,
+          systemInstruction,
+          prompt: currentPrompt,
+          temperature: 0.2,
+          openRouterKey,
+          googleKey
+        });
+
+        const parsed = this.cleanAndParseJSON(response);
+        if (!parsed || !parsed.nextAction) {
+          throw new Error("Invalid plan: Missing 'nextAction'.");
+        }
+        return parsed;
+      } catch (e: any) {
+        lastError = e;
+        console.warn(`Agent decision attempt ${attempt + 1} failed:`, e);
+
+        if (attempt < MAX_RETRIES) {
+          // Add error feedback to the prompt for the next attempt
+          currentPrompt += `\n\nSYSTEM ERROR: Your previous response was invalid. Error: "${e.message || e}".\nCORRECTION: You MUST provide a valid JSON object with a 'nextAction' field. Do not include markdown formatting if it caused the error, just raw JSON.`;
+        }
+      }
     }
+
+    console.error("Agent decision failed after retries:", lastError);
+    throw new Error("Agent decision failed after retry. Stopping process.");
   }
 
   /**

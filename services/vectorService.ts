@@ -17,7 +17,7 @@ export class VectorService {
     const OVERLAP = 100;
     const text = doc.content;
     const chunks: Chunk[] = [];
-    
+
     let start = 0;
     while (start < text.length) {
       const end = start + CHUNK_SIZE;
@@ -35,11 +35,11 @@ export class VectorService {
     if (this.chunks.length === 0) return [];
 
     const keywords = expandedQuery.toLowerCase().split(/[\s,.-]+/).filter(k => k.length > 2);
-    
+
     const scored = this.chunks.map(chunk => {
       let score = 0;
       const chunkLower = chunk.text.toLowerCase();
-      
+
       keywords.forEach(word => {
         const regex = new RegExp(`\\b${word}\\b`, 'gi');
         const matches = chunkLower.match(regex);
@@ -48,9 +48,10 @@ export class VectorService {
         }
       });
 
-      // APPLY TAG BOOST: Multiplier for files explicitly mentioned by the user
+      // APPLY TAG BOOST: Additive score for files explicitly mentioned by the user
+      // so they appear even if they have 0 keyword matches.
       if (taggedFileNames.some(tagged => chunk.docName.toLowerCase() === tagged.toLowerCase())) {
-        score *= 5.0; 
+        score += 100.0;
       }
 
       return { chunk, score };
