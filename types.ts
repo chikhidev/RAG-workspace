@@ -13,7 +13,7 @@ export interface Chunk {
   embedding?: number[];
 }
 
-export type PipelineStatus = 'expanding' | 'searching' | 'thinking' | 'reasoning' | 'completed' | 'error';
+export type PipelineStatus = 'planning' | 'expanding' | 'searching' | 'thinking' | 'synthesizing' | 'reasoning' | 'completed' | 'error';
 
 export interface Message {
   id: string;
@@ -23,8 +23,21 @@ export interface Message {
   expandedQuery?: string;
   sources?: Chunk[];
   thoughtProcess?: string; // The "self-discussion"
+  researchStrategy?: string;
+  thoughtLogs?: { timestamp: number; step: string; thought: string; turn?: number }[];
+  activeSubQuery?: string;
+  pendingClarification?: string;
+  clarificationAnswer?: string;
+  agentContext?: {
+    originalQuery: string;
+    knowledgeBuffer: string;
+    iterations: number;
+    sources: Chunk[];
+    turnTitles?: Record<number, string>;
+  };
   subtasks?: { label: string; status: 'pending' | 'loading' | 'completed'; detail?: string }[];
   expansionDuration?: number;
+  planningDuration?: number;
   searchDuration?: number;
   thinkingDuration?: number;
   reasoningDuration?: number;
@@ -76,8 +89,37 @@ export interface AppState {
   isInputModalOpen?: boolean;
   inputModalType?: 'text' | 'url';
   maxTokens: number;
+  maxAgentIterations: number;
   sessionStats: {
     inputTokens: number;
     outputTokens: number;
   };
+  customContext: string;
+}
+
+export interface AgentAction {
+  type: 'search' | 'clarify' | 'conclude';
+  thought: string;
+  searchParams?: SubQuery;
+  clarificationQuestion?: string;
+}
+
+export interface ResearchPlan {
+  turnTitle: string;
+  understanding: string;
+  queryComplexity: 'simple' | 'moderate' | 'complex';
+  targetFiles: string[] | null;
+  searchScope: 'narrow' | 'broad';
+  researchStrategy: string;
+  nextAction: AgentAction;
+  thoughts?: { step: string; thought: string }[];
+}
+
+export interface SubQuery {
+  id: number;
+  query: string;
+  purpose: string;
+  priority: 'high' | 'medium' | 'low';
+  targetFiles: string[] | null;
+  expectedChunks: number;
 }

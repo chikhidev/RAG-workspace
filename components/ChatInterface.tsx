@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Message, PipelineStatus, Document, Chunk } from '../types';
-import { Search, Box, Loader2, CheckCircle2, ChevronDown, ChevronRight, FileText, Sparkles, Copy, Check, Zap, Cpu, RefreshCw, Trash2, Send, AtSign, ArrowRight, X } from 'lucide-react';
+import { Search, Plus, Loader2, CheckCircle2, ChevronDown, ChevronRight, FileText, Sparkles, Copy, Check, Zap, Cpu, RefreshCw, Trash2, Send, ArrowRight, X, Target, Brain, PenTool, Circle, SearchIcon } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -20,6 +20,7 @@ interface Props {
   onSend: (customValue?: string) => void;
   onStop: () => void;
   isProcessing: boolean;
+  onClarifyAnswer: (id: string, answer: string) => void;
   availableDocuments: Document[];
 }
 
@@ -75,7 +76,7 @@ const CodeBlock = ({ children, className, ...props }: any) => {
   return (
     <div className="relative group my-6 rounded-xl overflow-hidden border border-brand-border shadow-sm">
       <div className="flex items-center justify-between px-4 py-2 bg-brand-darker border-b border-brand-border">
-        <span className="text-[10px] font-mono text-brand-muted uppercase tracking-wider">
+        <span className="text-[10px] font-mono text-brand-muted tracking-wider">
           {lang || 'code'}
         </span>
         <button
@@ -126,7 +127,7 @@ const ContextModal: React.FC<{
               {chunks.map((chunk, i) => (
                 <div key={i} className="bg-brand-base border border-brand-border rounded-xl p-4 group relative hover:border-brand-accent/30 transition-colors h-full flex flex-col">
                   <div className="flex-1 overflow-y-auto max-h-[300px] scrollbar-thin scrollbar-thumb-brand-border scrollbar-track-transparent pr-2">
-                    <p className="text-[13px] text-gray-300 leading-relaxed font-mono whitespace-pre-wrap">{chunk.text}</p>
+                    <p className="text-[13px] text-gray-300 leading-relaxed whitespace-pre-wrap">{chunk.text}</p>
                   </div>
                   <button
                     onClick={() => onRemoveChunk(i)}
@@ -168,126 +169,89 @@ const PipelineDetails: React.FC<{
   msg: Message;
   onViewContexts: (fileName: string, sources: Chunk[], messageId: string) => void;
 }> = ({ msg, onViewContexts }) => {
-  const [isExpendedToggled, setIsExpandedToggled] = useState(false);
-
   if (!msg.status || msg.role === 'user') return null;
 
   const usedFiles = msg.sources ? Array.from(new Set(msg.sources.map(s => s.docName))) : [];
 
+  const logs = msg.thoughtLogs || [];
+
   return (
+    <div className="w-full space-y-4 mt-6 mb-4 pl-2">
+      <div className="relative border-l border-white/10 ml-[5px] space-y-6 pb-2">
+        {logs.map((log, i) => {
+          const isSearching = log.step.toLowerCase().includes('searching');
+          const StepIcon = isSearching ? SearchIcon : Circle;
 
-    <>
-      <div className="w-full max-w-2xl space-y-2 mt-2">
-        <div className="transition-all duration-300">
-          <div className="w-full flex items-center justify-between py-2">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setIsExpandedToggled(!isExpendedToggled)}
-                className="flex items-center gap-2 text-[10px] font-serif font-bold text-gray-500 uppercase tracking-[0.15em] hover:text-brand-accent transition-colors"
-              >
-                Thinking
-                {isExpendedToggled ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400" />}
-              </button>
-            </div>
-            <div className="flex items-center gap-3">
-              {/* Status Indicators */}
-
-              {msg.status === 'thinking' && (
-                <div className="flex items-center gap-2 text-brand-accent">
-                  <span className="text-[10px] font-bold uppercase tracking-wider animate-pulse">Thinking</span>
-                  <LiveTimer status={msg.status} activeAt="thinking" finalDuration={msg.thinkingDuration} />
-                </div>
-              )}
-            </div>
-          </div>
-
-          {isExpendedToggled && (
-            <div className="pb-2 space-y-3 animate-[fadeIn_0.2s_ease-out]">
-
-
-              {/* Subtasks Section */}
-              {msg.subtasks && msg.subtasks.length > 0 && (
-                <div className="space-y-2 pb-2">
-                  {msg.subtasks.map((task, i) => (
-                    <div key={i} className="flex items-center justify-between text-[11px] group/task">
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center justify-center w-5 h-5">
-                          {task.status === 'loading' ? (
-                            <Loader2 size={12} className="animate-spin text-brand-accent" />
-                          ) : task.status === 'completed' ? (
-                            <CheckCircle2 size={12} className="text-emerald-500" />
-                          ) : (
-                            <div className="w-1.5 h-1.5 rounded-full bg-gray-600" />
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className={`${task.status === 'completed' ? 'text-gray-300 font-medium' : 'text-gray-500'} transition-colors`}>
-                            {task.label}
-                          </span>
-                          {task.detail && (
-                            <span className="text-[10px] font-mono text-brand-muted opacity-80 group-hover/task:opacity-100 transition-opacity">
-                              {task.detail}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Thoughts Section */}
-              {(msg.thoughtProcess || msg.status === 'thinking') && (
-                <div className={`mt-${msg.subtasks?.length ? '4' : '0'}`}>
-                  {msg.thoughtProcess ? (
-                    <div className="text-[12px] italic text-gray-400 bg-brand-base/50 p-3 border border-brand-border/50 rounded-lg border-l-2 border-l-brand-accent">
-                      "{msg.thoughtProcess}"
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 text-[11px] text-gray-500 italic">
-                      <Loader2 size={12} className="animate-spin" />
-                      Thinking...
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {(msg.status === 'reasoning' || msg.status === 'completed' || usedFiles.length > 0) && (
-          <div className="flex items-center justify-end gap-3 py-1 animate-[fadeIn_0.5s_ease-out] flex-wrap">
-            {usedFiles.length > 0 && (
-              <div className="flex flex-wrap gap-2 mr-auto">
-                {usedFiles.map((name, i) => (
-                  <button
-                    key={i}
-                    onClick={() => msg.sources && onViewContexts(name, msg.sources, msg.id)}
-                    className="flex items-center gap-1.5 px-2 py-1 bg-brand-base rounded border border-brand-border text-[11px] text-gray-400 font-medium hover:border-brand-accent hover:text-brand-accent transition-all"
-                  >
-                    <FileText size={10} className="text-brand-accent" />
-                    {name}
-                  </button>
-                ))}
+          return (
+            <div key={i} className="relative pl-6 group">
+              {/* Timeline Node */}
+              <div className={`absolute -left-[10px] top-1.5 p-0.5 rounded-full bg-brand-base transition-colors`}>
+                <StepIcon size={15} className={isSearching ? 'text-orange-400' : 'text-white'} fill={isSearching ? 'none' : 'currentColor'} />
               </div>
-            )}
 
-            {(msg.status === 'reasoning' || msg.status === 'completed') && (
-              <div className="flex items-center gap-3">
-                <LiveTimer status={msg.status} activeAt="reasoning" finalDuration={msg.reasoningDuration} />
-                {msg.status === 'completed' ? null : <Loader2 size={14} className="animate-spin text-brand-accent" />}
+              {/* Content */}
+              <div className="flex flex-col gap-1">
+                <span className="text-[13px] font-bold text-white tracking-wide leading-none">
+                  {log.step}
+                </span>
+
+                {log.thought && (
+                  <div className="text-[13px] text-gray-400 font-medium leading-relaxed whitespace-pre-wrap">
+                    {log.thought}
+                  </div>
+                )}
               </div>
-            )}
+            </div>
+          );
+        })}
+
+        {/* Active Status Indicator at the bottom of the timeline */}
+        {msg.status !== 'completed' && msg.status !== 'error' && (
+          <div className="relative pl-6 pt-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[13px] font-bold text-brand-accent animate-pulse">
+                {msg.status === 'searching' ? 'Searching...' :
+                  msg.status === 'planning' ? 'Planning...' :
+                    'Thinking...'}
+              </span>
+            </div>
           </div>
         )}
       </div>
-    </>
+
+
+
+      {(msg.status === 'reasoning' || msg.status === 'completed' || usedFiles.length > 0) && (
+        <div className="flex items-center justify-end gap-3 py-1 mt-6 animate-[fadeIn_0.5s_ease-out] flex-wrap">
+          {usedFiles.length > 0 && (
+            <div className="flex flex-wrap gap-2 mr-auto">
+              {usedFiles.map((name, i) => (
+                <button
+                  key={i}
+                  onClick={() => msg.sources && onViewContexts(name, msg.sources, msg.id)}
+                  className="flex items-center gap-1.5 px-2 py-1 bg-brand-base rounded border border-brand-border text-[11px] text-gray-400 font-medium hover:border-brand-accent hover:text-brand-accent transition-all"
+                >
+                  <FileText size={10} className="text-brand-accent" />
+                  {name}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {(msg.status === 'reasoning' || msg.status === 'completed') && (
+            <div className="flex items-center gap-3">
+              <LiveTimer status={msg.status} activeAt="reasoning" finalDuration={msg.reasoningDuration} />
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 };
 
 export const ChatInterface: React.FC<Props> = ({
   messages, expanderModelId, reasonerModelId, onRetry, onRegenerate, onUpdateSources, onClearChat,
-  inputPosition, inputValue, setInputValue, onSend, onStop, isProcessing, availableDocuments
+  inputPosition, inputValue, setInputValue, onSend, onStop, isProcessing, onClarifyAnswer, availableDocuments
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -318,9 +282,9 @@ export const ChatInterface: React.FC<Props> = ({
     } else {
       setViewContextState({ ...viewContextState, sources: newSources });
     }
-  }; <FileText size={16} className="text-brand-accent" />
+  };
 
-  const [suggestionFilter, setSuggestionFilter] = useState(''); <FileText size={16} className="text-brand-accent" />
+  const [suggestionFilter, setSuggestionFilter] = useState('');
 
   const [cursorPosition, setCursorPosition] = useState(0);
 
@@ -397,9 +361,6 @@ export const ChatInterface: React.FC<Props> = ({
 
   return (
     <div className="flex flex-col h-full bg-brand-base flex-1 transition-colors relative">
-      <div className="absolute inset-0 grid-bg pointer-events-none opacity-40"></div>
-
-
 
       <div ref={scrollRef} className={`flex-1 overflow-y-auto px-6 py-12 space-y-20 relative z-10 ${inputPosition === 'floating' ? 'pb-72' : ''}`}>
         {messages.length === 0 ? (
@@ -427,19 +388,84 @@ export const ChatInterface: React.FC<Props> = ({
 
                   <div className={`px-7 py-3 rounded-xl leading-relaxed text-[15px] ${msg.role === 'user'
                     ? 'bg-brand-darker text-gray-200 text-gray-300 max-w-xl'
-                    : 'bg-brand-darker text-gray-200 w-full border border-brand-border'
+                    : (msg.status === 'completed' ? 'bg-brand-darker text-gray-200 w-full border border-brand-border shadow-2xl' : 'w-full')
                     }`}>
-                    {msg.status === 'completed' || msg.role === 'user' ? (
-                      <div className={`prose dark:prose-invert ${msg.role === 'assistant' ? 'animate-blur-text' : ''}`}>
-                        <ReactMarkdown
-                          remarkPlugins={[remarkGfm]}
-                          rehypePlugins={[rehypeRaw]}
-                          components={{
-                            code: CodeBlock
-                          }}
-                        >
-                          {msg.content}
-                        </ReactMarkdown>
+                    {(msg.status === 'completed' || msg.role === 'user') ? (
+                      <div className="space-y-4">
+                        <div className={`prose dark:prose-invert ${msg.role === 'assistant' ? 'animate-blur-text' : ''}`}>
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            rehypePlugins={[rehypeRaw]}
+                            components={{
+                              code: CodeBlock
+                            }}
+                          >
+                            {msg.content}
+                          </ReactMarkdown>
+                        </div>
+
+                        {msg.pendingClarification && (
+                          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+
+                            <div className="">
+                              <div className="flex gap-4 group/item">
+                                <div className="flex items-start gap-2 min-w-[100px] pt-0.5">
+                                  <ChevronRight size={10} className="text-brand-accent mt-1" />
+                                  <span className="text-[10px] text-brand-accent font-bold tracking-tight">Question</span>
+                                </div>
+                                <div className="text-[14px] text-gray-100 font-medium leading-relaxed">
+                                  {msg.pendingClarification}
+                                </div>
+                              </div>
+
+                              <div className="flex gap-4 group/item pt-2">
+                                <div className="flex items-center gap-2 min-w-[100px]">
+                                  <ChevronRight size={10} className="text-gray-500" />
+                                  <span className="text-[10px] text-gray-500 font-bold tracking-tight">Input</span>
+                                </div>
+                                {msg.clarificationAnswer ? (
+                                  <div className="flex items-center gap-2 px-6 py-2 bg-brand-accent/20 text-brand-accent border border-brand-accent/30 rounded-lg text-[12px] font-bold">
+                                    <span>Confirmed: {msg.clarificationAnswer}</span>
+                                    <CheckCircle2 size={14} />
+                                  </div>
+                                ) : (
+                                  <div className="flex-1 space-y-3">
+                                    <div className="flex gap-3">
+                                      <button
+                                        onClick={() => onClarifyAnswer(msg.id, 'yes')}
+                                        className="px-6 py-2 bg-brand-accent/10 hover:bg-brand-accent text-brand-accent hover:text-white border border-brand-accent/20 rounded-lg text-[12px] font-bold transition-all shadow-lg flex items-center gap-2"
+                                      >
+                                        <span>Yes</span>
+                                        <ArrowRight size={14} />
+                                      </button>
+                                      <button
+                                        onClick={() => onClarifyAnswer(msg.id, 'no')}
+                                        className="px-6 py-2 bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 rounded-lg text-[12px] font-bold transition-all"
+                                      >
+                                        No
+                                      </button>
+                                    </div>
+
+                                    <div className="relative mt-2">
+                                      <input
+                                        type="text"
+                                        placeholder="Type a custom response..."
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                                            onClarifyAnswer(msg.id, e.currentTarget.value);
+                                            e.currentTarget.value = '';
+                                          }
+                                        }}
+                                        className="w-full bg-black/20 border border-white/5 rounded-lg px-4 py-2 text-[13px] text-gray-200 outline-none focus:border-brand-accent/50 transition-all placeholder:text-gray-600"
+                                      />
+                                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-gray-600 font-mono">press enter</div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ) : msg.status === 'error' ? (
                       <div className="flex flex-col items-start gap-4">
@@ -453,11 +479,10 @@ export const ChatInterface: React.FC<Props> = ({
                         </button>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-3 py-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-brand-accent animate-pulse"></div>
-                        <div className="text-[11px] font-mono text-brand-muted uppercase tracking-widest flex items-center gap-2">
-                          Synthesizing
-                          <LiveTimer status={msg.status} activeAt="reasoning" finalDuration={msg.reasoningDuration} />
+                      <div className="flex items-center gap-3 py-2 px-1">
+                        <div className="text-[10px] font-mono text-brand-muted tracking-[0.2em] flex items-center gap-2">
+                          Researching
+                          <LiveTimer status={msg.status} activeAt="thinking" finalDuration={msg.thinkingDuration} />
                         </div>
                       </div>
                     )}
@@ -479,8 +504,8 @@ export const ChatInterface: React.FC<Props> = ({
             {showSuggestions && filteredDocs.length > 0 && (
               <div className="absolute bottom-full left-0 mb-4 w-full bg-[#202020]/90 border border-white/10 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] overflow-hidden animate-in slide-in-from-bottom-2 duration-150 backdrop-blur-2xl">
                 <div className="px-5 py-3 border-b border-white/5 flex items-center justify-between bg-white/[0.03]">
-                  <span className="text-[10px] font-mono text-brand-muted uppercase tracking-widest">Vault Suggestions</span>
-                  <span className="text-[9px] px-2 py-1 bg-brand-accent/20 text-brand-accent rounded font-bold uppercase">Priority Link</span>
+                  <span className="text-[10px] font-mono text-brand-muted tracking-widest">Vault Suggestions</span>
+                  <span className="text-[9px] px-2 py-1 bg-brand-accent/20 text-brand-accent rounded font-bold">Priority Link</span>
                 </div>
                 <div className="max-h-52 overflow-y-auto scrollbar-hide">
                   {filteredDocs.map((doc) => (

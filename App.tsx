@@ -15,7 +15,8 @@ const STORAGE_KEYS = {
   PROMPT_HISTORY: 'gemini_rag_history',
   CONTEXT_SCRIPT: 'gemini_rag_context_script',
   OPENROUTER_KEY: 'gemini_rag_openrouter_key',
-  GOOGLE_KEY: 'gemini_rag_google_key'
+  GOOGLE_KEY: 'gemini_rag_google_key',
+  CUSTOM_CONTEXT: 'gemini_rag_custom_context'
 };
 
 const ApiKeyModal: React.FC<{
@@ -139,7 +140,8 @@ const App: React.FC = () => {
       expanderModel: 'cohere/command-r7b-12-2024',
       reasonerModel: 'openai/gpt-oss-safeguard-20b',
       inputPosition: 'floating' as const,
-      maxTokens: 2000
+      maxTokens: 2000,
+      maxAgentIterations: 5
     };
     return stored ? { ...defaults, ...JSON.parse(stored) } : defaults;
   };
@@ -163,7 +165,9 @@ const App: React.FC = () => {
     isApiKeyModalOpen: false,
     isInputModalOpen: false,
     maxTokens: initialSettings.maxTokens,
-    sessionStats: { inputTokens: 0, outputTokens: 0 }
+    maxAgentIterations: initialSettings.maxAgentIterations,
+    sessionStats: { inputTokens: 0, outputTokens: 0 },
+    customContext: localStorage.getItem(STORAGE_KEYS.CUSTOM_CONTEXT) || '',
   });
 
   const [inputValue, setInputValue] = useState('');
@@ -324,6 +328,7 @@ const App: React.FC = () => {
       let expandedQuery = '';
       let sources: Chunk[] = [];
       let expansionDuration = 0;
+      let planningDuration = 0;
       let searchDuration = 0;
       let thinkingDuration = 0;
       let reasoningDuration = 0;
@@ -335,35 +340,180 @@ const App: React.FC = () => {
       if (abortControllerRef.current.signal.aborted) throw new Error("Aborted");
 
       if (state.useVault && activeDocs.length > 0) {
-        // 1. SEARCH
-        const t2 = performance.now();
-        sources = await vectorService.search(query, 5, taggedFileNames);
-        searchDuration = (performance.now() - t2) / 1000;
+        // --- AGENTIC RESEARCH LOOP ---
+        const tResearchStart = performance.now();
+        const currentMsg = state.messages.find(m => m.id === assistantId);
+        let currentKnowledgeBuffer = currentMsg?.agentContext?.knowledgeBuffer || "";
+        let iterations = currentMsg?.agentContext?.iterations || 0;
+        const maxAgentIterations = state.maxAgentIterations;
+        let isResearchFinalized = false;
+        if (currentMsg?.agentContext?.sources) {
+          sources = [...currentMsg.agentContext.sources];
+        }
 
         setState(prev => ({
           ...prev,
           messages: prev.messages.map(m => m.id === assistantId ? {
             ...m,
-            sources,
-            searchDuration,
-            status: 'thinking',
+            status: 'planning',
+            pendingClarification: undefined,
+            agentContext: m.agentContext ? m.agentContext : {
+              originalQuery: query,
+              knowledgeBuffer: '',
+              iterations: 0,
+              sources: [],
+              turnTitles: {}
+            },
+            thoughtLogs: (m.thoughtLogs && m.thoughtLogs.length > 0) ? m.thoughtLogs : [{ timestamp: Date.now(), step: 'Thinking', thought: 'Analyzing goal and drafting research strategy...', turn: 0 }],
+            subtasks: [
+              { label: 'Planning', status: 'loading' },
+              { label: 'Searching', status: 'pending' },
+              { label: 'Drafting', status: 'pending' }
+            ]
+          } : m)
+        }));
+
+        while (iterations < maxAgentIterations && !isResearchFinalized) {
+          iterations++;
+          if (abortControllerRef.current.signal.aborted) throw new Error("Aborted");
+
+          const tIteration = performance.now();
+          const availableFileNames = activeDocs.map(d => d.name);
+          const filePreviews = activeDocs.map(d => `${d.name}: ${d.content.slice(0, 500)}...`);
+
+          const plan = await geminiRAG.decideNextAction(
+            query,
+            availableFileNames,
+            filePreviews,
+            hist,
+            currentKnowledgeBuffer,
+            taggedFileNames,
+            state.expanderModel,
+            state.openRouterKey,
+            state.googleKey,
+            state.customContext
+          );
+
+          const action = plan.nextAction;
+
+          if (action.type === 'search' && action.searchParams) {
+            const sub = action.searchParams;
+            setState(prev => ({
+              ...prev,
+              messages: prev.messages.map(m => m.id === assistantId ? {
+                ...m,
+                status: 'searching',
+                activeSubQuery: sub.query,
+                agentContext: {
+                  ...(m.agentContext || {}),
+                  originalQuery: query,
+                  knowledgeBuffer: currentKnowledgeBuffer,
+                  iterations: iterations,
+                  sources: [...sources],
+                  turnTitles: {
+                    ...(m.agentContext?.turnTitles || {}),
+                    [iterations]: plan.turnTitle
+                  }
+                },
+                thoughtLogs: [
+                  ...(m.thoughtLogs || []),
+                  { timestamp: Date.now(), step: `Searching`, thought: action.thought, turn: iterations }
+                ],
+                subtasks: m.subtasks?.map(s =>
+                  s.label === 'Searching' ? { ...s, status: 'loading', detail: `Searching: ${sub.query}` } :
+                    s.label === 'Planning' ? { ...s, status: 'completed' } : s
+                )
+              } : m)
+            }));
+
+            const subResults = await vectorService.search(
+              sub.query,
+              sub.expectedChunks || 3,
+              sub.targetFiles || plan.targetFiles || taggedFileNames
+            );
+
+            // Accumulate results
+            const resultText = subResults.map(c => `[From ${c.docName}]: ${c.text}`).join('\n');
+            currentKnowledgeBuffer += `\n--- Search Result (Iter ${iterations}) ---\n${resultText}\n`;
+
+            // Deduplicate chunks for sources
+            subResults.forEach(c => {
+              if (!sources.some(s => s.text === c.text)) {
+                sources.push(c);
+              }
+            });
+
+          } else if (action.type === 'clarify' && action.clarificationQuestion) {
+            setState(prev => ({
+              ...prev,
+              messages: prev.messages.map(m => m.id === assistantId ? {
+                ...m,
+                status: 'completed', // Stop the loop and wait
+                pendingClarification: action.clarificationQuestion,
+                agentContext: {
+                  originalQuery: query,
+                  knowledgeBuffer: currentKnowledgeBuffer,
+                  iterations: iterations,
+                  sources: [...sources],
+                  turnTitles: {
+                    ...(m.agentContext?.turnTitles || {}),
+                    [iterations]: plan.turnTitle
+                  }
+                },
+                thoughtLogs: [
+                  ...(m.thoughtLogs || []),
+                  { timestamp: Date.now(), step: 'Clarifying', thought: 'Clarification needed from user to proceed.', turn: iterations }
+                ]
+              } : m)
+            }));
+            return; // EXIT processQuery and wait for user
+
+          } else if (action.type === 'conclude') {
+            isResearchFinalized = true;
+            setState(prev => ({
+              ...prev,
+              messages: prev.messages.map(m => m.id === assistantId ? {
+                ...m,
+                agentContext: m.agentContext ? {
+                  ...m.agentContext,
+                  turnTitles: {
+                    ...(m.agentContext.turnTitles || {}),
+                    [iterations]: plan.turnTitle
+                  }
+                } : undefined,
+                thoughtLogs: [
+                  ...(m.thoughtLogs || []),
+                  { timestamp: Date.now(), step: 'Finalizing', thought: action.thought || 'Research phase concluded. Synthesizing final response.', turn: iterations }
+                ]
+              } : m)
+            }));
+          }
+        }
+
+        searchDuration = (performance.now() - tResearchStart) / 1000;
+        // --- END RESEARCH LOOP ---
+
+        // 3. THINKER STEP (Self-Discussion & Prompt Rewriting)
+        const tThink = performance.now();
+        setState(prev => ({
+          ...prev,
+          messages: prev.messages.map(m => m.id === assistantId ? {
+            ...m,
+            status: 'synthesizing',
             subtasks: m.subtasks?.map(s =>
-              s.label === 'Searched' ? { ...s, status: 'completed', detail: `${sources.length} results` } :
-                s.label === 'Analyzed' ? { ...s, status: 'loading' } : s
+              s.label === 'Drafting' ? { ...s, status: 'loading' } : s
             )
           } : m)
         }));
 
-        // 2. THINKER STEP (Self-Discussion & Prompt Rewriting)
-        setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, sources, searchDuration, status: 'thinking' } : m) }));
-        const tThink = performance.now();
         thinkerResult = await geminiRAG.thinkerStep(
           query,
           sources,
-          state.expanderModel, // Use the smaller/faster model for thinking
+          state.expanderModel,
           activeDocs.map(d => d.name),
           state.openRouterKey,
-          state.googleKey
+          state.googleKey,
+          state.customContext
         );
 
         setState(prev => ({
@@ -371,21 +521,20 @@ const App: React.FC = () => {
           messages: prev.messages.map(m => m.id === assistantId ? {
             ...m,
             subtasks: m.subtasks?.map(s =>
-              s.label === 'Analyzed' ? { ...s, status: 'completed' } :
-                s.label === 'Linked' ? { ...s, status: 'loading' } : s
+              s.label === 'Searching' ? { ...s, status: 'completed' } :
+                s.label === 'Drafting' ? { ...s, status: 'loading' } : s
             )
           } : m)
         }));
 
-        // Artificial delay for "Linking" feel (simulating connecting dots)
-        await new Promise(r => setTimeout(r, 800));
+        await new Promise(r => setTimeout(r, 600));
 
         setState(prev => ({
           ...prev,
           messages: prev.messages.map(m => m.id === assistantId ? {
             ...m,
             subtasks: m.subtasks?.map(s =>
-              s.label === 'Linked' ? { ...s, status: 'completed' } : s
+              s.label === 'Drafting' ? { ...s, status: 'completed' } : s
             )
           } : m)
         }));
@@ -393,13 +542,25 @@ const App: React.FC = () => {
 
         if (abortControllerRef.current.signal.aborted) throw new Error("Aborted");
 
+        const synthesisThoughts = Array.isArray(thinkerResult.thoughts)
+          ? thinkerResult.thoughts.map(t => ({ timestamp: Date.now(), step: t.step, thought: t.thought }))
+          : [{ timestamp: Date.now(), step: 'Synthesis', thought: thinkerResult.thoughts }];
+
         setState(prev => ({
           ...prev,
           messages: prev.messages.map(m => m.id === assistantId ? {
             ...m,
             status: 'reasoning',
-            thoughtProcess: thinkerResult.thoughts,
-            thinkingDuration
+            thoughtProcess: Array.isArray(thinkerResult.thoughts) ? thinkerResult.thoughts.map(t => `[${t.step}] ${t.thought}`).join('\n') : thinkerResult.thoughts,
+            thinkingDuration,
+            thoughtLogs: [
+              ...(m.thoughtLogs || []),
+              ...synthesisThoughts,
+              { timestamp: Date.now(), step: 'Finalizing', thought: 'Final synthesis complete. Generating comprehensive answer...' }
+            ],
+            subtasks: m.subtasks?.map(s =>
+              s.label === 'Drafting' ? { ...s, status: 'completed' } : s
+            )
           } : m)
         }));
 
@@ -456,6 +617,7 @@ const App: React.FC = () => {
           status: 'completed',
           reasoningDuration,
           expansionDuration,
+          planningDuration,
           searchDuration,
           thinkingDuration
         } : m)
@@ -620,6 +782,30 @@ const App: React.FC = () => {
     }
   }, [state.messages, state.isProcessing, state.useVault, state.reasonerModel, state.contextScript, state.useContextHistory, state.openRouterKey, state.documents]);
 
+  const handleClarificationAnswer = useCallback(async (messageId: string, answer: string) => {
+    const msg = state.messages.find(m => m.id === messageId);
+    if (!msg) return;
+
+    setState(prev => ({
+      ...prev,
+      messages: prev.messages.map(m => m.id === messageId ? {
+        ...m,
+        clarificationAnswer: answer,
+        pendingClarification: undefined,
+        thoughtLogs: [
+          ...(m.thoughtLogs || []),
+          { timestamp: Date.now(), step: 'User Input', thought: `Clarified: ${answer}`, turn: m.agentContext?.iterations }
+        ],
+        agentContext: {
+          ...m.agentContext!,
+          knowledgeBuffer: m.agentContext!.knowledgeBuffer + `\n--- User Clarification ---\nQuestion: ${m.pendingClarification}\nAnswer: ${answer}\n`
+        }
+      } : m)
+    }));
+
+    await processQuery(msg.agentContext?.originalQuery || "", messageId);
+  }, [state.messages, processQuery]);
+
   const onClearChat = useCallback(() => {
     setConfirmationState({
       isOpen: true,
@@ -674,6 +860,7 @@ const App: React.FC = () => {
           setInputValue={setInputValue}
           onSend={handleSend}
           onStop={handleStop}
+          onClarifyAnswer={handleClarificationAnswer}
           isProcessing={state.isProcessing}
           availableDocuments={state.documents.filter(d => d.enabled)}
         />
@@ -707,7 +894,11 @@ const App: React.FC = () => {
           onClearChat={onClearChat}
           maxTokens={state.maxTokens}
           setMaxTokens={(n) => setState(prev => ({ ...prev, maxTokens: n }))}
+          maxAgentIterations={state.maxAgentIterations}
+          setMaxAgentIterations={(n) => setState(prev => ({ ...prev, maxAgentIterations: n }))}
           sessionStats={state.sessionStats}
+          customContext={state.customContext}
+          setCustomContext={(v) => setState(prev => ({ ...prev, customContext: v }))}
         />
       </div>
 

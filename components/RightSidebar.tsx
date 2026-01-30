@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, Sun, Moon, Terminal, Cpu, Eraser, Layers, Key, Settings2, Layout, Maximize2, AlertCircle, FileText, Trash2, BarChart2 } from 'lucide-react';
+import { Send, Loader2, Sun, Moon, Terminal, Cpu, Eraser, Layers, Key, Settings2, Layout, Maximize2, AlertCircle, FileText, Trash2, BarChart2, Shield } from 'lucide-react';
 import { SUPPORTED_MODELS } from '../services/modelService';
 
 import { ModelDefinition, Document } from '../types';
@@ -31,7 +31,11 @@ interface Props {
   onClearChat: () => void;
   maxTokens: number;
   setMaxTokens: (n: number) => void;
+  maxAgentIterations: number;
+  setMaxAgentIterations: (n: number) => void;
   sessionStats: { inputTokens: number; outputTokens: number };
+  customContext: string;
+  setCustomContext: (v: string) => void;
 }
 
 const ModelDetails: React.FC<{ model?: ModelDefinition }> = ({ model }) => {
@@ -67,7 +71,8 @@ export const RightSidebar: React.FC<Props> = ({
   useVault, setUseVault, useContextHistory, setUseContextHistory,
   onClearContext, expanderModel, setExpanderModel, reasonerModel, setReasonerModel,
   onOpenApiManagement, inputPosition, setInputPosition, availableDocuments, onClearChat,
-  maxTokens, setMaxTokens, sessionStats
+  maxTokens, setMaxTokens, maxAgentIterations, setMaxAgentIterations, sessionStats,
+  customContext, setCustomContext
 }) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestionFilter, setSuggestionFilter] = useState('');
@@ -257,6 +262,32 @@ export const RightSidebar: React.FC<Props> = ({
             </button>
           </div>
         </div>
+
+        <div className="pt-8 border-t border-brand-border/30">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Shield size={14} className="text-brand-accent" />
+              <h2 className="text-md text-white tracking-tight">Custom Context Vault</h2>
+            </div>
+          </div>
+          <div className="space-y-3">
+            <p className="text-[10px] text-brand-muted leading-relaxed uppercase tracking-wider font-bold">
+              Permanent Directive & Learning Log
+            </p>
+            <textarea
+              value={customContext}
+              onChange={(e) => setCustomContext(e.target.value)}
+              placeholder="Record developer preferences, system rules, or permanent context here..."
+              className="w-full bg-[#1a1a1a] border border-brand-border rounded-xl p-4 focus:border-brand-accent/50 transition-all text-[12px] font-mono h-40 resize-none text-gray-300 outline-none leading-relaxed placeholder:text-gray-600 shadow-inner"
+            />
+            <div className="flex items-start gap-2 px-1">
+              <AlertCircle size={10} className="text-brand-accent mt-0.5 shrink-0" />
+              <p className="text-[9px] text-brand-muted italic leading-relaxed">
+                Content here is ALWAYS analyzed by the agent during planning to prevent recurring reasoning failures.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="mt-4 pt-10 border-t border-brand-border space-y-10">
@@ -347,6 +378,23 @@ export const RightSidebar: React.FC<Props> = ({
                 className="w-full accent-brand-accent bg-brand-border h-1.5 rounded-full appearance-none cursor-pointer hover:bg-brand-border/80 transition-all"
               />
               <p className="text-[10px] text-brand-muted">Limits the length of the AI's response.</p>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[13px] font-bold text-gray-200">Max Research Iterations</span>
+                <span className="text-[10px] font-mono text-brand-accent bg-brand-accent/10 px-1.5 py-0.5 rounded">{maxAgentIterations}</span>
+              </div>
+              <input
+                type="range"
+                min="1"
+                max="20"
+                step="1"
+                value={maxAgentIterations}
+                onChange={(e) => setMaxAgentIterations(parseInt(e.target.value))}
+                className="w-full accent-brand-accent bg-brand-border h-1.5 rounded-full appearance-none cursor-pointer hover:bg-brand-border/80 transition-all"
+              />
+              <p className="text-[10px] text-brand-muted">Limits how many steps the agent can take per session.</p>
             </div>
 
             <div className="p-4 bg-brand-base border border-brand-border rounded-xl space-y-3">
