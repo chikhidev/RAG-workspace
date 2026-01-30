@@ -8,9 +8,11 @@ interface Props {
   onRemove: (id: string) => void;
   onToggle: (id: string) => void;
   isIndexing: boolean;
+  onAddText: () => void;
+  onAddLink: () => void;
 }
 
-export const DocumentList: React.FC<Props> = ({ documents, onUpload, onRemove, onToggle, isIndexing }) => {
+export const DocumentList: React.FC<Props> = ({ documents, onUpload, onRemove, onToggle, isIndexing, onAddText, onAddLink }) => {
   const isAtLimit = documents.length >= 10;
 
   return (
@@ -22,16 +24,32 @@ export const DocumentList: React.FC<Props> = ({ documents, onUpload, onRemove, o
             Knowledge Vault
           </h2>
         </div>
-        <label className={`p-1.5 rounded-lg transition-colors shrink-0 ${
-          isAtLimit 
-            ? 'text-brand-muted cursor-not-allowed' 
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onAddText}
+            className="p-1.5 rounded-lg text-gray-400 hover:text-brand-accent hover:bg-brand-border transition-colors group"
+            title="Paste Text"
+          >
+            <FileText size={16} />
+          </button>
+          <button
+            onClick={onAddLink}
+            className="p-1.5 rounded-lg text-gray-400 hover:text-brand-accent hover:bg-brand-border transition-colors group"
+            title="Add from URL"
+          >
+            <Box size={16} className="hidden" /> {/* Placeholder import if needed */}
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-link"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
+          </button>
+          <label className={`p-1.5 rounded-lg transition-colors shrink-0 ${isAtLimit
+            ? 'text-brand-muted cursor-not-allowed'
             : 'cursor-pointer text-gray-400 hover:text-brand-accent hover:bg-brand-border'
-        }`}>
-          <Upload size={16} />
-          {!isAtLimit && <input type="file" multiple accept=".txt" onChange={onUpload} className="hidden" />}
-        </label>
+            }`} title="Upload PDF/DOCX/TXT">
+            <Upload size={16} />
+            {!isAtLimit && <input type="file" multiple accept=".txt,.md,.pdf,.docx" onChange={onUpload} className="hidden" />}
+          </label>
+        </div>
       </div>
-      
+
       <div className="mb-8 flex justify-between items-center shrink-0">
         <span className={`text-[9px] font-mono uppercase tracking-widest ${isAtLimit ? 'text-brand-accent font-bold' : 'text-brand-muted'}`}>
           {documents.length} / 10 Files
@@ -45,26 +63,23 @@ export const DocumentList: React.FC<Props> = ({ documents, onUpload, onRemove, o
           </div>
         ) : (
           documents.map((doc) => (
-            <div 
-              key={doc.id} 
-              className={`group flex items-center justify-between p-3 rounded-lg border transition-all ${
-                doc.enabled 
-                  ? 'bg-brand-base border-brand-border/50' 
-                  : 'bg-transparent border-transparent opacity-60'
-              }`}
+            <div
+              key={doc.id}
+              className={`group flex items-center justify-between p-3 rounded-lg border transition-all ${doc.enabled
+                ? 'bg-brand-base border-brand-border/50'
+                : 'bg-transparent border-transparent opacity-60'
+                }`}
             >
               <div className="flex items-center gap-3 overflow-hidden flex-1">
-                <button 
+                <button
                   onClick={() => onToggle(doc.id)}
-                  className={`shrink-0 w-7 h-4 rounded-full relative transition-colors ${
-                    doc.enabled ? 'bg-brand-accent' : 'bg-brand-border'
-                  }`}
+                  className={`shrink-0 w-7 h-4 rounded-full relative transition-colors ${doc.enabled ? 'bg-brand-accent' : 'bg-brand-border'
+                    }`}
                 >
-                  <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${
-                    doc.enabled ? 'left-3.5' : 'left-0.5'
-                  }`} />
+                  <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${doc.enabled ? 'left-3.5' : 'left-0.5'
+                    }`} />
                 </button>
-                
+
                 <div className="flex items-center gap-2 overflow-hidden">
                   <FileText size={14} className="text-gray-500 shrink-0" />
                   <span className="text-[12px] font-medium truncate text-gray-300">
@@ -72,7 +87,7 @@ export const DocumentList: React.FC<Props> = ({ documents, onUpload, onRemove, o
                   </span>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => onRemove(doc.id)}
                 className="text-gray-600 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2 shrink-0"
               >

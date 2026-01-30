@@ -5,6 +5,8 @@ import { RightSidebar } from './components/RightSidebar';
 import { AppState, Message, Document, Chunk, Toast } from './types';
 import { vectorService } from './services/vectorService';
 import { geminiRAG } from './services/geminiService';
+import { fileService } from './services/fileService';
+import { InputModal } from './components/InputModal';
 import { X, Key, Shield, ExternalLink } from 'lucide-react';
 
 const STORAGE_KEYS = {
@@ -40,19 +42,19 @@ const ApiKeyModal: React.FC<{
               <label className="flex items-center gap-2 text-[10px] font-mono text-brand-muted uppercase tracking-widest">
                 OpenRouter Key
               </label>
-              <input 
-                type="password" 
-                value={openRouterKey} 
-                onChange={(e) => setOpenRouterKey(e.target.value)} 
+              <input
+                type="password"
+                value={openRouterKey}
+                onChange={(e) => setOpenRouterKey(e.target.value)}
                 placeholder="sk-or-v1-..."
                 className="w-full bg-[#252525] border border-brand-border rounded-xl p-4 text-[13px] font-mono text-gray-200 outline-none focus:border-brand-accent/50 transition-all"
               />
             </div>
-            
-           
+
+
           </div>
 
-          <button 
+          <button
             onClick={onClose}
             className="w-full py-3.5 bg-brand-accent hover:bg-brand-accent/90 text-white rounded-xl text-[13px] font-bold tracking-wider transition-all"
           >
@@ -87,13 +89,13 @@ const ConfirmationModal: React.FC<{
             {message}
           </p>
           <div className="flex gap-3 pt-2">
-            <button 
+            <button
               onClick={onClose}
               className="flex-1 py-2.5 bg-brand-base hover:bg-brand-border text-gray-300 rounded-xl text-[12px] font-bold transition-all border border-brand-border"
             >
               Cancel
             </button>
-            <button 
+            <button
               onClick={() => {
                 onConfirm();
                 onClose();
@@ -142,7 +144,8 @@ const App: React.FC = () => {
     reasonerModel: initialSettings.reasonerModel,
     openRouterKey: localStorage.getItem(STORAGE_KEYS.OPENROUTER_KEY) || "",
     inputPosition: initialSettings.inputPosition,
-    isApiKeyModalOpen: false
+    isApiKeyModalOpen: false,
+    isInputModalOpen: false
   });
 
   const [inputValue, setInputValue] = useState('');
@@ -240,13 +243,37 @@ const App: React.FC = () => {
     }
     const newDocs: Document[] = [];
     const fileArray = Array.from(files) as File[];
+
+    // Process sequentially to handle parsing
     for (const file of fileArray) {
       try {
-        const text = await file.text();
-        newDocs.push({ id: Math.random().toString(36).substring(2, 11), name: file.name, content: text, enabled: true });
-      } catch (err) { addToast(`Failed to read ${file.name}`); }
+        // Use fileService to parse PDF/DOCX/Text
+        const text = await fileService.parseFile(file);
+        newDocs.push({
+          id: Math.random().toString(36).substring(2, 11),
+          name: file.name,
+          content: text,
+          enabled: true
+        });
+      } catch (err: any) {
+        addToast(`Failed to parse ${file.name}: ${err.message}`);
+      }
     }
     setState(prev => ({ ...prev, documents: [...prev.documents, ...newDocs] }));
+  }, [state.documents]);
+
+  const handleManualDocAdd = useCallback((name: string, content: string) => {
+    if (state.documents.length >= 10) {
+      addToast("File limit reached (10 max).");
+      return;
+    }
+    const newDoc: Document = {
+      id: Math.random().toString(36).substring(2, 11),
+      name,
+      content,
+      enabled: true
+    };
+    setState(prev => ({ ...prev, documents: [...prev.documents, newDoc] }));
   }, [state.documents]);
 
   useEffect(() => {
@@ -263,7 +290,7 @@ const App: React.FC = () => {
   const processQuery = async (query: string, assistantId: string) => {
     setState(prev => ({ ...prev, isProcessing: true }));
     abortControllerRef.current = new AbortController();
-    
+
     try {
       // EXTRACT TAGS: Find @FileName mentions in the prompt
       const taggedFileNames = state.documents
@@ -274,78 +301,108 @@ const App: React.FC = () => {
       let sources: Chunk[] = [];
       let expansionDuration = 0;
       let searchDuration = 0;
+      let thinkingDuration = 0;
       let reasoningDuration = 0;
+      let thinkerResult = undefined;
+
       const activeDocs = state.documents.filter(d => d.enabled);
       const hist = state.useContextHistory ? state.contextScript : "";
 
       if (abortControllerRef.current.signal.aborted) throw new Error("Aborted");
 
       if (state.useVault && activeDocs.length > 0) {
-        setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, status: 'expanding' } : m) }));
-        const t1 = performance.now();
-        expandedQuery = await geminiRAG.expandQuery(
-          query, 
-          activeDocs.map(d => d.name), 
-          activeDocs.map(d => d.content.substring(0, 300)), 
-          0.1, 
-          hist, 
-          state.expanderModel,
-          state.openRouterKey,
-          taggedFileNames
+        // 1. SEARCH directly (Query Expansion removed)
+        setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, status: 'searching' } : m) }));
+        const t2 = performance.now();
+        // Use raw query for search
+        sources = await vectorService.search(query, 5, taggedFileNames);
+        searchDuration = (performance.now() - t2) / 1000;
+
+        // 2. THINKER STEP (Self-Discussion & Prompt Rewriting)
+        setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, sources, searchDuration, status: 'thinking' } : m) }));
+        const tThink = performance.now();
+        thinkerResult = await geminiRAG.thinkerStep(
+          query,
+          sources,
+          state.expanderModel, // Use the smaller/faster model for thinking
+          activeDocs.map(d => d.name),
+          state.openRouterKey
         );
-        expansionDuration = (performance.now() - t1) / 1000;
-        
+        thinkingDuration = (performance.now() - tThink) / 1000;
+
         if (abortControllerRef.current.signal.aborted) throw new Error("Aborted");
 
-        setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, expandedQuery, expansionDuration, status: 'searching' } : m) }));
-        const t2 = performance.now();
-        sources = await vectorService.search(expandedQuery, 5, taggedFileNames);
-        searchDuration = (performance.now() - t2) / 1000;
-        
-        setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, sources, searchDuration, status: 'reasoning' } : m) }));
+        setState(prev => ({
+          ...prev,
+          messages: prev.messages.map(m => m.id === assistantId ? {
+            ...m,
+            status: 'reasoning',
+            thoughtProcess: thinkerResult.thoughts,
+            thinkingDuration
+          } : m)
+        }));
+
       } else {
         setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, status: 'reasoning' } : m) }));
       }
 
-      if (abortControllerRef.current.signal.aborted) throw new Error("Aborted");
-
       const t3 = performance.now();
-      const { answer } = await geminiRAG.generateAnswer(
+
+      // 4. GENERATION (STREAMING)
+      let fullAnswer = "";
+      const stream = geminiRAG.generateAnswerStream(
         query, expandedQuery, sources,
-        0.7, 
+        0.7,
         state.useVault, state.reasonerModel, hist, state.openRouterKey,
-        taggedFileNames
+        taggedFileNames,
+        thinkerResult
       );
+
+      for await (const chunk of stream) {
+        if (abortControllerRef.current.signal.aborted) break;
+        fullAnswer += chunk;
+
+        // Update UI with partial answer
+        setState(prev => ({
+          ...prev,
+          messages: prev.messages.map(m => m.id === assistantId ? {
+            ...m,
+            content: fullAnswer,
+            // Keep status as reasoning while streaming
+          } : m)
+        }));
+      }
+
       reasoningDuration = (performance.now() - t3) / 1000;
-      
+
       if (abortControllerRef.current.signal.aborted) throw new Error("Aborted");
 
-      setState(prev => ({ 
-        ...prev, 
-        messages: prev.messages.map(m => m.id === assistantId ? { 
-          ...m, 
-          content: answer, 
-          status: 'completed', 
+      setState(prev => ({
+        ...prev,
+        messages: prev.messages.map(m => m.id === assistantId ? {
+          ...m,
+          status: 'completed',
           reasoningDuration,
           expansionDuration,
-          searchDuration 
-        } : m) 
+          searchDuration,
+          thinkingDuration
+        } : m)
       }));
 
       if (state.useContextHistory) {
         // Now the expander brain handles the summarization
         const scriptLine = await geminiRAG.generateSummary(
-          query, 
-          answer, 
-          Array.from(new Set(sources.map(s => s.docName))), 
-          state.expanderModel, 
+          query,
+          fullAnswer,
+          Array.from(new Set(sources.map(s => s.docName))),
+          state.expanderModel,
           state.openRouterKey
         );
         setState(prev => ({ ...prev, contextScript: prev.contextScript ? `${prev.contextScript}\n${scriptLine}` : scriptLine }));
       }
     } catch (err: any) {
       if (err.message === "Aborted") {
-        setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, status: 'error', content: 'Generation stopped by user.' } : m) }));
+        setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, status: 'error', content: prev.messages.find(msg => msg.id === assistantId)?.content || 'Generation stopped by user.' } : m) }));
       } else {
         addToast(err.message || "Pipeline error.");
         setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, status: 'error' } : m) }));
@@ -374,7 +431,7 @@ const App: React.FC = () => {
     const currentQuery = valToUse.trim();
     setPromptHistory(prev => [currentQuery, ...prev.filter(p => p !== currentQuery)].slice(0, 50));
     setHistoryIndex(-1);
-    
+
     const assistantId = Date.now().toString() + '-ai';
     const userMsg: Message = { id: Date.now().toString(), role: 'user', content: currentQuery, timestamp: new Date() };
     const placeholder: Message = { id: assistantId, role: 'assistant', content: '', status: state.useVault ? 'expanding' : 'reasoning', timestamp: new Date() };
@@ -387,10 +444,10 @@ const App: React.FC = () => {
 
   const handleRetry = useCallback(async (failedMessageId: string) => {
     if (state.isProcessing) return;
-    
+
     const msgIndex = state.messages.findIndex(m => m.id === failedMessageId);
     if (msgIndex <= 0) return;
-    
+
     const userMsg = state.messages[msgIndex - 1];
     if (userMsg.role !== 'user') return;
 
@@ -411,10 +468,10 @@ const App: React.FC = () => {
 
   const handleRegenerate = useCallback(async (messageId: string) => {
     if (state.isProcessing) return;
-    
+
     const msgIndex = state.messages.findIndex(m => m.id === messageId);
     if (msgIndex <= 0) return;
-    
+
     const userMsg = state.messages[msgIndex - 1];
     const targetMsg = state.messages[msgIndex];
     if (userMsg.role !== 'user' || targetMsg.role !== 'assistant') return;
@@ -423,46 +480,46 @@ const App: React.FC = () => {
     abortControllerRef.current = new AbortController();
 
     try {
-        setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === messageId ? { ...m, status: 'reasoning', content: '' } : m) }));
-        
-        const hist = state.useContextHistory ? state.contextScript : "";
-        const expandedQuery = targetMsg.expandedQuery || userMsg.content;
-        const sources = targetMsg.sources || [];
-        const taggedFileNames = state.documents
-            .filter(d => userMsg.content.includes(`@${d.name}`))
-            .map(d => d.name);
+      setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === messageId ? { ...m, status: 'reasoning', content: '' } : m) }));
 
-        const t3 = performance.now();
-        const { answer } = await geminiRAG.generateAnswer(
-            userMsg.content, expandedQuery, sources,
-            0.7, 
-            state.useVault, state.reasonerModel, hist, state.openRouterKey,
-            taggedFileNames
-        );
-        const reasoningDuration = (performance.now() - t3) / 1000;
+      const hist = state.useContextHistory ? state.contextScript : "";
+      const expandedQuery = targetMsg.expandedQuery || userMsg.content;
+      const sources = targetMsg.sources || [];
+      const taggedFileNames = state.documents
+        .filter(d => userMsg.content.includes(`@${d.name}`))
+        .map(d => d.name);
 
-        if (abortControllerRef.current.signal.aborted) throw new Error("Aborted");
+      const t3 = performance.now();
+      const { answer } = await geminiRAG.generateAnswer(
+        userMsg.content, expandedQuery, sources,
+        0.7,
+        state.useVault, state.reasonerModel, hist, state.openRouterKey,
+        taggedFileNames
+      );
+      const reasoningDuration = (performance.now() - t3) / 1000;
 
-        setState(prev => ({ 
-            ...prev, 
-            messages: prev.messages.map(m => m.id === messageId ? { 
-            ...m, 
-            content: answer, 
-            status: 'completed', 
-            reasoningDuration
-            } : m) 
-        }));
+      if (abortControllerRef.current.signal.aborted) throw new Error("Aborted");
+
+      setState(prev => ({
+        ...prev,
+        messages: prev.messages.map(m => m.id === messageId ? {
+          ...m,
+          content: answer,
+          status: 'completed',
+          reasoningDuration
+        } : m)
+      }));
 
     } catch (err: any) {
-         if (err.message === "Aborted") {
-            setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === messageId ? { ...m, status: 'error', content: 'Generation stopped by user.' } : m) }));
-        } else {
-            addToast(err.message || "Regeneration error.");
-            setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === messageId ? { ...m, status: 'error' } : m) }));
-        }
+      if (err.message === "Aborted") {
+        setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === messageId ? { ...m, status: 'error', content: 'Generation stopped by user.' } : m) }));
+      } else {
+        addToast(err.message || "Regeneration error.");
+        setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === messageId ? { ...m, status: 'error' } : m) }));
+      }
     } finally {
-        setState(prev => ({ ...prev, isProcessing: false }));
-        abortControllerRef.current = null;
+      setState(prev => ({ ...prev, isProcessing: false }));
+      abortControllerRef.current = null;
     }
   }, [state.messages, state.isProcessing, state.useVault, state.reasonerModel, state.contextScript, state.useContextHistory, state.openRouterKey, state.documents]);
 
@@ -479,11 +536,13 @@ const App: React.FC = () => {
     <div className="flex h-screen bg-brand-base text-gray-100 transition-colors overflow-hidden dark">
       <div className="shrink-0 flex" style={{ width: `${leftWidth}px` }}>
         <div className="flex-1 min-w-0 h-full overflow-hidden">
-          <DocumentList 
-            documents={state.documents} onUpload={handleFileUpload} 
-            onRemove={(id) => setState(prev => ({ ...prev, documents: prev.documents.filter(d => d.id !== id) }))} 
+          <DocumentList
+            documents={state.documents} onUpload={handleFileUpload}
+            onRemove={(id) => setState(prev => ({ ...prev, documents: prev.documents.filter(d => d.id !== id) }))}
             onToggle={(id) => setState(prev => ({ ...prev, documents: prev.documents.map(d => d.id === id ? { ...d, enabled: !d.enabled } : d) }))}
             isIndexing={state.isIndexing}
+            onAddText={() => setState(prev => ({ ...prev, isInputModalOpen: true, inputModalType: 'text' }))}
+            onAddLink={() => setState(prev => ({ ...prev, isInputModalOpen: true, inputModalType: 'url' }))}
           />
         </div>
         <div onMouseDown={startResizingLeft} className="w-1.5 cursor-col-resize bg-brand-border hover:bg-brand-accent transition-all flex flex-col items-center justify-center gap-1 group shrink-0">
@@ -491,10 +550,10 @@ const App: React.FC = () => {
           <div className="w-[1px] h-8 bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
         </div>
       </div>
-      
+
       <main className="flex-1 flex flex-col min-w-0 bg-brand-base relative">
-        <ChatInterface 
-          messages={state.messages} 
+        <ChatInterface
+          messages={state.messages}
           expanderModelId={state.expanderModel}
           reasonerModelId={state.reasonerModel}
           onRetry={handleRetry}
@@ -519,7 +578,7 @@ const App: React.FC = () => {
 
         <RightSidebar
           inputValue={inputValue} setInputValue={setInputValue}
-          onSend={handleSend} onStop={handleStop} onHistoryNav={(d) => {}}
+          onSend={handleSend} onStop={handleStop} onHistoryNav={(d) => { }}
           isProcessing={state.isProcessing}
           useVault={state.useVault} setUseVault={(v) => setState(prev => ({ ...prev, useVault: v }))}
           useContextHistory={state.useContextHistory} setUseContextHistory={(v) => setState(prev => ({ ...prev, useContextHistory: v }))}
@@ -536,11 +595,12 @@ const App: React.FC = () => {
           inputPosition={state.inputPosition}
           setInputPosition={(pos) => setState(prev => ({ ...prev, inputPosition: pos }))}
           availableDocuments={state.documents.filter(d => d.enabled)}
+          onClearChat={onClearChat}
         />
       </div>
 
-      <ApiKeyModal 
-        isOpen={state.isApiKeyModalOpen} 
+      <ApiKeyModal
+        isOpen={state.isApiKeyModalOpen}
         onClose={() => setState(prev => ({ ...prev, isApiKeyModalOpen: false }))}
         openRouterKey={state.openRouterKey}
         setOpenRouterKey={(k) => setState(prev => ({ ...prev, openRouterKey: k }))}
@@ -555,6 +615,13 @@ const App: React.FC = () => {
           message={confirmationState.message}
         />
       )}
+
+      <InputModal
+        isOpen={state.isInputModalOpen}
+        onClose={() => setState(prev => ({ ...prev, isInputModalOpen: false }))}
+        onConfirm={handleManualDocAdd}
+        type={state.inputModalType || 'text'} // Pass the type to the modal
+      />
 
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex flex-col gap-3 z-50 pointer-events-none w-full max-sm px-4">
         {state.toasts.map(toast => (

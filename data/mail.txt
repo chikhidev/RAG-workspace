@@ -1,0 +1,34 @@
+Oracle R&D Morocco - Technical Assessment - PFE 2026:
+
+MADC Internship Program Generic
+Powered by HackerRank
+Thank you for your interest in our PFE 2026 internship program starting in January 2026.
+
+
+Kindly complete the assessment, MADC Internship Program Generic, within the next 7 days.
+
+ 
+
+Please ignore this invitation if you have already completed the test as part for PFE 2026.
+
+
+Before starting, make sure to carefully review the instructions and FAQs.
+
+ 
+
+The assessment consists of six sections:
+
+Problem Solving 1 – Mandatory
+Aptitude – Mandatory
+Data Structures – Mandatory
+Algorithms – Mandatory
+DevOps – Optional
+Machine Learning – Complete this in addition to sections 1, 2, 3, and 4 if interested in ML
+
+Please note: We strongly discourage any form of cheating or plagiarism. Any attempt at such practices may lead to disqualification from the program.
+
+For more on plagiarism detection, visit: Plagiarism Detection in Your Submitted Code
+
+We wish you all the best!
+
+Oracle Talent Acquisition Team

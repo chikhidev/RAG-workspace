@@ -13,7 +13,7 @@ export interface Chunk {
   embedding?: number[];
 }
 
-export type PipelineStatus = 'expanding' | 'searching' | 'reasoning' | 'completed' | 'error';
+export type PipelineStatus = 'expanding' | 'searching' | 'thinking' | 'reasoning' | 'completed' | 'error';
 
 export interface Message {
   id: string;
@@ -22,8 +22,10 @@ export interface Message {
   status?: PipelineStatus;
   expandedQuery?: string;
   sources?: Chunk[];
+  thoughtProcess?: string; // The "self-discussion"
   expansionDuration?: number;
   searchDuration?: number;
+  thinkingDuration?: number;
   reasoningDuration?: number;
   timestamp: Date;
 }
@@ -69,4 +71,6 @@ export interface AppState {
   reasonerModel: string;
   openRouterKey: string;
   inputPosition: 'floating' | 'sidebar';
+  isInputModalOpen?: boolean;
+  inputModalType?: 'text' | 'url';
 }

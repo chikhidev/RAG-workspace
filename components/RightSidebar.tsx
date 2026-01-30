@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, Sun, Moon, Terminal, Cpu, Eraser, Layers, Key, Settings2, Layout, Maximize2, AlertCircle, FileText } from 'lucide-react';
+import { Send, Loader2, Sun, Moon, Terminal, Cpu, Eraser, Layers, Key, Settings2, Layout, Maximize2, AlertCircle, FileText, Trash2 } from 'lucide-react';
 import { SUPPORTED_MODELS } from '../services/modelService';
 import { ModelDefinition, Document } from '../types';
 
@@ -26,12 +26,13 @@ interface Props {
   inputPosition: 'floating' | 'sidebar';
   setInputPosition: (pos: 'floating' | 'sidebar') => void;
   availableDocuments: Document[];
+  onClearChat: () => void;
 }
 
 const ModelDetails: React.FC<{ model?: ModelDefinition }> = ({ model }) => {
   if (!model) return null;
   const { metadata } = model;
-  
+
   return (
     <div className="mt-3 p-3 bg-brand-base/40 border border-brand-border/50 rounded-xl space-y-2.5 animate-[fadeIn_0.3s_ease-out]">
       <div className="flex flex-col gap-0.5">
@@ -60,7 +61,7 @@ export const RightSidebar: React.FC<Props> = ({
   inputValue, setInputValue, onSend, onStop, onHistoryNav, isProcessing,
   useVault, setUseVault, useContextHistory, setUseContextHistory,
   onClearContext, expanderModel, setExpanderModel, reasonerModel, setReasonerModel,
-  onOpenApiManagement, inputPosition, setInputPosition, availableDocuments
+  onOpenApiManagement, inputPosition, setInputPosition, availableDocuments, onClearChat
 }) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestionFilter, setSuggestionFilter] = useState('');
@@ -86,7 +87,7 @@ export const RightSidebar: React.FC<Props> = ({
     const newValue = `${beforeAt}@${fileName} ${afterAt}`;
     setInputValue(newValue);
     setShowSuggestions(false);
-    
+
     setTimeout(() => {
       if (sidebarTextareaRef.current) {
         sidebarTextareaRef.current.focus();
@@ -96,7 +97,7 @@ export const RightSidebar: React.FC<Props> = ({
     }, 0);
   };
 
-  const filteredDocs = availableDocuments.filter(doc => 
+  const filteredDocs = availableDocuments.filter(doc =>
     doc.name.toLowerCase().includes(suggestionFilter.toLowerCase())
   );
 
@@ -112,7 +113,7 @@ export const RightSidebar: React.FC<Props> = ({
         return;
       }
     }
-    
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       onSend();
@@ -134,18 +135,25 @@ export const RightSidebar: React.FC<Props> = ({
         <div className="flex items-center gap-2">
           <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-brand-muted">Studio Controller</span>
         </div>
+        <button
+          onClick={onClearChat}
+          title="Clear Chat"
+          className="p-1.5 hover:bg-red-500/10 rounded transition-all text-gray-500 hover:text-red-500 flex items-center gap-1.5 group"
+        >
+          <div className="text-[9px] font-bold uppercase tracking-wider hidden sm:inline opacity-0 group-hover:opacity-100 transition-opacity">Clear</div>
+          <Trash2 size={14} />
+        </button>
       </div>
 
       <div className="mb-10">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg text-white tracking-tight">Synthesis Query</h2>
-          <button 
+          <button
             onClick={() => setInputPosition(inputPosition === 'floating' ? 'sidebar' : 'floating')}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
-              inputPosition === 'floating' 
-                ? 'bg-brand-accent/10 text-brand-accent border border-brand-accent/20' 
-                : 'bg-brand-border text-gray-500'
-            }`}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${inputPosition === 'floating'
+              ? 'bg-brand-accent/10 text-brand-accent border border-brand-accent/20'
+              : 'bg-brand-border text-gray-500'
+              }`}
             title="Toggle Floating Input"
           >
             {inputPosition === 'floating' ? <Maximize2 size={12} /> : <Layout size={12} />}
@@ -157,7 +165,7 @@ export const RightSidebar: React.FC<Props> = ({
           <div className="relative group">
             <textarea
               ref={sidebarTextareaRef}
-              value={inputValue} 
+              value={inputValue}
               onChange={(e) => {
                 setInputValue(e.target.value);
                 setCursorPosition(e.target.selectionStart || 0);
@@ -168,7 +176,7 @@ export const RightSidebar: React.FC<Props> = ({
               placeholder="Describe task... Use @ for files"
               className="w-full bg-brand-base border border-brand-border rounded-xl p-5 focus:border-brand-accent transition-all text-[14px] font-medium h-48 resize-none text-gray-200 outline-none leading-relaxed placeholder:text-brand-muted/50 shadow-inner"
             />
-            
+
             {/* Sidebar Suggestions Portal (Now listing downwards) */}
             {showSuggestions && filteredDocs.length > 0 && (
               <div className="absolute top-full left-0 mt-2 w-full bg-brand-base border border-brand-border rounded-xl shadow-2xl overflow-hidden z-[60] backdrop-blur-md">
@@ -193,13 +201,12 @@ export const RightSidebar: React.FC<Props> = ({
             )}
 
             <button
-              onClick={() => isProcessing ? onStop() : onSend()} 
+              onClick={() => isProcessing ? onStop() : onSend()}
               disabled={!isProcessing && !inputValue.trim()}
-              className={`absolute bottom-4 right-4 h-10 w-10 flex items-center justify-center rounded-lg transition-all shadow-xl ${
-                isProcessing 
-                  ? 'bg-red-500 hover:bg-red-600' 
-                  : 'bg-brand-accent hover:bg-brand-accent/90 disabled:bg-brand-border disabled:text-brand-muted'
-              }`}
+              className={`absolute bottom-4 right-4 h-10 w-10 flex items-center justify-center rounded-lg transition-all shadow-xl ${isProcessing
+                ? 'bg-red-500 hover:bg-red-600'
+                : 'bg-brand-accent hover:bg-brand-accent/90 disabled:bg-brand-border disabled:text-brand-muted'
+                }`}
             >
               {isProcessing ? <div className="w-3 h-3 bg-white rounded-sm" /> : <Send className="text-white" size={16} />}
             </button>
@@ -236,7 +243,7 @@ export const RightSidebar: React.FC<Props> = ({
                 </div>
               )}
             </div>
-            
+
             <button onClick={() => setUseVault(!useVault)} className={toggleBtnClass}>
               <div className="flex flex-col items-start">
                 <span className="text-[13px] font-bold text-gray-200">Knowledge Vault</span>
@@ -276,7 +283,7 @@ export const RightSidebar: React.FC<Props> = ({
               </div>
               <ModelDetails model={selectedExpander} />
             </div>
-            
+
             <div className="space-y-2">
               <label className="flex items-center gap-2 text-[10px] font-mono text-brand-muted uppercase tracking-widest">
                 Synthesizer (Reasoner)
@@ -307,7 +314,7 @@ export const RightSidebar: React.FC<Props> = ({
         <div>
           <h2 className="text-md text-white mb-6 tracking-tight">API Management</h2>
           <div className="space-y-3">
-             <button 
+            <button
               onClick={onOpenApiManagement}
               className="w-full flex items-center justify-between p-4 bg-brand-base border border-brand-border hover:border-brand-accent/50 rounded-xl transition-all group"
             >
