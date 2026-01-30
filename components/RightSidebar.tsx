@@ -130,9 +130,6 @@ export const RightSidebar: React.FC<Props> = ({
   const toggleBtnClass = "w-full flex items-center justify-between p-4 rounded-xl border border-brand-border bg-[#252525] transition-all hover:bg-brand-border/50";
   const selectClass = "w-full bg-[#252525] border border-brand-border rounded-xl p-3 text-[13px] font-bold text-gray-200 outline-none focus:border-brand-accent/50 appearance-none cursor-pointer hover:border-brand-accent/30 transition-all pl-10";
 
-  const smallModels = SUPPORTED_MODELS.filter(m => m.size === 'small');
-  const largeModels = SUPPORTED_MODELS.filter(m => m.size === 'large');
-
   const selectedExpander = SUPPORTED_MODELS.find(m => m.id === expanderModel);
   const selectedReasoner = SUPPORTED_MODELS.find(m => m.id === reasonerModel);
 

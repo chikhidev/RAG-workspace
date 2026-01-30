@@ -747,8 +747,8 @@ class ModelService {
       // Normalize model ID: remove 'google/' and strip ':free'
       const modelId = params.modelId.replace('google/', '').split(':')[0];
 
-      // Determine API version: v1beta for experimental/thinking/preview, v1 for stable
-      const isBeta = modelId.includes('exp') || modelId.includes('thinking') || modelId.includes('preview');
+      // Determine API version: v1beta for experimental/thinking/preview/2.5/3, v1 for stable
+      const isBeta = modelId.includes('exp') || modelId.includes('thinking') || modelId.includes('preview') || modelId.includes('2.5') || modelId.includes('gemini-3');
       const apiVersion = isBeta ? 'v1beta' : 'v1';
 
       const ai = new GoogleGenAI({ apiKey: params.googleKey, apiVersion });
@@ -796,7 +796,7 @@ class ModelService {
 
     try {
       const modelId = params.modelId.replace('google/', '').split(':')[0];
-      const isBeta = modelId.includes('exp') || modelId.includes('thinking') || modelId.includes('preview');
+      const isBeta = modelId.includes('exp') || modelId.includes('thinking') || modelId.includes('preview') || modelId.includes('2.5') || modelId.includes('gemini-3');
       const apiVersion = isBeta ? 'v1beta' : 'v1';
 
       const ai = new GoogleGenAI({ apiKey: params.googleKey, apiVersion });

@@ -17,18 +17,27 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
     isOpen, onClose, currentModelId, onSelect, category, title
 }) => {
     const [search, setSearch] = useState('');
+    const [providerFilter, setProviderFilter] = useState<'all' | string>('all');
 
     if (!isOpen) return null;
 
     // Filter models based on category and search term
     const models = SUPPORTED_MODELS.filter(m => {
-        const matchesCategory = m.size === category;
+        // Models >= Gemini 2 from Google are allowed in both small/large categories
+        const isGeminiUpgrade = m.provider === 'google' && (m.id.includes('gemini-2') || m.id.includes('gemini-3'));
+
+        const matchesCategory = isGeminiUpgrade || m.size === category;
+        const matchesProvider = providerFilter === 'all' || m.provider.toLowerCase() === providerFilter.toLowerCase();
+
         const matchesSearch =
             m.name.toLowerCase().includes(search.toLowerCase()) ||
             m.provider.toLowerCase().includes(search.toLowerCase()) ||
             m.description.toLowerCase().includes(search.toLowerCase());
-        return matchesCategory && matchesSearch;
+
+        return matchesCategory && matchesProvider && matchesSearch;
     });
+
+    const providers = ['all', ...new Set(SUPPORTED_MODELS.map(m => m.provider))];
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
@@ -47,8 +56,8 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                     </button>
                 </div>
 
-                {/* Search Bar */}
-                <div className="px-6 py-4 border-b border-brand-border/50 bg-[#1e1e1e]">
+                {/* Search & Filters */}
+                <div className="px-6 py-4 border-b border-brand-border/50 bg-[#1e1e1e] space-y-4">
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
                         <input
@@ -58,6 +67,22 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                             onChange={(e) => setSearch(e.target.value)}
                             className="w-full bg-[#252525] border border-brand-border rounded-xl pl-10 pr-4 py-2.5 text-sm text-gray-200 placeholder:text-gray-600 focus:border-brand-accent outline-none transition-colors"
                         />
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                        {providers.map(p => (
+                            <button
+                                key={p}
+                                onClick={() => setProviderFilter(p)}
+                                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border flex items-center gap-2 ${providerFilter === p
+                                        ? 'bg-brand-accent/20 border-brand-accent text-brand-accent'
+                                        : 'bg-white/5 border-transparent text-gray-500 hover:bg-white/10 hover:text-gray-300'
+                                    }`}
+                            >
+                                <img src={`/logos/${p}.png`} alt={p} className='w-4 h-4' />
+                                {p}
+                            </button>
+                        ))}
                     </div>
                 </div>
 
@@ -69,8 +94,8 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                                 key={model.id}
                                 onClick={() => { onSelect(model.id); onClose(); }}
                                 className={`flex flex-col text-left p-4 rounded-xl border transition-all hover:-translate-y-0.5 group relative ${currentModelId === model.id
-                                        ? 'bg-brand-accent/10 border-brand-accent ring-1 ring-brand-accent'
-                                        : 'bg-[#252525] border-brand-border hover:border-brand-accent/50 hover:shadow-lg'
+                                    ? 'bg-brand-accent/10 border-brand-accent ring-1 ring-brand-accent'
+                                    : 'bg-[#252525] border-brand-border hover:border-brand-accent/50 hover:shadow-lg'
                                     }`}
                             >
 
