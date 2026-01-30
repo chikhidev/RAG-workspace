@@ -23,6 +23,7 @@ export interface Message {
   expandedQuery?: string;
   sources?: Chunk[];
   thoughtProcess?: string; // The "self-discussion"
+  subtasks?: { label: string; status: 'pending' | 'loading' | 'completed'; detail?: string }[];
   expansionDuration?: number;
   searchDuration?: number;
   thinkingDuration?: number;
@@ -70,7 +71,13 @@ export interface AppState {
   expanderModel: string;
   reasonerModel: string;
   openRouterKey: string;
+  googleKey: string;
   inputPosition: 'floating' | 'sidebar';
   isInputModalOpen?: boolean;
   inputModalType?: 'text' | 'url';
+  maxTokens: number;
+  sessionStats: {
+    inputTokens: number;
+    outputTokens: number;
+  };
 }

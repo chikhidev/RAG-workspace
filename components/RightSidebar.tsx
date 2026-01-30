@@ -1,8 +1,10 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, Sun, Moon, Terminal, Cpu, Eraser, Layers, Key, Settings2, Layout, Maximize2, AlertCircle, FileText, Trash2 } from 'lucide-react';
+import { Send, Loader2, Sun, Moon, Terminal, Cpu, Eraser, Layers, Key, Settings2, Layout, Maximize2, AlertCircle, FileText, Trash2, BarChart2 } from 'lucide-react';
 import { SUPPORTED_MODELS } from '../services/modelService';
+
 import { ModelDefinition, Document } from '../types';
+import { ModelSelectorModal } from './ModelSelectorModal';
 
 interface Props {
   inputValue: string;
@@ -27,6 +29,9 @@ interface Props {
   setInputPosition: (pos: 'floating' | 'sidebar') => void;
   availableDocuments: Document[];
   onClearChat: () => void;
+  maxTokens: number;
+  setMaxTokens: (n: number) => void;
+  sessionStats: { inputTokens: number; outputTokens: number };
 }
 
 const ModelDetails: React.FC<{ model?: ModelDefinition }> = ({ model }) => {
@@ -61,11 +66,13 @@ export const RightSidebar: React.FC<Props> = ({
   inputValue, setInputValue, onSend, onStop, onHistoryNav, isProcessing,
   useVault, setUseVault, useContextHistory, setUseContextHistory,
   onClearContext, expanderModel, setExpanderModel, reasonerModel, setReasonerModel,
-  onOpenApiManagement, inputPosition, setInputPosition, availableDocuments, onClearChat
+  onOpenApiManagement, inputPosition, setInputPosition, availableDocuments, onClearChat,
+  maxTokens, setMaxTokens, sessionStats
 }) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestionFilter, setSuggestionFilter] = useState('');
   const [cursorPosition, setCursorPosition] = useState(0);
+  const [activeModal, setActiveModal] = useState<'expander' | 'reasoner' | null>(null);
   const sidebarTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Handle Tagging in Sidebar
@@ -266,20 +273,27 @@ export const RightSidebar: React.FC<Props> = ({
                   <span className="ml-1 px-1 py-0.5 bg-emerald-500/10 text-emerald-500 rounded text-[8px] font-bold">FREE</span>
                 )}
               </label>
-              <div className="relative group/select">
-                {selectedExpander && (
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center z-10 pointer-events-none bg-white rounded p-0.5">
-                    <img src={selectedExpander.logo} alt="" className="max-w-full max-h-full object-contain" />
+
+              <div
+                onClick={() => setActiveModal('expander')}
+                className="w-full bg-[#252525] border border-brand-border rounded-xl p-3 flex items-center justify-between cursor-pointer hover:border-brand-accent/50 group transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  {selectedExpander && (
+                    <div className="w-8 h-8 bg-white rounded p-1 flex items-center justify-center">
+                      <img src={selectedExpander.logo} alt="" className="w-full h-full object-contain" />
+                    </div>
+                  )}
+                  <div className="text-left">
+                    <div className="text-[13px] font-bold text-gray-200 group-hover:text-white transition-colors line-clamp-1">
+                      {selectedExpander?.name || 'Select Model'}
+                    </div>
+                    <div className="text-[10px] text-brand-muted uppercase tracking-wider">
+                      {selectedExpander?.provider} • {selectedExpander?.size}
+                    </div>
                   </div>
-                )}
-                <select value={expanderModel} onChange={(e) => setExpanderModel(e.target.value)} className={selectClass}>
-                  {smallModels.map(m => (
-                    <option key={m.id} value={m.id} title={m.description}>
-                      {m.name} {m.isFree ? '(FREE)' : ''}
-                    </option>
-                  ))}
-                </select>
-                <Settings2 size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover/select:text-brand-accent transition-colors" />
+                </div>
+                <Settings2 size={14} className="text-gray-500 group-hover:text-brand-accent transition-colors" />
               </div>
               <ModelDetails model={selectedExpander} />
             </div>
@@ -291,22 +305,68 @@ export const RightSidebar: React.FC<Props> = ({
                   <span className="ml-1 px-1 py-0.5 bg-emerald-500/10 text-emerald-500 rounded text-[8px] font-bold">FREE</span>
                 )}
               </label>
-              <div className="relative group/select">
-                {selectedReasoner && (
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center z-10 pointer-events-none bg-white rounded p-0.5">
-                    <img src={selectedReasoner.logo} alt="" className="max-w-full max-h-full object-contain" />
+
+              <div
+                onClick={() => setActiveModal('reasoner')}
+                className="w-full bg-[#252525] border border-brand-border rounded-xl p-3 flex items-center justify-between cursor-pointer hover:border-brand-accent/50 group transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  {selectedReasoner && (
+                    <div className="w-8 h-8 bg-white rounded p-1 flex items-center justify-center">
+                      <img src={selectedReasoner.logo} alt="" className="w-full h-full object-contain" />
+                    </div>
+                  )}
+                  <div className="text-left">
+                    <div className="text-[13px] font-bold text-gray-200 group-hover:text-white transition-colors line-clamp-1">
+                      {selectedReasoner?.name || 'Select Model'}
+                    </div>
+                    <div className="text-[10px] text-brand-muted uppercase tracking-wider">
+                      {selectedReasoner?.provider} • {selectedReasoner?.size}
+                    </div>
                   </div>
-                )}
-                <select value={reasonerModel} onChange={(e) => setReasonerModel(e.target.value)} className={selectClass}>
-                  {largeModels.map(m => (
-                    <option key={m.id} value={m.id} title={m.description}>
-                      {m.name} {m.isFree ? '(FREE)' : ''}
-                    </option>
-                  ))}
-                </select>
-                <Settings2 size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover/select:text-brand-accent transition-colors" />
+                </div>
+                <Settings2 size={14} className="text-gray-500 group-hover:text-brand-accent transition-colors" />
               </div>
               <ModelDetails model={selectedReasoner} />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-md text-white mb-6 tracking-tight">Generation Controls</h2>
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[13px] font-bold text-gray-200">Max Output Tokens</span>
+                <span className="text-[10px] font-mono text-brand-accent bg-brand-accent/10 px-1.5 py-0.5 rounded">{maxTokens}</span>
+              </div>
+              <input
+                type="range"
+                min="100"
+                max="8000"
+                step="100"
+                value={maxTokens}
+                onChange={(e) => setMaxTokens(parseInt(e.target.value))}
+                className="w-full accent-brand-accent bg-brand-border h-1.5 rounded-full appearance-none cursor-pointer hover:bg-brand-border/80 transition-all"
+              />
+              <p className="text-[10px] text-brand-muted">Limits the length of the AI's response.</p>
+            </div>
+
+            <div className="p-4 bg-brand-base border border-brand-border rounded-xl space-y-3">
+              <div className="flex items-center gap-2 mb-2">
+                <BarChart2 size={14} className="text-brand-accent" />
+                <span className="text-[11px] font-bold uppercase tracking-widest text-gray-300">Session Usage</span>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="text-[10px] text-brand-muted uppercase tracking-wider mb-0.5">Input</div>
+                  <div className="text-[16px] font-mono text-white font-bold">{sessionStats.inputTokens.toLocaleString()}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] text-brand-muted uppercase tracking-wider mb-0.5">Output</div>
+                  <div className="text-[16px] font-mono text-white font-bold">{sessionStats.outputTokens.toLocaleString()}</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -327,6 +387,24 @@ export const RightSidebar: React.FC<Props> = ({
           </div>
         </div>
       </div>
+
+      <ModelSelectorModal
+        isOpen={activeModal === 'expander'}
+        onClose={() => setActiveModal(null)}
+        currentModelId={expanderModel}
+        onSelect={setExpanderModel}
+        category="small"
+        title="Select Expansion Model"
+      />
+
+      <ModelSelectorModal
+        isOpen={activeModal === 'reasoner'}
+        onClose={() => setActiveModal(null)}
+        currentModelId={reasonerModel}
+        onSelect={setReasonerModel}
+        category="large"
+        title="Select Reasoning Model"
+      />
 
     </div>
   );

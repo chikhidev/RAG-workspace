@@ -205,9 +205,40 @@ const PipelineDetails: React.FC<{
             <div className="pb-2 space-y-3 animate-[fadeIn_0.2s_ease-out]">
 
 
+              {/* Subtasks Section */}
+              {msg.subtasks && msg.subtasks.length > 0 && (
+                <div className="space-y-2 pb-2">
+                  {msg.subtasks.map((task, i) => (
+                    <div key={i} className="flex items-center justify-between text-[11px] group/task">
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center justify-center w-5 h-5">
+                          {task.status === 'loading' ? (
+                            <Loader2 size={12} className="animate-spin text-brand-accent" />
+                          ) : task.status === 'completed' ? (
+                            <CheckCircle2 size={12} className="text-emerald-500" />
+                          ) : (
+                            <div className="w-1.5 h-1.5 rounded-full bg-gray-600" />
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`${task.status === 'completed' ? 'text-gray-300 font-medium' : 'text-gray-500'} transition-colors`}>
+                            {task.label}
+                          </span>
+                          {task.detail && (
+                            <span className="text-[10px] font-mono text-brand-muted opacity-80 group-hover/task:opacity-100 transition-opacity">
+                              {task.detail}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* Thoughts Section */}
               {(msg.thoughtProcess || msg.status === 'thinking') && (
-                <div>
+                <div className={`mt-${msg.subtasks?.length ? '4' : '0'}`}>
                   {msg.thoughtProcess ? (
                     <div className="text-[12px] italic text-gray-400 bg-brand-base/50 p-3 border border-brand-border/50 rounded-lg border-l-2 border-l-brand-accent">
                       "{msg.thoughtProcess}"

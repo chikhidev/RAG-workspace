@@ -7,14 +7,15 @@ import { vectorService } from './services/vectorService';
 import { geminiRAG } from './services/geminiService';
 import { fileService } from './services/fileService';
 import { InputModal } from './components/InputModal';
-import { X, Key, Shield, ExternalLink } from 'lucide-react';
+import { X, Key, Shield, ExternalLink, PanelLeft, PanelLeftClose } from 'lucide-react';
 
 const STORAGE_KEYS = {
   DOCUMENTS: 'gemini_rag_docs',
   SETTINGS: 'gemini_rag_settings',
   PROMPT_HISTORY: 'gemini_rag_history',
   CONTEXT_SCRIPT: 'gemini_rag_context_script',
-  OPENROUTER_KEY: 'gemini_rag_openrouter_key'
+  OPENROUTER_KEY: 'gemini_rag_openrouter_key',
+  GOOGLE_KEY: 'gemini_rag_google_key'
 };
 
 const ApiKeyModal: React.FC<{
@@ -22,7 +23,9 @@ const ApiKeyModal: React.FC<{
   onClose: () => void;
   openRouterKey: string;
   setOpenRouterKey: (k: string) => void;
-}> = ({ isOpen, onClose, openRouterKey, setOpenRouterKey }) => {
+  googleKey: string;
+  setGoogleKey: (k: string) => void;
+}> = ({ isOpen, onClose, openRouterKey, setOpenRouterKey, googleKey, setGoogleKey }) => {
   if (!isOpen) return null;
 
   return (
@@ -51,7 +54,18 @@ const ApiKeyModal: React.FC<{
               />
             </div>
 
-
+            <div className="space-y-3">
+              <label className="flex items-center gap-2 text-[10px] font-mono text-brand-muted uppercase tracking-widest">
+                Google AI (Gemini) Key
+              </label>
+              <input
+                type="password"
+                value={googleKey}
+                onChange={(e) => setGoogleKey(e.target.value)}
+                placeholder="AIzaSy..."
+                className="w-full bg-[#252525] border border-brand-border rounded-xl p-4 text-[13px] font-mono text-gray-200 outline-none focus:border-brand-accent/50 transition-all"
+              />
+            </div>
           </div>
 
           <button
@@ -124,7 +138,8 @@ const App: React.FC = () => {
       useContextHistory: false,
       expanderModel: 'cohere/command-r7b-12-2024',
       reasonerModel: 'openai/gpt-oss-safeguard-20b',
-      inputPosition: 'floating' as const
+      inputPosition: 'floating' as const,
+      maxTokens: 2000
     };
     return stored ? { ...defaults, ...JSON.parse(stored) } : defaults;
   };
@@ -143,12 +158,16 @@ const App: React.FC = () => {
     expanderModel: initialSettings.expanderModel,
     reasonerModel: initialSettings.reasonerModel,
     openRouterKey: localStorage.getItem(STORAGE_KEYS.OPENROUTER_KEY) || "",
+    googleKey: localStorage.getItem(STORAGE_KEYS.GOOGLE_KEY) || "",
     inputPosition: initialSettings.inputPosition,
     isApiKeyModalOpen: false,
-    isInputModalOpen: false
+    isInputModalOpen: false,
+    maxTokens: initialSettings.maxTokens,
+    sessionStats: { inputTokens: 0, outputTokens: 0 }
   });
 
   const [inputValue, setInputValue] = useState('');
+  const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(true);
   const [confirmationState, setConfirmationState] = useState<{
     isOpen: boolean;
     title: string;
@@ -177,13 +196,18 @@ const App: React.FC = () => {
       useContextHistory: state.useContextHistory,
       expanderModel: state.expanderModel,
       reasonerModel: state.reasonerModel,
-      inputPosition: state.inputPosition
+      inputPosition: state.inputPosition,
+      maxTokens: state.maxTokens
     }));
-  }, [state.useVault, state.useContextHistory, state.expanderModel, state.reasonerModel, state.inputPosition]);
+  }, [state.useVault, state.useContextHistory, state.expanderModel, state.reasonerModel, state.inputPosition, state.maxTokens]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.OPENROUTER_KEY, state.openRouterKey);
   }, [state.openRouterKey]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.GOOGLE_KEY, state.googleKey);
+  }, [state.googleKey]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.CONTEXT_SCRIPT, state.contextScript);
@@ -311,12 +335,24 @@ const App: React.FC = () => {
       if (abortControllerRef.current.signal.aborted) throw new Error("Aborted");
 
       if (state.useVault && activeDocs.length > 0) {
-        // 1. SEARCH directly (Query Expansion removed)
-        setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, status: 'searching' } : m) }));
+        // 1. SEARCH
         const t2 = performance.now();
-        // Use raw query for search
         sources = await vectorService.search(query, 5, taggedFileNames);
         searchDuration = (performance.now() - t2) / 1000;
+
+        setState(prev => ({
+          ...prev,
+          messages: prev.messages.map(m => m.id === assistantId ? {
+            ...m,
+            sources,
+            searchDuration,
+            status: 'thinking',
+            subtasks: m.subtasks?.map(s =>
+              s.label === 'Searched' ? { ...s, status: 'completed', detail: `${sources.length} results` } :
+                s.label === 'Analyzed' ? { ...s, status: 'loading' } : s
+            )
+          } : m)
+        }));
 
         // 2. THINKER STEP (Self-Discussion & Prompt Rewriting)
         setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, sources, searchDuration, status: 'thinking' } : m) }));
@@ -326,8 +362,33 @@ const App: React.FC = () => {
           sources,
           state.expanderModel, // Use the smaller/faster model for thinking
           activeDocs.map(d => d.name),
-          state.openRouterKey
+          state.openRouterKey,
+          state.googleKey
         );
+
+        setState(prev => ({
+          ...prev,
+          messages: prev.messages.map(m => m.id === assistantId ? {
+            ...m,
+            subtasks: m.subtasks?.map(s =>
+              s.label === 'Analyzed' ? { ...s, status: 'completed' } :
+                s.label === 'Linked' ? { ...s, status: 'loading' } : s
+            )
+          } : m)
+        }));
+
+        // Artificial delay for "Linking" feel (simulating connecting dots)
+        await new Promise(r => setTimeout(r, 800));
+
+        setState(prev => ({
+          ...prev,
+          messages: prev.messages.map(m => m.id === assistantId ? {
+            ...m,
+            subtasks: m.subtasks?.map(s =>
+              s.label === 'Linked' ? { ...s, status: 'completed' } : s
+            )
+          } : m)
+        }));
         thinkingDuration = (performance.now() - tThink) / 1000;
 
         if (abortControllerRef.current.signal.aborted) throw new Error("Aborted");
@@ -354,8 +415,19 @@ const App: React.FC = () => {
         query, expandedQuery, sources,
         0.7,
         state.useVault, state.reasonerModel, hist, state.openRouterKey,
+        state.googleKey,
         taggedFileNames,
-        thinkerResult
+        thinkerResult,
+        state.maxTokens,
+        (usage) => {
+          setState(prev => ({
+            ...prev,
+            sessionStats: {
+              inputTokens: prev.sessionStats.inputTokens + (usage.prompt_tokens || 0),
+              outputTokens: prev.sessionStats.outputTokens + (usage.completion_tokens || 0)
+            }
+          }));
+        }
       );
 
       for await (const chunk of stream) {
@@ -396,7 +468,8 @@ const App: React.FC = () => {
           fullAnswer,
           Array.from(new Set(sources.map(s => s.docName))),
           state.expanderModel,
-          state.openRouterKey
+          state.openRouterKey,
+          state.googleKey
         );
         setState(prev => ({ ...prev, contextScript: prev.contextScript ? `${prev.contextScript}\n${scriptLine}` : scriptLine }));
       }
@@ -434,7 +507,18 @@ const App: React.FC = () => {
 
     const assistantId = Date.now().toString() + '-ai';
     const userMsg: Message = { id: Date.now().toString(), role: 'user', content: currentQuery, timestamp: new Date() };
-    const placeholder: Message = { id: assistantId, role: 'assistant', content: '', status: state.useVault ? 'expanding' : 'reasoning', timestamp: new Date() };
+    const placeholder: Message = {
+      id: assistantId,
+      role: 'assistant',
+      content: '',
+      status: state.useVault ? 'searching' : 'reasoning',
+      timestamp: new Date(),
+      subtasks: state.useVault ? [
+        { label: 'Searched', status: 'loading' },
+        { label: 'Analyzed', status: 'pending' },
+        { label: 'Linked', status: 'pending' }
+      ] : []
+    };
 
     setState(prev => ({ ...prev, messages: [...prev.messages, userMsg, placeholder] }));
     setInputValue('');
@@ -480,7 +564,19 @@ const App: React.FC = () => {
     abortControllerRef.current = new AbortController();
 
     try {
-      setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === messageId ? { ...m, status: 'reasoning', content: '' } : m) }));
+      setState(prev => ({
+        ...prev,
+        messages: prev.messages.map(m => m.id === messageId ? {
+          ...m,
+          status: 'reasoning',
+          content: '',
+          subtasks: [
+            { label: 'Searched', status: 'completed', detail: `${m.sources?.length || 0} results` },
+            { label: 'Analyzed', status: 'completed' },
+            { label: 'Linked', status: 'completed' }
+          ]
+        } : m)
+      }));
 
       const hist = state.useContextHistory ? state.contextScript : "";
       const expandedQuery = targetMsg.expandedQuery || userMsg.content;
@@ -494,6 +590,7 @@ const App: React.FC = () => {
         userMsg.content, expandedQuery, sources,
         0.7,
         state.useVault, state.reasonerModel, hist, state.openRouterKey,
+        state.googleKey,
         taggedFileNames
       );
       const reasoningDuration = (performance.now() - t3) / 1000;
@@ -534,8 +631,11 @@ const App: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-brand-base text-gray-100 transition-colors overflow-hidden dark">
-      <div className="shrink-0 flex" style={{ width: `${leftWidth}px` }}>
-        <div className="flex-1 min-w-0 h-full overflow-hidden">
+      <div
+        className={`shrink-0 flex transition-all duration-300 ease-in-out ${isLeftSidebarOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 absolute z-0'}`}
+        style={{ width: isLeftSidebarOpen ? `${leftWidth}px` : '0px' }}
+      >
+        <div className="flex-1 min-w-0 h-full overflow-hidden border-r border-brand-border/50">
           <DocumentList
             documents={state.documents} onUpload={handleFileUpload}
             onRemove={(id) => setState(prev => ({ ...prev, documents: prev.documents.filter(d => d.id !== id) }))}
@@ -545,13 +645,22 @@ const App: React.FC = () => {
             onAddLink={() => setState(prev => ({ ...prev, isInputModalOpen: true, inputModalType: 'url' }))}
           />
         </div>
-        <div onMouseDown={startResizingLeft} className="w-1.5 cursor-col-resize bg-brand-border hover:bg-brand-accent transition-all flex flex-col items-center justify-center gap-1 group shrink-0">
+        <div onMouseDown={startResizingLeft} className="w-1.5 cursor-col-resize bg-brand-border hover:bg-brand-accent transition-all flex flex-col items-center justify-center gap-1 group shrink-0 z-10">
           <div className="w-[1px] h-8 bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
           <div className="w-[1px] h-8 bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
         </div>
       </div>
 
-      <main className="flex-1 flex flex-col min-w-0 bg-brand-base relative">
+      <main className="flex-1 flex flex-col min-w-0 bg-brand-base relative transition-all">
+        {/* Sidebar Toggle Button */}
+        <button
+          onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}
+          className={`absolute top-4 left-4 z-40 p-2 rounded-lg bg-brand-darker border border-brand-border text-gray-400 hover:text-white hover:border-brand-accent transition-all shadow-lg ${!isLeftSidebarOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 pointer-events-none'}`}
+          title={isLeftSidebarOpen ? "Close Sidebar" : "Open Sidebar"}
+          style={{ pointerEvents: 'auto' }}
+        >
+          {isLeftSidebarOpen ? <PanelLeftClose size={18} /> : <PanelLeft size={18} />}
+        </button>
         <ChatInterface
           messages={state.messages}
           expanderModelId={state.expanderModel}
@@ -596,6 +705,9 @@ const App: React.FC = () => {
           setInputPosition={(pos) => setState(prev => ({ ...prev, inputPosition: pos }))}
           availableDocuments={state.documents.filter(d => d.enabled)}
           onClearChat={onClearChat}
+          maxTokens={state.maxTokens}
+          setMaxTokens={(n) => setState(prev => ({ ...prev, maxTokens: n }))}
+          sessionStats={state.sessionStats}
         />
       </div>
 
@@ -604,6 +716,8 @@ const App: React.FC = () => {
         onClose={() => setState(prev => ({ ...prev, isApiKeyModalOpen: false }))}
         openRouterKey={state.openRouterKey}
         setOpenRouterKey={(k) => setState(prev => ({ ...prev, openRouterKey: k }))}
+        googleKey={state.googleKey}
+        setGoogleKey={(k) => setState(prev => ({ ...prev, googleKey: k }))}
       />
 
       {confirmationState && (
@@ -629,7 +743,19 @@ const App: React.FC = () => {
             <span className={`text-[11px] font-bold uppercase tracking-widest ${toast.type === 'error' ? 'text-red-500' : 'text-emerald-500'}`}>
               {toast.type}
             </span>
-            <p className="flex-1 text-[13px] text-gray-300 font-medium">{toast.message}</p>
+            <div className="flex-1 flex flex-col">
+              <p className="text-[13px] text-gray-300 font-medium leading-normal">{toast.message}</p>
+              {toast.message.includes("OpenRouter Privacy Settings") && (
+                <a
+                  href="https://openrouter.ai/settings/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-flex items-center text-[11px] font-bold text-brand-accent hover:text-white transition-colors uppercase tracking-wide gap-1 self-start border-b border-brand-accent/30 hover:border-brand-accent pb-0.5"
+                >
+                  Configure Settings &rarr;
+                </a>
+              )}
+            </div>
             <button onClick={() => removeToast(toast.id)} className="text-gray-400 hover:text-white transition-colors">
               <X size={14} />
             </button>

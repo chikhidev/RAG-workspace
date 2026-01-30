@@ -10,6 +10,7 @@ export class GeminiRAGService {
     contextScript: string = "",
     modelId: string = 'cohere/command-r7b-12-2024',
     openRouterKey?: string,
+    googleKey?: string,
     taggedFileNames: string[] = []
   ): Promise<string> {
     const vaultContext = filePreviews.length > 0
@@ -60,7 +61,8 @@ export class GeminiRAGService {
       systemInstruction,
       prompt,
       temperature,
-      openRouterKey
+      openRouterKey,
+      googleKey
     });
   }
 
@@ -70,7 +72,8 @@ export class GeminiRAGService {
     contextChunks: any[],
     modelId: string,
     availableFileNames: string[],
-    openRouterKey?: string
+    openRouterKey?: string,
+    googleKey?: string
   ): Promise<{ rewrittenPrompt: string; thoughts: string }> {
     const contextText = contextChunks
       .map((c, i) => `[Segment ${i + 1}]\n${c.text}`)
@@ -79,18 +82,19 @@ export class GeminiRAGService {
     const systemInstruction = `You are the "Thinker Brain" of a sophisticated RAG system.
     
     GOAL:
-    1. Perform a "Self-Reflection & Planning" phase: Analyze the User Query and Retrieved Context. decide if you have enough info.
-    2. Rewrite the User Query into a precise instruction for the Answer Generator.
+    1. RESEARCH & ANALYSIS: Review the User Query and the Retrieved Context. Extract key insights and verify facts.
+    2. LINKING: Connect separate pieces of information between different context segments.
+    3. PLAN & REWRITE: Formulate a precise instruction for the Final Answer Generator.
 
     CRITICAL REWRITING RULES:
     - IF the user specified files (e.g., "@file.txt"), the rewritten prompt MUST explicitly instruct the generator to look ONLY in those files.
     - IF NO files were specified, the rewritten prompt MUST explicitly instruct the generator to look in the "Knowledge Vault" generally.
-    - DO NOT generate generic search terms. Focus on extracting the answer from the provided context.
+    - Your rewritten prompt should be a detailed blueprint for the final answer.
     
     OUTPUT FORMAT:
     Return a valid JSON object ONLY:
     {
-      "thoughts": "Brief self-reflection on the request and the context strategy...",
+      "thoughts": "[Phase 1: Research] Found X in segment 1... [Phase 2: Linking] This connects to Y in segment 3... [Phase 3: Conclusion] Planning to...",
       "rewrittenPrompt": "The optimized, context-aware prompt..."
     }`;
 
@@ -102,7 +106,8 @@ export class GeminiRAGService {
         systemInstruction,
         prompt,
         temperature: 0.3,
-        openRouterKey
+        openRouterKey,
+        googleKey
       });
 
       const cleaned = response.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -122,8 +127,11 @@ export class GeminiRAGService {
     modelId: string = 'openai/gpt-oss-safeguard-20b',
     contextScript: string = "",
     openRouterKey?: string,
+    googleKey?: string,
     taggedFileNames: string[] = [],
-    thinkerResult?: { rewrittenPrompt: string; thoughts: string }
+    thinkerResult?: { rewrittenPrompt: string; thoughts: string },
+    maxTokens: number = 2000,
+    onUsage?: (usage: any) => void
   ): AsyncGenerator<string, void, unknown> {
     const hasContext = contextChunks.length > 0;
     const contextText = hasContext
@@ -167,7 +175,10 @@ export class GeminiRAGService {
       systemInstruction,
       prompt,
       temperature,
-      openRouterKey
+      openRouterKey,
+      googleKey,
+      maxTokens,
+      onUsage
     });
   }
 
@@ -181,12 +192,15 @@ export class GeminiRAGService {
     modelId: string = 'openai/gpt-oss-safeguard-20b',
     contextScript: string = "",
     openRouterKey?: string,
-    taggedFileNames: string[] = []
+    googleKey?: string,
+    taggedFileNames: string[] = [],
+    maxTokens: number = 2000,
+    onUsage?: (usage: any) => void
   ): Promise<{ answer: string }> {
     // This now just aggregates the stream
     let answer = "";
     for await (const chunk of this.generateAnswerStream(
-      userQuery, expandedQuery, contextChunks, temperature, useVault, modelId, contextScript, openRouterKey, taggedFileNames
+      userQuery, expandedQuery, contextChunks, temperature, useVault, modelId, contextScript, openRouterKey, googleKey, taggedFileNames, undefined, maxTokens, onUsage
     )) {
       answer += chunk;
     }
@@ -198,7 +212,8 @@ export class GeminiRAGService {
     aiResponse: string,
     usedFiles: string[],
     modelId: string,
-    openRouterKey?: string
+    openRouterKey?: string,
+    googleKey?: string
   ): Promise<string> {
     const filesString = usedFiles.length > 0 ? usedFiles.join(', ') : 'No vault files';
 
@@ -208,7 +223,8 @@ export class GeminiRAGService {
       FORMAT: [Context: ${filesString}] Summary: [1 concise sentence describing the user's intent and the core of the AI's conclusion].`,
       prompt: `Input: ${userPrompt}\n\nResponse: ${aiResponse}`,
       temperature: 0.1,
-      openRouterKey
+      openRouterKey,
+      googleKey
     });
   }
 }
