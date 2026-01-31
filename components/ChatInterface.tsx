@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { SUPPORTED_MODELS } from '../services/modelService';
+import { MarkdownResponse } from './MarkdownResponse';
 
 interface Props {
   messages: Message[];
@@ -50,51 +51,7 @@ const LiveTimer: React.FC<{ status: PipelineStatus; activeAt: PipelineStatus; fi
   );
 };
 
-const CodeBlock = ({ children, className, ...props }: any) => {
-  const [copied, setCopied] = useState(false);
-  const match = /language-(\w+)/.exec(className || '');
-  const lang = match ? match[1] : '';
-  const codeContent = String(children).replace(/\n$/, '');
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(codeContent);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const isInline = !className;
-
-  if (isInline) {
-    return (
-      <code className="bg-brand-border px-1.5 py-0.5 rounded text-brand-accent font-mono text-[0.9em]" {...props}>
-        {children}
-      </code>
-    );
-  }
-
-  return (
-    <div className="relative group my-6 rounded-xl overflow-hidden border border-brand-border shadow-sm">
-      <div className="flex items-center justify-between px-4 py-2 bg-brand-darker border-b border-brand-border">
-        <span className="text-[10px] font-mono text-brand-muted tracking-wider">
-          {lang || 'code'}
-        </span>
-        <button
-          onClick={handleCopy}
-          className="p-1 hover:bg-brand-base rounded transition-colors text-gray-400 hover:text-brand-accent"
-        >
-          {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
-        </button>
-      </div>
-      <div className="overflow-x-auto bg-[#0d1117] p-4">
-        <pre className="m-0">
-          <code className={`${className} font-mono text-[13px] leading-relaxed text-[#e6edf3]`} {...props}>
-            {children}
-          </code>
-        </pre>
-      </div>
-    </div>
-  );
-};
+// Redundant local CodeBlock removed as MarkdownResponse handles it now
 
 const ContextModal: React.FC<{
   isOpen: boolean;
@@ -425,22 +382,14 @@ export const ChatInterface: React.FC<Props> = ({
                     />
                   )}
 
-                  <div className={`px-7 py-3 rounded-xl leading-relaxed text-[15px] ${msg.role === 'user'
-                    ? 'bg-brand-darker text-gray-200 text-gray-300 max-w-xl'
-                    : (msg.status === 'completed' ? 'bg-brand-darker text-gray-200 w-full border border-brand-border shadow-2xl' : 'w-full')
+                  <div className={` leading-relaxed text-[15px] ${msg.role === 'user'
+                    ? 'bg-brand-darker text-gray-200 text-gray-300 max-w-xl p-3 rounded-xl'
+                    : (msg.status === 'completed' ? '' : 'w-full')
                     }`}>
                     {(msg.status === 'completed' || msg.role === 'user') ? (
                       <div className="space-y-4">
-                        <div className={`prose dark:prose-invert ${msg.role === 'assistant' ? 'animate-blur-text' : ''}`}>
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            rehypePlugins={[rehypeRaw]}
-                            components={{
-                              code: CodeBlock
-                            }}
-                          >
-                            {msg.content}
-                          </ReactMarkdown>
+                        <div className={`${msg.role === 'assistant' ? 'animate-blur-text' : ''}`}>
+                          <MarkdownResponse content={msg.content} />
                         </div>
 
                         {msg.pendingClarification && (
