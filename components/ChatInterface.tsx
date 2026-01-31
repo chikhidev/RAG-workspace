@@ -148,7 +148,7 @@ const PipelineDetails: React.FC<{
   };
 
   return (
-    <div className="w-full space-y-4 mt-6 mb-4 pl-2">
+    <div className="w-full space-y-3 mt-4 mb-2 pl-2">
       <button
         onClick={() => setIsMainExpanded(!isMainExpanded)}
         className="flex items-center gap-2 group/trace active:scale-95 transition-transform"
@@ -160,7 +160,7 @@ const PipelineDetails: React.FC<{
       </button>
 
       {isMainExpanded && (
-        <div className="relative border-l border-white/5 ml-[7px] space-y-6 pb-2 mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
+        <div className="relative border-l border-white/5 ml-[7px] space-y-4 pb-1 mt-3 animate-in fade-in slide-in-from-top-2 duration-300">
           {logs.map((log, i) => {
             const isSearching = log.step.toLowerCase().includes('searching');
             const StepIcon = isSearching ? SearchIcon : null;
@@ -370,14 +370,14 @@ export const ChatInterface: React.FC<Props> = ({
   return (
     <div className="flex flex-col h-full bg-brand-base flex-1 transition-colors relative">
 
-      <div ref={scrollRef} className={`flex-1 overflow-y-auto px-6 py-12 space-y-20 relative z-10 pb-72`}>
+      <div ref={scrollRef} className={`flex-1 overflow-y-auto px-6 py-8 space-y-12 relative z-10 pb-60`}>
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center px-12 pb-20">
 
           </div>
         ) : (
           messages.map((msg) => (
-            <div key={msg.id} className="max-w-5xl ml-8 w-full fade-in">
+            <div key={msg.id} className="max-w-4xl mx-auto w-full fade-in">
               <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start gap-4'}`}>
 
 
@@ -399,7 +399,10 @@ export const ChatInterface: React.FC<Props> = ({
                     {(msg.status === 'completed' || msg.role === 'user' || (msg.role === 'assistant' && msg.content)) ? (
                       <div className="space-y-4">
                         <div className={`${msg.role === 'assistant' ? 'animate-blur-text' : ''}`}>
-                          <MarkdownResponse content={msg.content} />
+                          <MarkdownResponse
+                            content={msg.content}
+                            onSourceClick={(fileName) => msg.sources && handleViewContexts(fileName, msg.sources, msg.id)}
+                          />
                         </div>
 
                         {msg.pendingClarification && (
@@ -494,64 +497,69 @@ export const ChatInterface: React.FC<Props> = ({
 
       <>
         <div className="absolute bottom-0 left-0 w-full h-64 bg-gradient-to-t from-brand-base via-brand-base/95 to-transparent pointer-events-none z-40" />
-        <div className="absolute bottom-8 left-8 w-full max-w-5xl px-0 z-50">
+        <div className="absolute bottom-8 left-0 w-full flex justify-center px-8 z-50">
+          <div className="w-full max-w-4xl">
 
-          {/* FILE SUGGESTIONS PORTAL */}
-          {showSuggestions && filteredDocs.length > 0 && (
-            <div className="absolute bottom-full left-0 mb-4 w-full bg-[#202020]/90 border border-white/10 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] overflow-hidden animate-in slide-in-from-bottom-2 duration-150 backdrop-blur-2xl">
-              <div className="px-5 py-3 border-b border-white/5 flex items-center justify-between bg-white/[0.03]">
-                <span className="text-[10px] font-mono text-brand-muted tracking-widest">Vault Suggestions</span>
-                <span className="text-[9px] px-2 py-1 bg-brand-accent/20 text-brand-accent rounded font-bold">Priority Link</span>
-              </div>
-              <div className="max-h-52 overflow-y-auto scrollbar-hide">
-                {filteredDocs.map((doc) => (
-                  <button
-                    key={doc.id}
-                    onClick={() => insertTag(doc.name)}
-                    className="w-full flex items-center gap-4 px-5 py-3 hover:bg-white/[0.05] border-b border-white/5 last:border-0 transition-colors text-left group"
-                  >
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-brand-base border border-white/5 group-hover:border-brand-accent/50 transition-all">
-                      <FileText size={12} className="text-emerald-500" />
-                    </div>
-                    <span className="text-[13px] font-medium text-gray-300 group-hover:text-white transition-colors">
-                      @{doc.name}
-                    </span>
-                  </button>
-                ))}
+            <div className="bg-brand-base rounded-3xl">
+
+              {/* FILE SUGGESTIONS PORTAL */}
+              {showSuggestions && filteredDocs.length > 0 && (
+                <div className="absolute bottom-full left-0 mb-4 w-full bg-[#202020]/90 border border-white/10 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] overflow-hidden animate-in slide-in-from-bottom-2 duration-150 backdrop-blur-2xl">
+                  <div className="px-5 py-3 border-b border-white/5 flex items-center justify-between bg-white/[0.03]">
+                    <span className="text-[10px] font-mono text-brand-muted tracking-widest">Vault Suggestions</span>
+                    <span className="text-[9px] px-2 py-1 bg-brand-accent/20 text-brand-accent rounded font-bold">Priority Link</span>
+                  </div>
+                  <div className="max-h-52 overflow-y-auto scrollbar-hide">
+                    {filteredDocs.map((doc) => (
+                      <button
+                        key={doc.id}
+                        onClick={() => insertTag(doc.name)}
+                        className="w-full flex items-center gap-4 px-5 py-3 hover:bg-white/[0.05] border-b border-white/5 last:border-0 transition-colors text-left group"
+                      >
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-brand-base border border-white/5 group-hover:border-brand-accent/50 transition-all">
+                          <FileText size={12} className="text-emerald-500" />
+                        </div>
+                        <span className="text-[13px] font-medium text-gray-300 group-hover:text-white transition-colors">
+                          @{doc.name}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className={`relative group/input bg-white/[0.06] backdrop-blur-[40px] rounded-[32px] border border-white/[0.12] shadow-[0_20px_50px_rgba(0,0,0,0.4)] transition-all focus-within:border-brand-accent/40 p-2.5 flex items-end gap-2.5`}>
+                <textarea
+                  ref={textareaRef}
+                  value={inputValue}
+                  onChange={(e) => {
+                    setInputValue(e.target.value);
+                    setCursorPosition(e.target.selectionStart || 0);
+                  }}
+                  onKeyUp={(e) => setCursorPosition((e.target as any).selectionStart || 0)}
+                  onClick={(e) => setCursorPosition((e.target as any).selectionStart || 0)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Expand context... Deep reason... Use @ to focus on specific files"
+                  className="flex-1 bg-transparent border-none text-[13px] font-medium px-4 py-3 resize-none outline-none text-gray-100 placeholder:text-gray-500 min-h-[63px] overflow-y-auto scrollbar-hide leading-relaxed"
+                  style={{ height: '63px' }}
+                  rows={1}
+                />
+                <button
+                  onClick={() => isProcessing ? onStop() : onSend()}
+                  disabled={!isProcessing && !inputValue.trim()}
+                  className={`shrink-0 h-9 w-16 flex items-center justify-center rounded-full transition-all mb-1 mr-1.5 ${isProcessing
+                    ? 'bg-red-500 hover:bg-red-600 ai-glow-box'
+                    : 'bg-gradient-to-br from-brand-accent to-[#d4480e] hover:brightness-110 disabled:grayscale disabled:opacity-20'
+                    }`}
+                >
+                  {isProcessing ? (
+                    <div className="w-3 h-3 bg-white rounded-sm" />
+                  ) : (
+                    <ArrowRight className="text-white" size={16} strokeWidth={2.5} />
+                  )}
+                </button>
               </div>
             </div>
-          )}
-
-          <div className="relative group/input bg-white/[0.06] backdrop-blur-[40px] rounded-[32px] border border-white/[0.12] shadow-[0_20px_50px_rgba(0,0,0,0.4)] transition-all focus-within:border-brand-accent/40 p-2.5 flex items-end gap-2.5">
-            <textarea
-              ref={textareaRef}
-              value={inputValue}
-              onChange={(e) => {
-                setInputValue(e.target.value);
-                setCursorPosition(e.target.selectionStart || 0);
-              }}
-              onKeyUp={(e) => setCursorPosition((e.target as any).selectionStart || 0)}
-              onClick={(e) => setCursorPosition((e.target as any).selectionStart || 0)}
-              onKeyDown={handleKeyDown}
-              placeholder="Expand context... Deep reason... Use @ to focus on specific files"
-              className="flex-1 bg-transparent border-none text-[13px] font-medium px-4 py-3 resize-none outline-none text-gray-100 placeholder:text-gray-500 min-h-[63px] overflow-y-auto scrollbar-hide leading-relaxed"
-              style={{ height: '63px' }}
-              rows={1}
-            />
-            <button
-              onClick={() => isProcessing ? onStop() : onSend()}
-              disabled={!isProcessing && !inputValue.trim()}
-              className={`shrink-0 h-9 w-16 flex items-center justify-center rounded-full transition-all mb-1 mr-1.5 ${isProcessing
-                ? 'bg-red-500 hover:bg-red-600'
-                : 'bg-gradient-to-br from-brand-accent to-[#d4480e] hover:brightness-110 disabled:grayscale disabled:opacity-20'
-                }`}
-            >
-              {isProcessing ? (
-                <div className="w-3 h-3 bg-white rounded-sm" />
-              ) : (
-                <ArrowRight className="text-white" size={16} strokeWidth={2.5} />
-              )}
-            </button>
           </div>
         </div>
       </>

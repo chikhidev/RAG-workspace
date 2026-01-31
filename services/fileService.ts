@@ -1,9 +1,12 @@
-
 import * as pdfjsLib from 'pdfjs-dist';
+// @ts-ignore - Vite worker loader
+import PDFWorker from 'pdfjs-dist/build/pdf.worker.mjs?worker';
 import mammoth from 'mammoth';
 
-// Configure worker for PDF.js
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// Configure worker for PDF.js - Use Vite's native worker handling
+if (typeof window !== 'undefined' && 'Worker' in window) {
+    pdfjsLib.GlobalWorkerOptions.workerPort = new PDFWorker();
+}
 
 export const fileService = {
     async parseFile(file: File): Promise<string> {
@@ -26,21 +29,44 @@ export const fileService = {
     async parsePdf(file: File): Promise<string> {
         try {
             const arrayBuffer = await file.arrayBuffer();
-            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            const loadingTask = pdfjsLib.getDocument({
+                data: arrayBuffer,
+                useWorkerFetch: true,
+                isEvalSupported: false
+            });
+
+            const pdf = await loadingTask.promise;
             let fullText = '';
 
             for (let i = 1; i <= pdf.numPages; i++) {
-                const page = await pdf.getPage(i);
-                const textContent = await page.getTextContent();
-                const pageText = textContent.items
-                    .map((item: any) => item.str)
-                    .join(' ');
-                fullText += `[Page ${i}]\n${pageText}\n\n`;
+                try {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items
+                        .map((item: any) => item.str)
+                        .filter(str => str !== undefined)
+                        .join(' ');
+
+                    if (pageText.trim()) {
+                        fullText += `[Page ${i}]\n${pageText}\n\n`;
+                    }
+                } catch (pageError) {
+                    console.warn(`Error parsing page ${i}:`, pageError);
+                    fullText += `[Page ${i}]\n[Error: Could not extract text from this page]\n\n`;
+                }
             }
+
+            if (!fullText.trim()) {
+                throw new Error('PDF appears to be empty or contains no extractable text (it might be an image-only scan).');
+            }
+
             return fullText;
         } catch (error) {
-            console.error('PDF parsing error:', error);
-            throw new Error('Failed to parse PDF file.');
+            console.error('Detailed PDF parsing error:', error);
+            if (error instanceof Error) {
+                throw new Error(`PDF Parsing Failed: ${error.message}`);
+            }
+            throw new Error('Failed to parse PDF file. Please ensure it is a text-based PDF.');
         }
     },
 

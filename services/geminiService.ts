@@ -129,7 +129,7 @@ export class GeminiRAGService {
     3. Generate 5-8 dense, descriptive search keywords optimized for finding relevant segments in the target files.
     
     UP TO DATE DATA:
-    - now's date is ${new Date().toDateString()}.
+    - Current System Date: ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
 
     OUTPUT:
     Return ONLY a comma-separated list of keywords. No preamble.`;
@@ -173,6 +173,9 @@ export class GeminiRAGService {
     2. LINKING: Connect separate pieces of information between different context segments.
     3. PLAN & REWRITE: Formulate a precise instruction for the Final Answer Generator.
     4. PROVIDE RESOURCE: When you provide facts, provide the document name.
+
+    UP TO DATE DATA:
+    - Current System Date: ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
 
     CRITICAL REWRITING RULES:
     - IF the user specified files (e.g., "@file.txt"), the rewritten prompt MUST explicitly instruct the generator to look ONLY in those files.
@@ -234,7 +237,7 @@ export class GeminiRAGService {
     const hasContext = contextChunks.length > 0;
     const contextText = hasContext
       ? contextChunks
-        .map((c, i) => `[Document: ${c.docName}]\n${c.text}`)
+        .map((c, i) => `[Source: ${c.docName}]\n${c.text}`)
         .join('\n\n')
       : "NO RELEVANT FRAGMENTS RETRIEVED FROM VAULT.";
 
@@ -254,17 +257,17 @@ export class GeminiRAGService {
     
     TASK:
     1. Synthesize a definitive answer using ONLY the "KNOWLEDGE VAULT" fragments provided. ${priorityNote}
-    2. Cite sources using [Document: Name].
+    2. Cite sources using [Source: Name].
     3. If the user query mentions specific files using @ notation, ensure you verify claims against those documents primarily.
     ${thinkerNote}
     
     FORMATTING RULES (CRITICAL):
     - Use "Airy Formatting": Insert DOUBLE NEWLINES between every paragraph and list item.
     - Avoid dense walls of text.
-    - Ensure citations [Document: ...] are clearly separated from the text they support.
+    - Ensure citations [Source: ...] are clearly separated from the text they support.
     
     UP TO DATE DATA:
-    - now's date is ${new Date().toDateString()}.
+    - Current System Date: ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
 
     PERMANENT USER PREFERENCES:
     ${thinkerResult?.customContext || ""}
@@ -392,7 +395,7 @@ Based on what we know so far, decide the SINGLE next action.
     }
 
     console.error("Agent decision failed after retries:", lastError);
-    throw new Error("Agent decision failed after retry. Stopping process.");
+    throw new Error("Model decision failed after retry. Stopping process.");
   }
 
   /**

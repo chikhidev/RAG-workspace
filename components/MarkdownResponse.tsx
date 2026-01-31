@@ -6,12 +6,13 @@ import rehypeKatex from 'rehype-katex';
 import rehypeRaw from 'rehype-raw';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { Copy, Check, Info, AlertTriangle, CheckCircle2, XCircle, Lightbulb } from 'lucide-react';
+import { Copy, Check, Info, AlertTriangle, CheckCircle2, XCircle, Lightbulb, FileText } from 'lucide-react';
 import 'katex/dist/katex.min.css';
 
 interface MarkdownResponseProps {
   content: string;
   className?: string;
+  onSourceClick?: (fileName: string) => void;
 }
 
 const CodeBlock = ({ inline, className, children, ...props }: any) => {
@@ -29,8 +30,8 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
   // Inline code
   if (inline) {
     return (
-      <code 
-        className="bg-orange-500/10 text-orange-400 px-1.5 py-0.5 rounded font-mono text-[0.9em] border border-orange-500/20" 
+      <code
+        className="bg-orange-500/10 text-orange-400 px-1.5 py-0.5 rounded font-mono text-[0.9em] border border-orange-500/20"
         {...props}
       >
         {children}
@@ -92,7 +93,7 @@ const Blockquote = ({ children }: any) => {
   if (React.isValidElement(firstChild)) {
     const text = String((firstChild.props as any).children || '');
     const calloutMatch = text.match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/i);
-    
+
     if (calloutMatch) {
       calloutType = calloutMatch[1].toLowerCase();
       // Remove the callout indicator from content
@@ -209,13 +210,35 @@ const TaskListItem = ({ checked, children }: any) => {
   );
 };
 
-export const MarkdownResponse: React.FC<MarkdownResponseProps> = ({ content, className = '' }) => {
+const SourceTag = ({ name, onClick }: { name: string; onClick?: (name: string) => void }) => {
+  return (
+    <button
+      onClick={() => onClick?.(name)}
+      className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-brand-base rounded border border-brand-border text-[11px] text-gray-400 font-medium hover:border-brand-accent hover:text-brand-accent transition-all mx-1 align-baseline translate-y-[1px]"
+    >
+      <FileText size={10} className="text-brand-accent" />
+      {name}
+    </button>
+  );
+};
+
+export const MarkdownResponse: React.FC<MarkdownResponseProps> = ({ content, className = '', onSourceClick }) => {
+  // Pre-process content to handle [Source: filename.md]
+  const processedContent = content.replace(/\[Source:\s*([^\]]+)\]/g, (match, fileName) => {
+    return `<source-tag name="${fileName.trim()}"></source-tag>`;
+  });
+
   return (
     <div className={`markdown-response ${className}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex, rehypeRaw]}
         components={{
+          // Custom Source Tag
+          // @ts-ignore
+          'source-tag': ({ node, ...props }: any) => (
+            <SourceTag name={props.name} onClick={onSourceClick} />
+          ),
           // Headings
           h1: ({ children }) => (
             <h1 className="text-2xl font-bold text-white mt-8 mb-4 pb-2 border-b-2 border-gray-800">
@@ -348,7 +371,7 @@ export const MarkdownResponse: React.FC<MarkdownResponseProps> = ({ content, cla
           ),
         }}
       >
-        {content}
+        {processedContent}
       </ReactMarkdown>
     </div>
   );

@@ -77,19 +77,6 @@ export const RightSidebar: React.FC<Props> = ({
 
   return (
     <div className="flex flex-col h-full bg-brand-darker border-l border-transparent p-6 w-full transition-colors overflow-y-auto relative">
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-brand-muted">Studio Controller</span>
-        </div>
-        <button
-          onClick={onClearChat}
-          title="Clear Chat"
-          className="p-1.5 hover:bg-red-500/10 rounded transition-all text-gray-500 hover:text-red-500 flex items-center gap-1.5 group"
-        >
-          <div className="text-[9px] font-bold uppercase tracking-wider hidden sm:inline opacity-0 group-hover:opacity-100 transition-opacity">Clear</div>
-          <Trash2 size={14} />
-        </button>
-      </div>
 
       <div className="mb-4 space-y-8">
         <div className="pt-8 border-t border-brand-border/30">
@@ -162,11 +149,23 @@ export const RightSidebar: React.FC<Props> = ({
         <div>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-md text-white tracking-tight">Generation Controls</h2>
-            <button onClick={onClearContext} className="p-1.5 hover:bg-brand-border rounded transition-colors text-gray-400 hover:text-brand-accent" title="Clear Context History"><Eraser size={14} /></button>
+            <div className="flex items-center gap-2">
+              <button
+            onClick={onClearChat}
+            title="Clear Chat"
+            className="p-1.5 hover:bg-red-500/10 rounded transition-all text-gray-500 hover:text-red-500 flex items-center gap-1.5 group"
+          >
+            <div className="text-[9px] font-bold uppercase tracking-wider hidden sm:inline opacity-0 group-hover:opacity-100 transition-opacity">Clear</div>
+            <Trash2 size={14} />
+          </button>
+              <button onClick={onClearContext} className="p-1.5 hover:bg-brand-border rounded transition-colors text-gray-400 hover:text-brand-accent" title="Clear Context History"><Eraser size={14} /></button>
+            </div>
           </div>
           <div className="space-y-6">
             <div className="space-y-4">
               <div className="space-y-2">
+                  
+
                 <button onClick={() => setUseContextHistory(!useContextHistory)} className={toggleBtnClass}>
                   <div className="flex flex-col items-start">
                     <span className="text-[13px] font-bold text-gray-200">Context Continuity</span>
@@ -182,6 +181,8 @@ export const RightSidebar: React.FC<Props> = ({
                   </div>
                 )}
               </div>
+
+                
 
               <button onClick={() => setUseVault(!useVault)} className={toggleBtnClass}>
                 <div className="flex flex-col items-start">

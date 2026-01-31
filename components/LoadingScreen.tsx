@@ -44,7 +44,7 @@ const LoadingScreen: React.FC<Props> = ({ isOnboarding, onComplete }) => {
             {/* Background Image with Gradient Overlay */}
             <div
                 className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-[10000ms] scale-110 animate-[ken-burns_20s_infinite_alternate]"
-                style={{ backgroundImage: 'url("/logos/background.jpeg")' }}
+                style={{ backgroundImage: 'url("/background.png")' }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
             <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-transparent" />
