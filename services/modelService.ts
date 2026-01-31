@@ -743,13 +743,13 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
     "description": "OpenAI - Flagship model. Best for coding, agentic tasks, and deep reasoning.",
     "size": "large",
     "logo": "/logos/chatgpt.png",
-    "metadata": { 
-      "author": "OpenAI", 
-      "context": "400K", 
-      "inputPrice": "$1.75", 
-      "outputPrice": "$14.00", 
-      "latency": "Medium", 
-      "throughput": "High" 
+    "metadata": {
+      "author": "OpenAI",
+      "context": "400K",
+      "inputPrice": "$1.75",
+      "outputPrice": "$14.00",
+      "latency": "Medium",
+      "throughput": "High"
     }
   },
   {
@@ -759,13 +759,13 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
     "description": "OpenAI - Cost-efficient, high-intelligence version of GPT-5 family.",
     "size": "small",
     "logo": "/logos/chatgpt.png",
-    "metadata": { 
-      "author": "OpenAI", 
-      "context": "400K", 
-      "inputPrice": "$0.25", 
-      "outputPrice": "$2.00", 
-      "latency": "Low", 
-      "throughput": "Very High" 
+    "metadata": {
+      "author": "OpenAI",
+      "context": "400K",
+      "inputPrice": "$0.25",
+      "outputPrice": "$2.00",
+      "latency": "Low",
+      "throughput": "Very High"
     }
   },
   {
@@ -775,13 +775,13 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
     "description": "OpenAI - Fastest, most cost-efficient model for lightweight tasks.",
     "size": "small",
     "logo": "/logos/chatgpt.png",
-    "metadata": { 
-      "author": "OpenAI", 
-      "context": "400K", 
-      "inputPrice": "$0.05", 
-      "outputPrice": "$0.40", 
-      "latency": "Very Low", 
-      "throughput": "Extreme" 
+    "metadata": {
+      "author": "OpenAI",
+      "context": "400K",
+      "inputPrice": "$0.05",
+      "outputPrice": "$0.40",
+      "latency": "Very Low",
+      "throughput": "Extreme"
     }
   },
   {
@@ -791,13 +791,13 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
     "description": "OpenAI - Maximum reasoning capability. 12x cost of standard 5.2.",
     "size": "large",
     "logo": "/logos/chatgpt.png",
-    "metadata": { 
-      "author": "OpenAI", 
-      "context": "400K", 
-      "inputPrice": "$21.00", 
-      "outputPrice": "$168.00", 
-      "latency": "High", 
-      "throughput": "Low" 
+    "metadata": {
+      "author": "OpenAI",
+      "context": "400K",
+      "inputPrice": "$21.00",
+      "outputPrice": "$168.00",
+      "latency": "High",
+      "throughput": "Low"
     }
   },
   {
@@ -807,13 +807,13 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
     "description": "OpenAI - The original 5-series reasoning model (Aug 2025).",
     "size": "large",
     "logo": "/logos/chatgpt.png",
-    "metadata": { 
-      "author": "OpenAI", 
-      "context": "400K", 
-      "inputPrice": "$1.25", 
-      "outputPrice": "$10.00", 
-      "latency": "Medium", 
-      "throughput": "Medium" 
+    "metadata": {
+      "author": "OpenAI",
+      "context": "400K",
+      "inputPrice": "$1.25",
+      "outputPrice": "$10.00",
+      "latency": "Medium",
+      "throughput": "Medium"
     }
   },
   {
@@ -823,13 +823,13 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
     "description": "OpenAI - Smartest non-reasoning model. Massive context window.",
     "size": "large",
     "logo": "/logos/chatgpt.png",
-    "metadata": { 
-      "author": "OpenAI", 
-      "context": "1M", 
-      "inputPrice": "$2.00", 
-      "outputPrice": "$8.00", 
-      "latency": "Low", 
-      "throughput": "High" 
+    "metadata": {
+      "author": "OpenAI",
+      "context": "1M",
+      "inputPrice": "$2.00",
+      "outputPrice": "$8.00",
+      "latency": "Low",
+      "throughput": "High"
     }
   },
   {
@@ -839,13 +839,13 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
     "description": "OpenAI - Open-weight MoE model (117B params). Rivals o4-mini.",
     "size": "large",
     "logo": "/logos/chatgpt.png",
-    "metadata": { 
-      "author": "OpenAI", 
-      "context": "128K", 
-      "inputPrice": "Free (Self-Hosted)", 
-      "outputPrice": "Free (Self-Hosted)", 
-      "latency": "Variable", 
-      "throughput": "Variable" 
+    "metadata": {
+      "author": "OpenAI",
+      "context": "128K",
+      "inputPrice": "Free (Self-Hosted)",
+      "outputPrice": "Free (Self-Hosted)",
+      "latency": "Variable",
+      "throughput": "Variable"
     }
   },
   {
@@ -855,13 +855,13 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
     "description": "OpenAI - Open-weight MoE model (21B params). Optimized for consumer GPUs.",
     "size": "small",
     "logo": "/logos/chatgpt.png",
-    "metadata": { 
-      "author": "OpenAI", 
-      "context": "128K", 
-      "inputPrice": "Free (Self-Hosted)", 
-      "outputPrice": "Free (Self-Hosted)", 
-      "latency": "Low", 
-      "throughput": "High" 
+    "metadata": {
+      "author": "OpenAI",
+      "context": "128K",
+      "inputPrice": "Free (Self-Hosted)",
+      "outputPrice": "Free (Self-Hosted)",
+      "latency": "Low",
+      "throughput": "High"
     }
   },
   {
@@ -871,13 +871,13 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
     "description": "OpenAI - High-speed reasoning model. Replaced o1-mini.",
     "size": "small",
     "logo": "/logos/chatgpt.png",
-    "metadata": { 
-      "author": "OpenAI", 
-      "context": "200K", 
-      "inputPrice": "$1.10", 
-      "outputPrice": "$4.40", 
-      "latency": "Low", 
-      "throughput": "High" 
+    "metadata": {
+      "author": "OpenAI",
+      "context": "200K",
+      "inputPrice": "$1.10",
+      "outputPrice": "$4.40",
+      "latency": "Low",
+      "throughput": "High"
     }
   },
   {
@@ -887,13 +887,13 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
     "description": "OpenAI - Legacy reasoning model (2024).",
     "size": "large",
     "logo": "/logos/chatgpt.png",
-    "metadata": { 
-      "author": "OpenAI", 
-      "context": "128K", 
-      "inputPrice": "$15.00", 
-      "outputPrice": "$60.00", 
-      "latency": "High", 
-      "throughput": "Low" 
+    "metadata": {
+      "author": "OpenAI",
+      "context": "128K",
+      "inputPrice": "$15.00",
+      "outputPrice": "$60.00",
+      "latency": "High",
+      "throughput": "Low"
     }
   },
   {
@@ -903,13 +903,13 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
     "description": "OpenAI - Legacy small reasoning model (2024).",
     "size": "small",
     "logo": "/logos/chatgpt.png",
-    "metadata": { 
-      "author": "OpenAI", 
-      "context": "128K", 
-      "inputPrice": "$1.10", 
-      "outputPrice": "$4.40", 
-      "latency": "Low", 
-      "throughput": "High" 
+    "metadata": {
+      "author": "OpenAI",
+      "context": "128K",
+      "inputPrice": "$1.10",
+      "outputPrice": "$4.40",
+      "latency": "Low",
+      "throughput": "High"
     }
   }
 ];
@@ -925,7 +925,6 @@ interface ExecutionParams {
   xaiKey?: string;
   openaiKey?: string;
   maxTokens?: number;
-  onUsage?: (usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number }) => void;
 }
 
 class ModelService {
@@ -1001,11 +1000,6 @@ class ModelService {
       }) as unknown as AsyncIterable<any>;
 
       for await (const chunk of stream) {
-        // Handle Usage if present in slice
-        if (chunk.usage && params.onUsage) {
-          params.onUsage(chunk.usage);
-        }
-
         const content = chunk.choices[0]?.delta?.content;
         if (content) {
           yield content;
@@ -1052,17 +1046,6 @@ class ModelService {
         config
       });
 
-      if (params.onUsage) {
-        const metadata = response.usageMetadata;
-        if (metadata) {
-          params.onUsage({
-            prompt_tokens: metadata.promptTokenCount || 0,
-            completion_tokens: metadata.candidatesTokenCount || 0,
-            total_tokens: metadata.totalTokenCount || 0
-          });
-        }
-      }
-
       return response.text || "";
     } catch (error: any) {
       console.error("Google Gemini API Error:", error);
@@ -1100,16 +1083,23 @@ class ModelService {
       });
 
       for await (const chunk of resultGenerator) {
-        const chunkText = chunk.text;
-        if (chunkText) yield chunkText;
-
-        if (chunk.usageMetadata && params.onUsage) {
-          params.onUsage({
-            prompt_tokens: chunk.usageMetadata.promptTokenCount || 0,
-            completion_tokens: chunk.usageMetadata.candidatesTokenCount || 0,
-            total_tokens: chunk.usageMetadata.totalTokenCount || 0
-          });
+        let chunkText = '';
+        const c = chunk as any;
+        try {
+          if (typeof c.text === 'function') {
+            chunkText = c.text();
+          } else if (typeof c.text === 'string') {
+            chunkText = c.text;
+          } else if (c.candidates?.[0]?.content?.parts?.[0]?.text) {
+            chunkText = c.candidates[0].content.parts[0].text;
+          }
+        } catch (e) {
+          if (c.candidates?.[0]?.content?.parts?.[0]?.text) {
+            chunkText = c.candidates[0].content.parts[0].text;
+          }
         }
+
+        if (chunkText) yield chunkText;
       }
     } catch (error: any) {
       console.error("Google Gemini Stream Error:", error);
@@ -1148,14 +1138,6 @@ class ModelService {
       }
 
       const data = await response.json();
-
-      if (params.onUsage && data.usage) {
-        params.onUsage({
-          prompt_tokens: data.usage.prompt_tokens,
-          completion_tokens: data.usage.completion_tokens,
-          total_tokens: data.usage.total_tokens
-        });
-      }
 
       return data.choices[0]?.message?.content || "";
     } catch (error: any) {
@@ -1214,14 +1196,6 @@ class ModelService {
           if (trimmed.startsWith('data: ')) {
             try {
               const json = JSON.parse(trimmed.slice(6));
-
-              if (json.usage && params.onUsage) {
-                params.onUsage({
-                  prompt_tokens: json.usage.prompt_tokens,
-                  completion_tokens: json.usage.completion_tokens,
-                  total_tokens: json.usage.total_tokens
-                });
-              }
 
               const content = json.choices[0]?.delta?.content;
               if (content) {

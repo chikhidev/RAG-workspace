@@ -247,7 +247,6 @@ const App: React.FC = () => {
     isInputModalOpen: false,
     maxTokens: initialSettings.maxTokens,
     maxAgentIterations: initialSettings.maxAgentIterations,
-    sessionStats: { inputTokens: 0, outputTokens: 0 },
     customContext: localStorage.getItem(STORAGE_KEYS.CUSTOM_CONTEXT) || '',
   });
 
@@ -693,16 +692,7 @@ const App: React.FC = () => {
         state.openaiKey,
         taggedFileNames,
         thinkerResult,
-        state.maxTokens,
-        (usage) => {
-          setState(prev => ({
-            ...prev,
-            sessionStats: {
-              inputTokens: prev.sessionStats.inputTokens + (usage.prompt_tokens || 0),
-              outputTokens: prev.sessionStats.outputTokens + (usage.completion_tokens || 0)
-            }
-          }));
-        }
+        state.maxTokens
       );
 
       for await (const chunk of stream) {
@@ -980,7 +970,6 @@ const App: React.FC = () => {
             setMaxTokens={(n) => setState(prev => ({ ...prev, maxTokens: n }))}
             maxAgentIterations={state.maxAgentIterations}
             setMaxAgentIterations={(n) => setState(prev => ({ ...prev, maxAgentIterations: n }))}
-            sessionStats={state.sessionStats}
             customContext={state.customContext}
             setCustomContext={(v) => setState(prev => ({ ...prev, customContext: v }))}
           />

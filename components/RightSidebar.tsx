@@ -30,7 +30,6 @@ interface Props {
   setMaxTokens: (n: number) => void;
   maxAgentIterations: number;
   setMaxAgentIterations: (n: number) => void;
-  sessionStats: { inputTokens: number; outputTokens: number };
   customContext: string;
   setCustomContext: (v: string) => void;
 }
@@ -68,7 +67,7 @@ export const RightSidebar: React.FC<Props> = ({
   useVault, setUseVault, useContextHistory, setUseContextHistory,
   onClearContext, selectedModel, setSelectedModel,
   onOpenApiManagement, onOpenModelSelector, availableDocuments, onClearChat,
-  maxTokens, setMaxTokens, maxAgentIterations, setMaxAgentIterations, sessionStats,
+  maxTokens, setMaxTokens, maxAgentIterations, setMaxAgentIterations,
   customContext, setCustomContext
 }) => {
   const toggleBtnClass = "w-full flex items-center justify-between p-4 rounded-xl border border-brand-border bg-[#252525] transition-all hover:bg-brand-border/50";
@@ -226,22 +225,6 @@ export const RightSidebar: React.FC<Props> = ({
               <p className="text-[10px] text-brand-muted">Limits how many steps the agent can take per session.</p>
             </div>
 
-            <div className="p-4 bg-brand-base border border-brand-border rounded-xl space-y-3">
-              <div className="flex items-center gap-2 mb-2">
-                <BarChart2 size={14} className="text-brand-accent" />
-                <span className="text-[11px] font-bold uppercase tracking-widest text-gray-300">Session Usage</span>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="text-[10px] text-brand-muted uppercase tracking-wider mb-0.5">Input</div>
-                  <div className="text-[16px] font-mono text-white font-bold">{sessionStats.inputTokens.toLocaleString()}</div>
-                </div>
-                <div>
-                  <div className="text-[10px] text-brand-muted uppercase tracking-wider mb-0.5">Output</div>
-                  <div className="text-[16px] font-mono text-white font-bold">{sessionStats.outputTokens.toLocaleString()}</div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
 

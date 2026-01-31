@@ -90,10 +90,6 @@ export interface AppState {
   inputModalType?: 'text' | 'url';
   maxTokens: number;
   maxAgentIterations: number;
-  sessionStats: {
-    inputTokens: number;
-    outputTokens: number;
-  };
   customContext: string;
 }
 

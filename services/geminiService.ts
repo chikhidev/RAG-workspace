@@ -229,8 +229,7 @@ export class GeminiRAGService {
     openaiKey?: string,
     taggedFileNames: string[] = [],
     thinkerResult?: { rewrittenPrompt: string; thoughts: string; customContext?: string },
-    maxTokens: number = 2000,
-    onUsage?: (usage: any) => void
+    maxTokens: number = 2000
   ): AsyncGenerator<string, void, unknown> {
     const hasContext = contextChunks.length > 0;
     const contextText = hasContext
@@ -285,8 +284,7 @@ export class GeminiRAGService {
       googleKey,
       xaiKey,
       openaiKey,
-      maxTokens,
-      onUsage
+      maxTokens
     });
   }
 
@@ -306,12 +304,11 @@ export class GeminiRAGService {
     xaiKey?: string,
     openaiKey?: string,
     taggedFileNames: string[] = [],
-    maxTokens: number = 2000,
-    onUsage?: (usage: any) => void
+    maxTokens: number = 2000
   ): Promise<{ answer: string }> {
     let answer = "";
     for await (const chunk of this.generateAnswerStream(
-      userQuery, expandedQuery, contextChunks, temperature, useVault, modelId, contextScript, openRouterKey, googleKey, xaiKey, openaiKey, taggedFileNames, undefined, maxTokens, onUsage
+      userQuery, expandedQuery, contextChunks, temperature, useVault, modelId, contextScript, openRouterKey, googleKey, xaiKey, openaiKey, taggedFileNames, undefined, maxTokens
     )) {
       answer += chunk;
     }

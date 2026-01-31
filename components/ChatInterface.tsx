@@ -396,7 +396,7 @@ export const ChatInterface: React.FC<Props> = ({
                     ? 'bg-brand-darker text-gray-200 text-gray-300 max-w-xl p-3 rounded-xl'
                     : (msg.status === 'completed' ? '' : 'w-full')
                     }`}>
-                    {(msg.status === 'completed' || msg.role === 'user') ? (
+                    {(msg.status === 'completed' || msg.role === 'user' || (msg.role === 'assistant' && msg.content)) ? (
                       <div className="space-y-4">
                         <div className={`${msg.role === 'assistant' ? 'animate-blur-text' : ''}`}>
                           <MarkdownResponse content={msg.content} />
