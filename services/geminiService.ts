@@ -95,6 +95,8 @@ export class GeminiRAGService {
     modelId: string = 'cohere/command-r7b-12-2024',
     openRouterKey?: string,
     googleKey?: string,
+    xaiKey?: string,
+    openaiKey?: string,
     taggedFileNames: string[] = []
   ): Promise<string> {
     const vaultContext = filePreviews.length > 0
@@ -139,7 +141,9 @@ export class GeminiRAGService {
       prompt,
       temperature,
       openRouterKey,
-      googleKey
+      googleKey,
+      xaiKey,
+      openaiKey
     });
   }
 
@@ -153,6 +157,8 @@ export class GeminiRAGService {
     availableFileNames: string[],
     openRouterKey?: string,
     googleKey?: string,
+    xaiKey?: string,
+    openaiKey?: string,
     customContext: string = ""
   ): Promise<{ rewrittenPrompt: string; thoughts: string; customContext: string }> {
     const contextText = contextChunks
@@ -192,7 +198,9 @@ export class GeminiRAGService {
         prompt,
         temperature: 0.3,
         openRouterKey,
-        googleKey
+        googleKey,
+        xaiKey,
+        openaiKey
       });
 
       const parsed = this.cleanAndParseJSON(response);
@@ -216,6 +224,8 @@ export class GeminiRAGService {
     contextScript: string = "",
     openRouterKey?: string,
     googleKey?: string,
+    xaiKey?: string,
+    openaiKey?: string,
     taggedFileNames: string[] = [],
     thinkerResult?: { rewrittenPrompt: string; thoughts: string; customContext?: string },
     maxTokens: number = 2000,
@@ -272,6 +282,8 @@ export class GeminiRAGService {
       temperature,
       openRouterKey,
       googleKey,
+      xaiKey,
+      openaiKey,
       maxTokens,
       onUsage
     });
@@ -290,13 +302,15 @@ export class GeminiRAGService {
     contextScript: string = "",
     openRouterKey?: string,
     googleKey?: string,
+    xaiKey?: string,
+    openaiKey?: string,
     taggedFileNames: string[] = [],
     maxTokens: number = 2000,
     onUsage?: (usage: any) => void
   ): Promise<{ answer: string }> {
     let answer = "";
     for await (const chunk of this.generateAnswerStream(
-      userQuery, expandedQuery, contextChunks, temperature, useVault, modelId, contextScript, openRouterKey, googleKey, taggedFileNames, undefined, maxTokens, onUsage
+      userQuery, expandedQuery, contextChunks, temperature, useVault, modelId, contextScript, openRouterKey, googleKey, xaiKey, openaiKey, taggedFileNames, undefined, maxTokens, onUsage
     )) {
       answer += chunk;
     }
@@ -316,6 +330,8 @@ export class GeminiRAGService {
     modelId: string = 'google/gemini-2.0-flash-thinking-exp:free',
     openRouterKey?: string,
     googleKey?: string,
+    xaiKey?: string,
+    openaiKey?: string,
     customContext: string = ""
   ): Promise<ResearchPlan> {
     const contextAwareness = conversationHistory
@@ -356,7 +372,9 @@ Based on what we know so far, decide the SINGLE next action.
           prompt: currentPrompt,
           temperature: 0.2,
           openRouterKey,
-          googleKey
+          googleKey,
+          xaiKey,
+          openaiKey
         });
 
         const parsed = this.cleanAndParseJSON(response);
@@ -411,9 +429,11 @@ Based on what we know so far, decide the SINGLE next action.
     taggedFileNames: string[] = [],
     modelId: string = 'google/gemini-2.0-flash-thinking-exp:free',
     openRouterKey?: string,
-    googleKey?: string
+    googleKey?: string,
+    xaiKey?: string,
+    openaiKey?: string
   ): Promise<ResearchPlan> {
-    return this.decideNextAction(userQuery, availableFileNames, filePreviews, conversationHistory, "", taggedFileNames, modelId, openRouterKey, googleKey);
+    return this.decideNextAction(userQuery, availableFileNames, filePreviews, conversationHistory, "", taggedFileNames, modelId, openRouterKey, googleKey, xaiKey, openaiKey);
   }
 
   /**
@@ -423,9 +443,11 @@ Based on what we know so far, decide the SINGLE next action.
     userPrompt: string,
     aiResponse: string,
     usedFiles: string[],
-    modelId: string,
-    openRouterKey?: string,
-    googleKey?: string
+    modelId,
+    openRouterKey,
+    googleKey,
+    xaiKey,
+    openaiKey
   ): Promise<string> {
     const filesString = usedFiles.length > 0 ? usedFiles.join(', ') : 'No vault files';
 
@@ -436,7 +458,9 @@ Based on what we know so far, decide the SINGLE next action.
       prompt: `Input: ${userPrompt}\n\nResponse: ${aiResponse}`,
       temperature: 0.1,
       openRouterKey,
-      googleKey
+      googleKey,
+      xaiKey,
+      openaiKey
     });
   }
 }

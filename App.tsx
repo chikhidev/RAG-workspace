@@ -11,11 +11,14 @@ import { X, Key, Shield, ExternalLink, PanelLeft, PanelLeftClose } from 'lucide-
 
 const STORAGE_KEYS = {
   DOCUMENTS: 'gemini_rag_docs',
-  SETTINGS: 'gemini_rag_settings',
+  SETTINGS: 'gemini_rag_settings_v2', // Version settings to reset model state if needed, or just change keys
   PROMPT_HISTORY: 'gemini_rag_history',
   CONTEXT_SCRIPT: 'gemini_rag_context_script',
+  SELECTED_MODEL: 'gemini_rag_selected_model',
   OPENROUTER_KEY: 'gemini_rag_openrouter_key',
   GOOGLE_KEY: 'gemini_rag_google_key',
+  XAI_KEY: 'gemini_rag_xai_key',
+  OPENAI_KEY: 'gemini_rag_openai_key',
   CUSTOM_CONTEXT: 'gemini_rag_custom_context'
 };
 
@@ -26,7 +29,11 @@ const ApiKeyModal: React.FC<{
   setOpenRouterKey: (k: string) => void;
   googleKey: string;
   setGoogleKey: (k: string) => void;
-}> = ({ isOpen, onClose, openRouterKey, setOpenRouterKey, googleKey, setGoogleKey }) => {
+  xaiKey: string;
+  setXaiKey: (k: string) => void;
+  openaiKey: string;
+  setOpenaiKey: (k: string) => void;
+}> = ({ isOpen, onClose, openRouterKey, setOpenRouterKey, googleKey, setGoogleKey, xaiKey, setXaiKey, openaiKey, setOpenaiKey }) => {
   if (!isOpen) return null;
 
   return (
@@ -91,6 +98,50 @@ const ApiKeyModal: React.FC<{
                   value={googleKey}
                   onChange={(e) => setGoogleKey(e.target.value)}
                   placeholder="AIzaSy..."
+                  className="w-full bg-brand-darker border border-brand-border rounded-lg px-4 py-2.5 text-[13px] font-mono text-gray-200 outline-none focus:border-brand-accent/50 transition-all placeholder:text-gray-700"
+                />
+              </div>
+            </div>
+
+            {/* xAI Row */}
+            <div className="flex items-center gap-6 p-6 hover:bg-brand-base/30 transition-colors group">
+              <div className="w-10 h-10 bg-white rounded-lg p-1.5 shrink-0 flex items-center justify-center">
+                <img src="/logos/xai.png" alt="xAI" className="w-full h-full object-contain" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm font-bold text-gray-200">xAI (Grok)</span>
+                </div>
+                <p className="text-[11px] text-brand-muted">Access Grok 3 and Grok 3 Mini models</p>
+              </div>
+              <div className="w-[400px]">
+                <input
+                  type="password"
+                  value={xaiKey}
+                  onChange={(e) => setXaiKey(e.target.value)}
+                  placeholder="xai-..."
+                  className="w-full bg-brand-darker border border-brand-border rounded-lg px-4 py-2.5 text-[13px] font-mono text-gray-200 outline-none focus:border-brand-accent/50 transition-all placeholder:text-gray-700"
+                />
+              </div>
+            </div>
+
+            {/* OpenAI Row */}
+            <div className="flex items-center gap-6 p-6 hover:bg-brand-base/30 transition-colors group">
+              <div className="w-10 h-10 bg-white rounded-lg p-1.5 shrink-0 flex items-center justify-center">
+                <img src="/logos/chatgpt.png" alt="OpenAI" className="w-full h-full object-contain" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm font-bold text-gray-200">OpenAI</span>
+                </div>
+                <p className="text-[11px] text-brand-muted">Access GPT-5 suite, and older GPT-4/3.5 models directly</p>
+              </div>
+              <div className="w-[400px]">
+                <input
+                  type="password"
+                  value={openaiKey}
+                  onChange={(e) => setOpenaiKey(e.target.value)}
+                  placeholder="sk-..."
                   className="w-full bg-brand-darker border border-brand-border rounded-lg px-4 py-2.5 text-[13px] font-mono text-gray-200 outline-none focus:border-brand-accent/50 transition-all placeholder:text-gray-700"
                 />
               </div>
@@ -187,10 +238,11 @@ const App: React.FC = () => {
     useVault: initialSettings.useVault,
     useContextHistory: initialSettings.useContextHistory,
     contextScript: localStorage.getItem(STORAGE_KEYS.CONTEXT_SCRIPT) || "",
-    expanderModel: initialSettings.expanderModel,
-    reasonerModel: initialSettings.reasonerModel,
+    selectedModel: localStorage.getItem(STORAGE_KEYS.SELECTED_MODEL) || 'google/gemini-2.0-flash-thinking-exp:free',
     openRouterKey: localStorage.getItem(STORAGE_KEYS.OPENROUTER_KEY) || "",
     googleKey: localStorage.getItem(STORAGE_KEYS.GOOGLE_KEY) || "",
+    xaiKey: localStorage.getItem(STORAGE_KEYS.XAI_KEY) || "",
+    openaiKey: localStorage.getItem(STORAGE_KEYS.OPENAI_KEY) || "",
     inputPosition: initialSettings.inputPosition,
     isApiKeyModalOpen: false,
     isInputModalOpen: false,
@@ -228,12 +280,11 @@ const App: React.FC = () => {
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify({
       useVault: state.useVault,
       useContextHistory: state.useContextHistory,
-      expanderModel: state.expanderModel,
-      reasonerModel: state.reasonerModel,
+      selectedModel: state.selectedModel,
       inputPosition: state.inputPosition,
       maxTokens: state.maxTokens
     }));
-  }, [state.useVault, state.useContextHistory, state.expanderModel, state.reasonerModel, state.inputPosition, state.maxTokens]);
+  }, [state.useVault, state.useContextHistory, state.selectedModel, state.inputPosition, state.maxTokens]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.OPENROUTER_KEY, state.openRouterKey);
@@ -244,12 +295,24 @@ const App: React.FC = () => {
   }, [state.googleKey]);
 
   useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.XAI_KEY, state.xaiKey);
+  }, [state.xaiKey]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.OPENAI_KEY, state.openaiKey);
+  }, [state.openaiKey]);
+
+  useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.CONTEXT_SCRIPT, state.contextScript);
   }, [state.contextScript]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.CUSTOM_CONTEXT, state.customContext);
   }, [state.customContext]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.SELECTED_MODEL, state.selectedModel);
+  }, [state.selectedModel]);
 
   const addToast = (message: string, type: Toast['type'] = 'error') => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -422,9 +485,11 @@ const App: React.FC = () => {
             hist,
             currentKnowledgeBuffer,
             taggedFileNames,
-            state.expanderModel,
+            state.selectedModel,
             state.openRouterKey,
             state.googleKey,
+            state.xaiKey,
+            state.openaiKey,
             state.customContext
           );
 
@@ -543,10 +608,12 @@ const App: React.FC = () => {
         thinkerResult = await geminiRAG.thinkerStep(
           query,
           sources,
-          state.expanderModel,
+          state.selectedModel,
           activeDocs.map(d => d.name),
           state.openRouterKey,
           state.googleKey,
+          state.xaiKey,
+          state.openaiKey,
           state.customContext
         );
 
@@ -609,8 +676,10 @@ const App: React.FC = () => {
       const stream = geminiRAG.generateAnswerStream(
         query, expandedQuery, sources,
         0.7,
-        state.useVault, state.reasonerModel, hist, state.openRouterKey,
+        state.useVault, state.selectedModel, hist, state.openRouterKey,
         state.googleKey,
+        state.xaiKey,
+        state.openaiKey,
         taggedFileNames,
         thinkerResult,
         state.maxTokens,
@@ -663,9 +732,11 @@ const App: React.FC = () => {
           query,
           fullAnswer,
           Array.from(new Set(sources.map(s => s.docName))),
-          state.expanderModel,
+          state.selectedModel,
           state.openRouterKey,
-          state.googleKey
+          state.googleKey,
+          state.xaiKey,
+          state.openaiKey
         );
         setState(prev => ({ ...prev, contextScript: prev.contextScript ? `${prev.contextScript}\n${scriptLine}` : scriptLine }));
       }
@@ -710,9 +781,9 @@ const App: React.FC = () => {
       status: state.useVault ? 'searching' : 'reasoning',
       timestamp: new Date(),
       subtasks: state.useVault ? [
-        { label: 'Searched', status: 'loading' },
-        { label: 'Analyzed', status: 'pending' },
-        { label: 'Linked', status: 'pending' }
+        { label: 'Planning', status: 'loading' },
+        { label: 'Searching', status: 'pending' },
+        { label: 'Drafting', status: 'pending' }
       ] : []
     };
 
@@ -720,7 +791,7 @@ const App: React.FC = () => {
     setInputValue('');
 
     await processQuery(currentQuery, assistantId);
-  }, [inputValue, state.isProcessing, state.documents, state.useVault, state.expanderModel, state.reasonerModel, state.contextScript, state.useContextHistory, state.openRouterKey]);
+  }, [inputValue, state.isProcessing, state.documents, state.useVault, state.selectedModel, state.contextScript, state.useContextHistory, state.openRouterKey]);
 
   const handleRetry = useCallback(async (failedMessageId: string) => {
     if (state.isProcessing) return;
@@ -737,7 +808,7 @@ const App: React.FC = () => {
     }));
 
     await processQuery(userMsg.content, failedMessageId);
-  }, [state.messages, state.isProcessing, state.useVault, state.documents, state.expanderModel, state.reasonerModel, state.contextScript, state.useContextHistory, state.openRouterKey]);
+  }, [state.messages, state.isProcessing, state.useVault, state.documents, state.selectedModel, state.contextScript, state.useContextHistory, state.openRouterKey]);
 
   const handleUpdateSources = useCallback((messageId: string, newSources: Chunk[]) => {
     setState(prev => ({
@@ -785,8 +856,10 @@ const App: React.FC = () => {
       const { answer } = await geminiRAG.generateAnswer(
         userMsg.content, expandedQuery, sources,
         0.7,
-        state.useVault, state.reasonerModel, hist, state.openRouterKey,
+        state.useVault, state.selectedModel, hist, state.openRouterKey,
         state.googleKey,
+        state.xaiKey,
+        state.openaiKey,
         taggedFileNames
       );
       const reasoningDuration = (performance.now() - t3) / 1000;
@@ -814,7 +887,7 @@ const App: React.FC = () => {
       setState(prev => ({ ...prev, isProcessing: false }));
       abortControllerRef.current = null;
     }
-  }, [state.messages, state.isProcessing, state.useVault, state.reasonerModel, state.contextScript, state.useContextHistory, state.openRouterKey, state.documents]);
+  }, [state.messages, state.isProcessing, state.useVault, state.selectedModel, state.contextScript, state.useContextHistory, state.openRouterKey, state.documents]);
 
   const handleClarificationAnswer = useCallback(async (messageId: string, answer: string) => {
     const msg = state.messages.find(m => m.id === messageId);
@@ -846,6 +919,15 @@ const App: React.FC = () => {
       title: "Clear Conversation",
       message: "Are you sure you want to clear the entire conversation history? This action cannot be undone.",
       onConfirm: () => setState(prev => ({ ...prev, messages: [], contextScript: "" }))
+    });
+  }, []);
+
+  const handleClearContextHistory = useCallback(() => {
+    setConfirmationState({
+      isOpen: true,
+      title: "Clear Context History",
+      message: "Are you sure you want to clear the context history? This will reset the conversation memory.",
+      onConfirm: () => setState(prev => ({ ...prev, contextScript: "" }))
     });
   }, []);
 
@@ -883,8 +965,7 @@ const App: React.FC = () => {
         </button>
         <ChatInterface
           messages={state.messages}
-          expanderModelId={state.expanderModel}
-          reasonerModelId={state.reasonerModel}
+          selectedModelId={state.selectedModel}
           onRetry={handleRetry}
           onRegenerate={handleRegenerate}
           onUpdateSources={handleUpdateSources}
@@ -911,15 +992,11 @@ const App: React.FC = () => {
           onSend={handleSend} onStop={handleStop} onHistoryNav={(d) => { }}
           isProcessing={state.isProcessing}
           useVault={state.useVault} setUseVault={(v) => setState(prev => ({ ...prev, useVault: v }))}
-          useContextHistory={state.useContextHistory} setUseContextHistory={(v) => setState(prev => ({ ...prev, useContextHistory: v }))}
-          onClearContext={() => setConfirmationState({
-            isOpen: true,
-            title: "Clear Context History",
-            message: "Are you sure you want to clear the context history? This will reset the conversation memory.",
-            onConfirm: () => setState(prev => ({ ...prev, contextScript: "" }))
-          })}
-          expanderModel={state.expanderModel} setExpanderModel={(m) => setState(prev => ({ ...prev, expanderModel: m }))}
-          reasonerModel={state.reasonerModel} setReasonerModel={(m) => setState(prev => ({ ...prev, reasonerModel: m }))}
+          useContextHistory={state.useContextHistory}
+          setUseContextHistory={(v) => setState(prev => ({ ...prev, useContextHistory: v }))}
+          onClearContext={handleClearContextHistory}
+          selectedModel={state.selectedModel}
+          setSelectedModel={(m) => setState(prev => ({ ...prev, selectedModel: m }))}
           openRouterKey={state.openRouterKey} setOpenRouterKey={(k) => setState(prev => ({ ...prev, openRouterKey: k }))}
           onOpenApiManagement={() => setState(prev => ({ ...prev, isApiKeyModalOpen: true }))}
           inputPosition={state.inputPosition}
@@ -943,6 +1020,10 @@ const App: React.FC = () => {
         setOpenRouterKey={(k) => setState(prev => ({ ...prev, openRouterKey: k }))}
         googleKey={state.googleKey}
         setGoogleKey={(k) => setState(prev => ({ ...prev, googleKey: k }))}
+        xaiKey={state.xaiKey}
+        setXaiKey={(k) => setState(prev => ({ ...prev, xaiKey: k }))}
+        openaiKey={state.openaiKey}
+        setOpenaiKey={(k) => setState(prev => ({ ...prev, openaiKey: k }))}
       />
 
       {confirmationState && (

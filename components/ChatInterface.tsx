@@ -8,8 +8,7 @@ import { SUPPORTED_MODELS } from '../services/modelService';
 
 interface Props {
   messages: Message[];
-  expanderModelId: string;
-  reasonerModelId: string;
+  selectedModelId: string;
   onRetry: (id: string) => void;
   onRegenerate: (id: string) => void;
   onUpdateSources: (id: string, sources: Chunk[]) => void;
@@ -250,7 +249,7 @@ const PipelineDetails: React.FC<{
 };
 
 export const ChatInterface: React.FC<Props> = ({
-  messages, expanderModelId, reasonerModelId, onRetry, onRegenerate, onUpdateSources, onClearChat,
+  messages, selectedModelId, onRetry, onRegenerate, onUpdateSources, onClearChat,
   inputPosition, inputValue, setInputValue, onSend, onStop, isProcessing, onClarifyAnswer, availableDocuments
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -337,8 +336,7 @@ export const ChatInterface: React.FC<Props> = ({
     doc.name.toLowerCase().includes(suggestionFilter.toLowerCase())
   );
 
-  const expanderModel = SUPPORTED_MODELS.find(m => m.id === expanderModelId);
-  const reasonerModel = SUPPORTED_MODELS.find(m => m.id === reasonerModelId);
+  const selectedModel = SUPPORTED_MODELS.find(m => m.id === selectedModelId);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (showSuggestions && filteredDocs.length > 0) {

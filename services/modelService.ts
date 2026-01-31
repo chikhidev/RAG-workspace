@@ -413,6 +413,39 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       throughput: '60tps'
     }
   },
+  // --- X.AI MODELS ---
+  {
+    id: 'grok-3',
+    name: 'Grok 3 (xAI)',
+    provider: 'xai',
+    description: 'xAI - Latest flagship model by xAI.',
+    size: 'large',
+    logo: '/logos/xai.png',
+    metadata: {
+      author: 'xAI',
+      context: '128K',
+      inputPrice: 'Unknown',
+      outputPrice: 'Unknown',
+      latency: 'Unknown',
+      throughput: 'Unknown'
+    }
+  },
+  {
+    id: 'grok-3-mini',
+    name: 'Grok 3 Mini (xAI)',
+    provider: 'xai',
+    description: 'xAI - Efficient reasoning model.',
+    size: 'small',
+    logo: '/logos/xai.png',
+    metadata: {
+      author: 'xAI',
+      context: '128K',
+      inputPrice: 'Unknown',
+      outputPrice: 'Unknown',
+      latency: 'Unknown',
+      throughput: 'Unknown'
+    }
+  },
   // --- PAID MODELS ---
   {
     id: 'anthropic/claude-3.7-sonnet',
@@ -590,6 +623,106 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       throughput: '250tps'
     }
   },
+  // --- OPENAI MODELS (Responses API) ---
+  {
+    id: 'gpt-5.2',
+    name: 'GPT-5.2',
+    provider: 'openai',
+    description: 'OpenAI - Best model for coding and agentic tasks.',
+    size: 'large',
+    logo: '/logos/chatgpt.png',
+    metadata: { author: 'OpenAI', context: '200K', inputPrice: 'Unknown', outputPrice: 'Unknown', latency: 'Unknown', throughput: 'Unknown' }
+  },
+  {
+    id: 'gpt-5-mini',
+    name: 'GPT-5 mini',
+    provider: 'openai',
+    description: 'OpenAI - Faster, cost-efficient version of GPT-5.',
+    size: 'small',
+    logo: '/logos/chatgpt.png',
+    metadata: { author: 'OpenAI', context: '128K', inputPrice: 'Unknown', outputPrice: 'Unknown', latency: 'Unknown', throughput: 'Unknown' }
+  },
+  {
+    id: 'gpt-5-nano',
+    name: 'GPT-5 nano',
+    provider: 'openai',
+    description: 'OpenAI - Fastest, most cost-efficient version of GPT-5.',
+    size: 'small',
+    logo: '/logos/chatgpt.png',
+    metadata: { author: 'OpenAI', context: '64K', inputPrice: 'Unknown', outputPrice: 'Unknown', latency: 'Unknown', throughput: 'Unknown' }
+  },
+  {
+    id: 'gpt-5.2-pro',
+    name: 'GPT-5.2 pro',
+    provider: 'openai',
+    description: 'OpenAI - Smarter and more precise GPT-5.2.',
+    size: 'large',
+    logo: '/logos/chatgpt.png',
+    metadata: { author: 'OpenAI', context: '200K', inputPrice: 'Unknown', outputPrice: 'Unknown', latency: 'Unknown', throughput: 'Unknown' }
+  },
+  {
+    id: 'gpt-5',
+    name: 'GPT-5',
+    provider: 'openai',
+    description: 'OpenAI - Previous intelligent reasoning model.',
+    size: 'large',
+    logo: '/logos/chatgpt.png',
+    metadata: { author: 'OpenAI', context: '128K', inputPrice: 'Unknown', outputPrice: 'Unknown', latency: 'Unknown', throughput: 'Unknown' }
+  },
+  {
+    id: 'gpt-4.1',
+    name: 'GPT-4.1',
+    provider: 'openai',
+    description: 'OpenAI - Smartest non-reasoning model.',
+    size: 'large',
+    logo: '/logos/chatgpt.png',
+    metadata: { author: 'OpenAI', context: '128K', inputPrice: 'Unknown', outputPrice: 'Unknown', latency: 'Unknown', throughput: 'Unknown' }
+  },
+  {
+    id: 'gpt-oss-120b',
+    name: 'gpt-oss-120b',
+    provider: 'openai',
+    description: 'OpenAI - Most powerful open-weight model.',
+    size: 'large',
+    logo: '/logos/chatgpt.png',
+    metadata: { author: 'OpenAI', context: '128K', inputPrice: 'Unknown', outputPrice: 'Unknown', latency: 'Unknown', throughput: 'Unknown' }
+  },
+  {
+    id: 'gpt-oss-20b',
+    name: 'gpt-oss-20b',
+    provider: 'openai',
+    description: 'OpenAI - Medium-sized open-weight model.',
+    size: 'large',
+    logo: '/logos/chatgpt.png',
+    metadata: { author: 'OpenAI', context: '128K', inputPrice: 'Unknown', outputPrice: 'Unknown', latency: 'Unknown', throughput: 'Unknown' }
+  },
+  {
+    id: 'o3-mini',
+    name: 'o3-mini',
+    provider: 'openai',
+    description: 'OpenAI - Small model alternative to o3.',
+    size: 'small',
+    logo: '/logos/chatgpt.png',
+    metadata: { author: 'OpenAI', context: '200K', inputPrice: 'Unknown', outputPrice: 'Unknown', latency: 'Unknown', throughput: 'Unknown' }
+  },
+  {
+    id: 'o1',
+    name: 'o1',
+    provider: 'openai',
+    description: 'OpenAI - Previous full o-series reasoning model.',
+    size: 'large',
+    logo: '/logos/chatgpt.png',
+    metadata: { author: 'OpenAI', context: '200K', inputPrice: 'Unknown', outputPrice: 'Unknown', latency: 'Unknown', throughput: 'Unknown' }
+  },
+  {
+    id: 'o1-mini',
+    name: 'o1-mini',
+    provider: 'openai',
+    description: 'OpenAI - Small model alternative to o1.',
+    size: 'small',
+    logo: '/logos/chatgpt.png',
+    metadata: { author: 'OpenAI', context: '128K', inputPrice: 'Unknown', outputPrice: 'Unknown', latency: 'Unknown', throughput: 'Unknown' }
+  },
 ];
 
 interface ExecutionParams {
@@ -600,6 +733,8 @@ interface ExecutionParams {
   thinkingBudget?: number;
   openRouterKey?: string;
   googleKey?: string;
+  xaiKey?: string;
+  openaiKey?: string;
   maxTokens?: number;
   onUsage?: (usage: { prompt_tokens: number; completion_tokens: number; total_tokens: number }) => void;
 }
@@ -793,6 +928,231 @@ class ModelService {
     }
   }
 
+  // xAI Execution
+  private async executeXai(params: ExecutionParams): Promise<string> {
+    if (!params.xaiKey) {
+      throw new Error("xAI API Key is missing. Please set it in the settings.");
+    }
+
+    try {
+      const response = await fetch('https://api.x.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${params.xaiKey}`
+        },
+        body: JSON.stringify({
+          model: params.modelId,
+          messages: [
+            { role: "system", content: params.systemInstruction },
+            { role: "user", content: params.prompt }
+          ],
+          temperature: params.temperature,
+          max_tokens: params.maxTokens,
+          stream: false
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error?.message || `xAI API Error ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (params.onUsage && data.usage) {
+        params.onUsage({
+          prompt_tokens: data.usage.prompt_tokens,
+          completion_tokens: data.usage.completion_tokens,
+          total_tokens: data.usage.total_tokens
+        });
+      }
+
+      return data.choices[0]?.message?.content || "";
+    } catch (error: any) {
+      console.error("xAI API Error:", error);
+      throw new Error(error.message || "Failed to generate response from xAI.");
+    }
+  }
+
+  // xAI Streaming
+  private async *streamXai(params: ExecutionParams): AsyncGenerator<string, void, unknown> {
+    if (!params.xaiKey) {
+      throw new Error("xAI API Key is missing. Please set it in the settings.");
+    }
+
+    try {
+      const response = await fetch('https://api.x.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${params.xaiKey}`
+        },
+        body: JSON.stringify({
+          model: params.modelId,
+          messages: [
+            { role: "system", content: params.systemInstruction },
+            { role: "user", content: params.prompt }
+          ],
+          temperature: params.temperature,
+          max_tokens: params.maxTokens,
+          stream: true
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error?.message || `xAI API Error ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("No response body from xAI stream.");
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep the last incomplete line
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed === 'data: [DONE]') continue;
+          if (trimmed.startsWith('data: ')) {
+            try {
+              const json = JSON.parse(trimmed.slice(6));
+
+              if (json.usage && params.onUsage) {
+                params.onUsage({
+                  prompt_tokens: json.usage.prompt_tokens,
+                  completion_tokens: json.usage.completion_tokens,
+                  total_tokens: json.usage.total_tokens
+                });
+              }
+
+              const content = json.choices[0]?.delta?.content;
+              if (content) {
+                yield content;
+              }
+            } catch (e) {
+              console.warn("Failed to parse xAI stream chunk", e);
+            }
+          }
+        }
+      }
+
+    } catch (error: any) {
+      console.error("xAI Stream Error:", error);
+      throw new Error(error.message || "Failed to stream from xAI.");
+    }
+  }
+
+  // OpenAI Responses API Execution
+  private async executeOpenAi(params: ExecutionParams): Promise<string> {
+    if (!params.openaiKey) {
+      throw new Error("OpenAI API Key is missing. Please set it in the settings.");
+    }
+
+    try {
+      const response = await fetch('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${params.openaiKey}`
+        },
+        body: JSON.stringify({
+          model: params.modelId,
+          input: `${params.systemInstruction}\n\n${params.prompt}`,
+          temperature: params.temperature,
+          max_tokens: params.maxTokens,
+          stream: false
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error?.message || `OpenAI API Error ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // OpenAI Responses API uses output_text helper in SDK, 
+      // but in REST it might be data.output[0].text or similar depending on the exact spec of v1/responses
+      // Based on user eg: response.output_text
+      return data.output_text || "";
+    } catch (error: any) {
+      console.error("OpenAI API Error:", error);
+      throw new Error(error.message || "Failed to generate response from OpenAI.");
+    }
+  }
+
+  private async *streamOpenAi(params: ExecutionParams): AsyncGenerator<string, void, unknown> {
+    if (!params.openaiKey) {
+      throw new Error("OpenAI API Key is missing. Please set it in the settings.");
+    }
+
+    try {
+      const response = await fetch('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${params.openaiKey}`
+        },
+        body: JSON.stringify({
+          model: params.modelId,
+          input: `${params.systemInstruction}\n\n${params.prompt}`,
+          temperature: params.temperature,
+          max_tokens: params.maxTokens,
+          stream: true
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error?.message || `OpenAI API Error ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("No response body from OpenAI stream.");
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed === 'data: [DONE]') continue;
+          if (trimmed.startsWith('data: ')) {
+            try {
+              const json = JSON.parse(trimmed.slice(6));
+              // For Responses API streaming, it might be delta based
+              const content = json.delta?.output_text || json.choices?.[0]?.delta?.content;
+              if (content) {
+                yield content;
+              }
+            } catch (e) {
+              console.warn("Failed to parse OpenAI stream chunk", e);
+            }
+          }
+        }
+      }
+    } catch (error: any) {
+      console.error("OpenAI Stream Error:", error);
+      throw new Error(error.message || "Failed to stream from OpenAI.");
+    }
+  }
+
   public async run(params: ExecutionParams): Promise<string> {
     const definition = SUPPORTED_MODELS.find(m => m.id === params.modelId);
     if (!definition) throw new Error(`Unsupported model: ${params.modelId}`);
@@ -801,6 +1161,10 @@ class ModelService {
       return this.executeOpenRouter(params);
     } else if (definition.provider === 'google') {
       return this.executeGoogle(params);
+    } else if (definition.provider === 'xai') {
+      return this.executeXai(params);
+    } else if (definition.provider === 'openai') {
+      return this.executeOpenAi(params);
     } else {
       throw new Error(`Provider ${definition.provider} is not currently supported.`);
     }
@@ -814,6 +1178,10 @@ class ModelService {
       yield* this.streamOpenRouter(params);
     } else if (definition.provider === 'google') {
       yield* this.streamGoogle(params);
+    } else if (definition.provider === 'xai') {
+      yield* this.streamXai(params);
+    } else if (definition.provider === 'openai') {
+      yield* this.streamOpenAi(params);
     } else {
       throw new Error(`Provider ${definition.provider} is not currently supported.`);
     }

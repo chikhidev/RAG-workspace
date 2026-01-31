@@ -18,10 +18,8 @@ interface Props {
   useContextHistory: boolean;
   setUseContextHistory: (v: boolean) => void;
   onClearContext: () => void;
-  expanderModel: string;
-  setExpanderModel: (m: string) => void;
-  reasonerModel: string;
-  setReasonerModel: (m: string) => void;
+  selectedModel: string;
+  setSelectedModel: (m: string) => void;
   openRouterKey: string;
   setOpenRouterKey: (k: string) => void;
   onOpenApiManagement: () => void;
@@ -69,7 +67,7 @@ const ModelDetails: React.FC<{ model?: ModelDefinition }> = ({ model }) => {
 export const RightSidebar: React.FC<Props> = ({
   inputValue, setInputValue, onSend, onStop, onHistoryNav, isProcessing,
   useVault, setUseVault, useContextHistory, setUseContextHistory,
-  onClearContext, expanderModel, setExpanderModel, reasonerModel, setReasonerModel,
+  onClearContext, selectedModel, setSelectedModel,
   onOpenApiManagement, inputPosition, setInputPosition, availableDocuments, onClearChat,
   maxTokens, setMaxTokens, maxAgentIterations, setMaxAgentIterations, sessionStats,
   customContext, setCustomContext
@@ -77,7 +75,7 @@ export const RightSidebar: React.FC<Props> = ({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestionFilter, setSuggestionFilter] = useState('');
   const [cursorPosition, setCursorPosition] = useState(0);
-  const [activeModal, setActiveModal] = useState<'expander' | 'reasoner' | null>(null);
+  const [activeModal, setActiveModal] = useState<boolean>(false);
   const [showCustomContext, setShowCustomContext] = useState(false);
   const sidebarTextareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -136,8 +134,7 @@ export const RightSidebar: React.FC<Props> = ({
   const toggleBtnClass = "w-full flex items-center justify-between p-4 rounded-xl border border-brand-border bg-[#252525] transition-all hover:bg-brand-border/50";
   const selectClass = "w-full bg-[#252525] border border-brand-border rounded-xl p-3 text-[13px] font-bold text-gray-200 outline-none focus:border-brand-accent/50 appearance-none cursor-pointer hover:border-brand-accent/30 transition-all pl-10";
 
-  const selectedExpander = SUPPORTED_MODELS.find(m => m.id === expanderModel);
-  const selectedReasoner = SUPPORTED_MODELS.find(m => m.id === reasonerModel);
+  const selectedModelDef = SUPPORTED_MODELS.find(m => m.id === selectedModel);
 
   return (
     <div className="flex flex-col h-full bg-brand-darker border-l border-transparent p-6 w-full transition-colors overflow-y-auto relative">
@@ -264,70 +261,38 @@ export const RightSidebar: React.FC<Props> = ({
 
       <div className="pt-10 border-t border-brand-border space-y-10">
         <div>
-          <h2 className="text-md text-white mb-6 tracking-tight">Infrastructure</h2>
+          <h2 className="text-md text-white mb-6 tracking-tight">Intelligence</h2>
           <div className="space-y-8">
             <div className="space-y-2">
               <label className="flex items-center gap-2 text-[10px] font-mono text-brand-muted uppercase tracking-widest">
-                Context expander
-                {selectedExpander?.isFree && (
+                Primary Model
+                {selectedModelDef?.isFree && (
                   <span className="ml-1 px-1 py-0.5 bg-emerald-500/10 text-emerald-500 rounded text-[8px] font-bold">FREE</span>
                 )}
               </label>
 
               <div
-                onClick={() => setActiveModal('expander')}
+                onClick={() => setActiveModal(true)}
                 className="w-full bg-[#252525] border border-brand-border rounded-xl p-3 flex items-center justify-between cursor-pointer hover:border-brand-accent/50 group transition-all"
               >
                 <div className="flex items-center gap-3">
-                  {selectedExpander && (
+                  {selectedModelDef && (
                     <div className="w-8 h-8 bg-white rounded p-1 flex items-center justify-center">
-                      <img src={selectedExpander.logo} alt="" className="w-full h-full object-contain" />
+                      <img src={selectedModelDef.logo} alt="" className="w-full h-full object-contain" />
                     </div>
                   )}
                   <div className="text-left">
                     <div className="text-[13px] font-bold text-gray-200 group-hover:text-white transition-colors line-clamp-1">
-                      {selectedExpander?.name || 'Select Model'}
+                      {selectedModelDef?.name || 'Select Model'}
                     </div>
                     <div className="text-[10px] text-brand-muted uppercase tracking-wider">
-                      {selectedExpander?.provider} • {selectedExpander?.size}
+                      {selectedModelDef?.provider} • {selectedModelDef?.size}
                     </div>
                   </div>
                 </div>
                 <Settings2 size={14} className="text-gray-500 group-hover:text-brand-accent transition-colors" />
               </div>
-              <ModelDetails model={selectedExpander} />
-            </div>
-
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-[10px] font-mono text-brand-muted uppercase tracking-widest">
-                Synthesizer (Reasoner)
-                {selectedReasoner?.isFree && (
-                  <span className="ml-1 px-1 py-0.5 bg-emerald-500/10 text-emerald-500 rounded text-[8px] font-bold">FREE</span>
-                )}
-              </label>
-
-              <div
-                onClick={() => setActiveModal('reasoner')}
-                className="w-full bg-[#252525] border border-brand-border rounded-xl p-3 flex items-center justify-between cursor-pointer hover:border-brand-accent/50 group transition-all"
-              >
-                <div className="flex items-center gap-3">
-                  {selectedReasoner && (
-                    <div className="w-8 h-8 bg-white rounded p-1 flex items-center justify-center">
-                      <img src={selectedReasoner.logo} alt="" className="w-full h-full object-contain" />
-                    </div>
-                  )}
-                  <div className="text-left">
-                    <div className="text-[13px] font-bold text-gray-200 group-hover:text-white transition-colors line-clamp-1">
-                      {selectedReasoner?.name || 'Select Model'}
-                    </div>
-                    <div className="text-[10px] text-brand-muted uppercase tracking-wider">
-                      {selectedReasoner?.provider} • {selectedReasoner?.size}
-                    </div>
-                  </div>
-                </div>
-                <Settings2 size={14} className="text-gray-500 group-hover:text-brand-accent transition-colors" />
-              </div>
-              <ModelDetails model={selectedReasoner} />
+              <ModelDetails model={selectedModelDef} />
             </div>
           </div>
         </div>
@@ -434,21 +399,11 @@ export const RightSidebar: React.FC<Props> = ({
       </div>
 
       <ModelSelectorModal
-        isOpen={activeModal === 'expander'}
-        onClose={() => setActiveModal(null)}
-        currentModelId={expanderModel}
-        onSelect={setExpanderModel}
-        category="small"
-        title="Select Expansion Model"
-      />
-
-      <ModelSelectorModal
-        isOpen={activeModal === 'reasoner'}
-        onClose={() => setActiveModal(null)}
-        currentModelId={reasonerModel}
-        onSelect={setReasonerModel}
-        category="large"
-        title="Select Reasoning Model"
+        isOpen={activeModal}
+        onClose={() => setActiveModal(false)}
+        currentModelId={selectedModel}
+        onSelect={setSelectedModel}
+        title="Select Primary Intelligence"
       />
 
     </div>

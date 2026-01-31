@@ -9,24 +9,19 @@ interface ModelSelectorModalProps {
     onClose: () => void;
     currentModelId: string;
     onSelect: (modelId: string) => void;
-    category: 'small' | 'large';
     title: string;
 }
 
 export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
-    isOpen, onClose, currentModelId, onSelect, category, title
+    isOpen, onClose, currentModelId, onSelect, title
 }) => {
     const [search, setSearch] = useState('');
     const [providerFilter, setProviderFilter] = useState<'all' | string>('all');
 
     if (!isOpen) return null;
 
-    // Filter models based on category and search term
+    // Filter models based on search term and provider
     const models = SUPPORTED_MODELS.filter(m => {
-        // Models >= Gemini 2 from Google are allowed in both small/large categories
-        const isGeminiUpgrade = m.provider === 'google' && (m.id.includes('gemini-2') || m.id.includes('gemini-3'));
-
-        const matchesCategory = isGeminiUpgrade || m.size === category;
         const matchesProvider = providerFilter === 'all' || m.provider.toLowerCase() === providerFilter.toLowerCase();
 
         const matchesSearch =
@@ -34,7 +29,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
             m.provider.toLowerCase().includes(search.toLowerCase()) ||
             m.description.toLowerCase().includes(search.toLowerCase());
 
-        return matchesCategory && matchesProvider && matchesSearch;
+        return matchesProvider && matchesSearch;
     });
 
     const providers = ['all', ...new Set(SUPPORTED_MODELS.map(m => m.provider))];
@@ -70,19 +65,22 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                     </div>
 
                     <div className="flex flex-wrap gap-2">
-                        {providers.map(p => (
-                            <button
-                                key={p}
-                                onClick={() => setProviderFilter(p)}
-                                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border flex items-center gap-2 ${providerFilter === p
+                        {providers.map(p => {
+                            const logoPath = p === 'openai' ? '/logos/chatgpt.png' : `/logos/${p}.png`;
+                            return (
+                                <button
+                                    key={p}
+                                    onClick={() => setProviderFilter(p)}
+                                    className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border flex items-center gap-2 ${providerFilter === p
                                         ? 'bg-brand-accent/20 border-brand-accent text-brand-accent'
                                         : 'bg-white/5 border-transparent text-gray-500 hover:bg-white/10 hover:text-gray-300'
-                                    }`}
-                            >
-                                <img src={`/logos/${p}.png`} alt={p} className='w-4 h-4' />
-                                {p}
-                            </button>
-                        ))}
+                                        }`}
+                                >
+                                    <img src={logoPath} alt={p} className='w-4 h-4 object-contain' />
+                                    {p}
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
 

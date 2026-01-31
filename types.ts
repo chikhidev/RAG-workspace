@@ -50,7 +50,7 @@ export interface Toast {
   type: 'error' | 'success' | 'info';
 }
 
-export type ModelProviderId = 'google' | 'openrouter';
+export type ModelProviderId = 'google' | 'openrouter' | 'xai' | 'openai';
 
 export interface ModelMetadata {
   author: string;
@@ -81,10 +81,11 @@ export interface AppState {
   useVault: boolean;
   useContextHistory: boolean;
   contextScript: string;
-  expanderModel: string;
-  reasonerModel: string;
+  selectedModel: string;
   openRouterKey: string;
   googleKey: string;
+  xaiKey: string;
+  openaiKey: string;
   inputPosition: 'floating' | 'sidebar';
   isInputModalOpen?: boolean;
   inputModalType?: 'text' | 'url';
