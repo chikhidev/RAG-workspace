@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, Sun, Moon, Terminal, Cpu, Eraser, Layers, Key, Settings2, Layout, Maximize2, AlertCircle, FileText, Trash2, BarChart2, Shield } from 'lucide-react';
+import { Send, Loader2, Sun, Moon, Terminal, Cpu, Eraser, Layers, Key, Settings2, Layout, Maximize2, AlertCircle, FileText, Trash2, BarChart2, Shield, ChevronDown, ChevronRight } from 'lucide-react';
 import { SUPPORTED_MODELS } from '../services/modelService';
 
 import { ModelDefinition, Document } from '../types';
@@ -78,6 +78,7 @@ export const RightSidebar: React.FC<Props> = ({
   const [suggestionFilter, setSuggestionFilter] = useState('');
   const [cursorPosition, setCursorPosition] = useState(0);
   const [activeModal, setActiveModal] = useState<'expander' | 'reasoner' | null>(null);
+  const [showCustomContext, setShowCustomContext] = useState(false);
   const sidebarTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Handle Tagging in Sidebar
@@ -229,68 +230,39 @@ export const RightSidebar: React.FC<Props> = ({
         )}
       </div>
 
-      <div className="mb-10 space-y-8">
-        <div>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-md text-white tracking-tight">Context expander Config</h2>
-            <button onClick={onClearContext} className="p-1.5 hover:bg-brand-border rounded transition-colors text-gray-400 hover:text-brand-accent"><Eraser size={14} /></button>
-          </div>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <button onClick={() => setUseContextHistory(!useContextHistory)} className={toggleBtnClass}>
-                <div className="flex flex-col items-start">
-                  <span className="text-[13px] font-bold text-gray-200">Context Continuity</span>
-                  <span className="text-[10px] font-mono text-brand-muted uppercase tracking-tighter">{useContextHistory ? 'Learning Logs' : 'Isolated Turns'}</span>
-                </div>
-                <div className={`w-10 h-5 rounded-full relative transition-colors ${useContextHistory ? 'bg-brand-accent' : 'bg-brand-border'}`}><div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${useContextHistory ? 'left-6' : 'left-1'}`} /></div>
-              </button>
-              {useContextHistory && (
-                <div className="px-3 flex items-start gap-2 animate-[fadeIn_0.3s_ease-out]">
-                  <p className="text-[10px] text-brand-muted leading-relaxed">
-                    Enabling continuity will cause a reasonable slowness in response time.
-                  </p>
-                </div>
-              )}
-            </div>
+      <div className="mb-4 space-y-8">
 
-            <button onClick={() => setUseVault(!useVault)} className={toggleBtnClass}>
-              <div className="flex flex-col items-start">
-                <span className="text-[13px] font-bold text-gray-200">Knowledge Vault</span>
-                <span className="text-[10px] font-mono text-brand-muted uppercase tracking-tighter">{useVault ? 'Active Indexing' : 'Isolated Mode'}</span>
-              </div>
-              <div className={`w-10 h-5 rounded-full relative transition-colors ${useVault ? 'bg-brand-accent' : 'bg-brand-border'}`}><div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${useVault ? 'left-6' : 'left-1'}`} /></div>
-            </button>
-          </div>
-        </div>
 
         <div className="pt-8 border-t border-brand-border/30">
-          <div className="flex items-center justify-between mb-4">
+          <button
+            onClick={() => setShowCustomContext(!showCustomContext)}
+            className="w-full flex items-center justify-between mb-4 hover:opacity-80 transition-opacity"
+          >
             <div className="flex items-center gap-2">
-              <Shield size={14} className="text-brand-accent" />
-              <h2 className="text-md text-white tracking-tight">Custom Context Vault</h2>
+              <h2 className="text-md text-white tracking-tight">Custom Instructions</h2>
             </div>
-          </div>
-          <div className="space-y-3">
-            <p className="text-[10px] text-brand-muted leading-relaxed uppercase tracking-wider font-bold">
-              Permanent Directive & Learning Log
-            </p>
-            <textarea
-              value={customContext}
-              onChange={(e) => setCustomContext(e.target.value)}
-              placeholder="Record developer preferences, system rules, or permanent context here..."
-              className="w-full bg-[#1a1a1a] border border-brand-border rounded-xl p-4 focus:border-brand-accent/50 transition-all text-[12px] font-mono h-40 resize-none text-gray-300 outline-none leading-relaxed placeholder:text-gray-600 shadow-inner"
-            />
-            <div className="flex items-start gap-2 px-1">
-              <AlertCircle size={10} className="text-brand-accent mt-0.5 shrink-0" />
-              <p className="text-[9px] text-brand-muted italic leading-relaxed">
-                Content here is ALWAYS analyzed by the agent during planning to prevent recurring reasoning failures.
-              </p>
+            {showCustomContext ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400" />}
+          </button>
+
+          {showCustomContext && (
+            <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+              <textarea
+                value={customContext}
+                onChange={(e) => setCustomContext(e.target.value)}
+                placeholder="Record developer preferences, specific answer styles, or permanent context here..."
+                className="w-full bg-[#1a1a1a] border border-brand-border rounded-xl p-4 focus:border-brand-accent/50 transition-all text-[12px] font-mono h-40 resize-none text-gray-300 outline-none leading-relaxed placeholder:text-gray-600 shadow-inner"
+              />
+              <div className="flex items-start gap-2 px-1">
+                <p className="text-[9px] text-brand-muted italic leading-relaxed">
+                  Content here is ALWAYS analyzed by the agent during planning to prevent recurring reasoning failures.
+                </p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
-      <div className="mt-4 pt-10 border-t border-brand-border space-y-10">
+      <div className="pt-10 border-t border-brand-border space-y-10">
         <div>
           <h2 className="text-md text-white mb-6 tracking-tight">Infrastructure</h2>
           <div className="space-y-8">
@@ -361,8 +333,37 @@ export const RightSidebar: React.FC<Props> = ({
         </div>
 
         <div>
-          <h2 className="text-md text-white mb-6 tracking-tight">Generation Controls</h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-md text-white tracking-tight">Generation Controls</h2>
+            <button onClick={onClearContext} className="p-1.5 hover:bg-brand-border rounded transition-colors text-gray-400 hover:text-brand-accent" title="Clear Context History"><Eraser size={14} /></button>
+          </div>
           <div className="space-y-6">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <button onClick={() => setUseContextHistory(!useContextHistory)} className={toggleBtnClass}>
+                  <div className="flex flex-col items-start">
+                    <span className="text-[13px] font-bold text-gray-200">Context Continuity</span>
+                    <span className="text-[10px] font-mono text-brand-muted uppercase tracking-tighter">{useContextHistory ? 'Learning Logs' : 'Isolated Turns'}</span>
+                  </div>
+                  <div className={`w-10 h-5 rounded-full relative transition-colors ${useContextHistory ? 'bg-brand-accent' : 'bg-brand-border'}`}><div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${useContextHistory ? 'left-6' : 'left-1'}`} /></div>
+                </button>
+                {useContextHistory && (
+                  <div className="px-3 flex items-start gap-2 animate-[fadeIn_0.3s_ease-out]">
+                    <p className="text-[10px] text-brand-muted leading-relaxed">
+                      Enabling continuity will cause a reasonable slowness in response time.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <button onClick={() => setUseVault(!useVault)} className={toggleBtnClass}>
+                <div className="flex flex-col items-start">
+                  <span className="text-[13px] font-bold text-gray-200">Knowledge Vault</span>
+                  <span className="text-[10px] font-mono text-brand-muted uppercase tracking-tighter">{useVault ? 'Active Indexing' : 'Isolated Mode'}</span>
+                </div>
+                <div className={`w-10 h-5 rounded-full relative transition-colors ${useVault ? 'bg-brand-accent' : 'bg-brand-border'}`}><div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${useVault ? 'left-6' : 'left-1'}`} /></div>
+              </button>
+            </div>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-[13px] font-bold text-gray-200">Max Output Tokens</span>
@@ -427,7 +428,6 @@ export const RightSidebar: React.FC<Props> = ({
                 <span className="text-[12px] font-bold text-gray-200 group-hover:text-brand-accent transition-colors">Configure Access</span>
                 <span className="text-[9px] font-mono text-brand-muted uppercase tracking-tighter">OpenRouter & Credentials</span>
               </div>
-              <Key size={14} className="text-brand-muted group-hover:text-brand-accent transition-colors" />
             </button>
           </div>
         </div>

@@ -30,51 +30,81 @@ const ApiKeyModal: React.FC<{
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-brand-darker w-full max-w-md rounded-2xl border border-brand-border shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-        <div className="px-6 py-4 border-b border-brand-border flex items-center justify-between bg-brand-base/50">
-          <div className="flex items-center gap-2">
-            <h3 className="text-lg font-bold text-gray-100">API Key Management</h3>
-          </div>
-          <button onClick={onClose} className="p-1 hover:bg-brand-base rounded-lg transition-colors text-gray-400">
-            <X size={18} />
-          </button>
+    <div className="fixed inset-0 z-[100] flex flex-col bg-brand-darker animate-in fade-in duration-200">
+      <div className="flex items-center justify-between px-8 py-6 border-b border-brand-border bg-brand-base/50">
+        <div className="flex items-center gap-3">
+          <h2 className="text-xl font-bold text-gray-100 tracking-tight">API Key Management</h2>
         </div>
-        <div className="p-8 space-y-6">
-          <div className="space-y-4">
-            <div className="space-y-3">
-              <label className="flex items-center gap-2 text-[10px] font-mono text-brand-muted uppercase tracking-widest">
-                OpenRouter Key
-              </label>
-              <input
-                type="password"
-                value={openRouterKey}
-                onChange={(e) => setOpenRouterKey(e.target.value)}
-                placeholder="sk-or-v1-..."
-                className="w-full bg-[#252525] border border-brand-border rounded-xl p-4 text-[13px] font-mono text-gray-200 outline-none focus:border-brand-accent/50 transition-all"
-              />
+        <button
+          onClick={onClose}
+          className="p-2 hover:bg-brand-border/50 rounded-full transition-colors text-gray-400 hover:text-white"
+        >
+          <X size={24} />
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-4xl mx-auto px-8 py-12 space-y-8">
+          <div className="space-y-2">
+            <h3 className="text-lg font-bold text-white">Provider Configuration</h3>
+            <p className="text-sm text-brand-muted">Manage your API credentials for various AI providers.</p>
+          </div>
+
+          <div className="bg-[#1a1a1a] border border-brand-border rounded-2xl overflow-hidden divide-y divide-brand-border/50">
+            {/* OpenRouter Row */}
+            <div className="flex items-center gap-6 p-6 hover:bg-brand-base/30 transition-colors group">
+              <div className="w-10 h-10 bg-white rounded-lg p-1.5 shrink-0 flex items-center justify-center">
+                <img src="/logos/openrouter.png" alt="OpenRouter" className="w-full h-full object-contain" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm font-bold text-gray-200">OpenRouter</span>
+                  <span className="px-1.5 py-0.5 rounded bg-brand-accent/10 text-brand-accent text-[10px] font-bold">PRIMARY</span>
+                </div>
+                <p className="text-[11px] text-brand-muted">Aggregator for various top-tier models (Claude, GPT-4, Llama 3)</p>
+              </div>
+              <div className="w-[400px]">
+                <input
+                  type="password"
+                  value={openRouterKey}
+                  onChange={(e) => setOpenRouterKey(e.target.value)}
+                  placeholder="sk-or-v1-..."
+                  className="w-full bg-brand-darker border border-brand-border rounded-lg px-4 py-2.5 text-[13px] font-mono text-gray-200 outline-none focus:border-brand-accent/50 transition-all placeholder:text-gray-700"
+                />
+              </div>
             </div>
 
-            <div className="space-y-3">
-              <label className="flex items-center gap-2 text-[10px] font-mono text-brand-muted uppercase tracking-widest">
-                Google AI (Gemini) Key
-              </label>
-              <input
-                type="password"
-                value={googleKey}
-                onChange={(e) => setGoogleKey(e.target.value)}
-                placeholder="AIzaSy..."
-                className="w-full bg-[#252525] border border-brand-border rounded-xl p-4 text-[13px] font-mono text-gray-200 outline-none focus:border-brand-accent/50 transition-all"
-              />
+            {/* Google AI Row */}
+            <div className="flex items-center gap-6 p-6 hover:bg-brand-base/30 transition-colors group">
+              <div className="w-10 h-10 bg-white rounded-lg p-1.5 shrink-0 flex items-center justify-center">
+                <img src="/logos/google.png" alt="Google AI" className="w-full h-full object-contain" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm font-bold text-gray-200">Google AI Studio</span>
+                </div>
+                <p className="text-[11px] text-brand-muted">Access Gemini 1.5 Pro, Flash and other Google models directly</p>
+              </div>
+              <div className="w-[400px]">
+                <input
+                  type="password"
+                  value={googleKey}
+                  onChange={(e) => setGoogleKey(e.target.value)}
+                  placeholder="AIzaSy..."
+                  className="w-full bg-brand-darker border border-brand-border rounded-lg px-4 py-2.5 text-[13px] font-mono text-gray-200 outline-none focus:border-brand-accent/50 transition-all placeholder:text-gray-700"
+                />
+              </div>
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="w-full py-3.5 bg-brand-accent hover:bg-brand-accent/90 text-white rounded-xl text-[13px] font-bold tracking-wider transition-all"
-          >
-            Save Configuration
-          </button>
+          <div className="flex justify-end pt-4">
+            <button
+              onClick={onClose}
+              className="px-8 py-3 bg-brand-accent hover:bg-brand-accent/90 text-white rounded-xl text-sm font-bold tracking-wide transition-all"
+            >
+              Done
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -216,6 +246,10 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.CONTEXT_SCRIPT, state.contextScript);
   }, [state.contextScript]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.CUSTOM_CONTEXT, state.customContext);
+  }, [state.customContext]);
 
   const addToast = (message: string, type: Toast['type'] = 'error') => {
     const id = Math.random().toString(36).substring(2, 9);

@@ -654,11 +654,13 @@ class ModelService {
     }
   }
 
-  // Streaming execution using native fetch to ensure browser compatibility
+  // Streaming execution using native SDK
   private async *streamOpenRouter(params: ExecutionParams): AsyncGenerator<string, void, unknown> {
     if (!params.openRouterKey) {
       throw new Error("OpenRouter API Key is missing.");
     }
+
+    const client = this.getClient(params.openRouterKey);
 
     const messages = [
       { role: "system", content: params.systemInstruction },
@@ -666,71 +668,26 @@ class ModelService {
     ];
 
     try {
-      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${params.openRouterKey}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": window.location.origin,
-          "X-Title": "Dual-Brain RAG",
-        },
-        body: JSON.stringify({
-          model: params.modelId,
-          messages: messages,
-          temperature: params.temperature,
-          max_tokens: params.maxTokens,
-          stream: true
-        })
-      });
+      const stream = await client.chat.send({
+        model: params.modelId,
+        messages: messages as any[],
+        temperature: params.temperature,
+        maxTokens: params.maxTokens,
+        stream: true
+      }) as unknown as AsyncIterable<any>;
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData.error?.message || `OpenRouter API error: ${response.status}`;
-
-        if (errorMessage.includes("data policy")) {
-          window.open("https://openrouter.ai/settings/privacy", "_blank");
-
-          throw new Error("To use Free models, you must enable 'Allow model training' in OpenRouter Privacy Settings.");
+      for await (const chunk of stream) {
+        // Handle Usage if present in slice
+        if (chunk.usage && params.onUsage) {
+          params.onUsage(chunk.usage);
         }
 
-        throw new Error(errorMessage);
-      }
-
-      if (!response.body) throw new Error("No response body");
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (trimmed.startsWith('data: ')) {
-            const dataStr = trimmed.slice(6);
-            if (dataStr === '[DONE]') continue;
-            try {
-              const data = JSON.parse(dataStr);
-
-              // Handle Usage
-              if (data.usage && params.onUsage) {
-                params.onUsage(data.usage);
-              }
-
-              const content = data.choices[0]?.delta?.content;
-              if (content) yield content;
-            } catch (e) {
-              // Ignore parse errors for partial chunks
-            }
-          }
+        const content = chunk.choices[0]?.delta?.content;
+        if (content) {
+          yield content;
         }
       }
+
     } catch (error: any) {
       console.error("OpenRouter Stream Error:", error);
       throw new Error(error.message || "Failed to stream response.");
