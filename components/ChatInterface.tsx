@@ -204,7 +204,8 @@ const PipelineDetails: React.FC<{
           {/* Active Status Indicator at the bottom of the timeline */}
           {msg.status !== 'completed' && msg.status !== 'error' && (
             <div className="relative pl-6 pt-2">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
+                <div className="loader" />
                 <span className="text-[13px] font-bold text-brand-accent animate-pulse">
                   {msg.status === 'searching' ? 'Searching...' :
                     msg.status === 'planning' ? 'Planning...' :
@@ -476,7 +477,7 @@ export const ChatInterface: React.FC<Props> = ({
                         </button>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-3 py-2 px-1">
+                      <div className="flex items-center gap-4 py-2 px-1">
                         <div className="text-[10px] font-mono text-brand-muted tracking-[0.2em] flex items-center gap-2">
                           <LiveTimer status={msg.status} activeAt="thinking" finalDuration={msg.thinkingDuration} />
                         </div>
