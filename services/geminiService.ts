@@ -162,7 +162,7 @@ export class GeminiRAGService {
     customContext: string = ""
   ): Promise<{ rewrittenPrompt: string; thoughts: string; customContext: string }> {
     const contextText = contextChunks
-      .map((c, i) => `[Segment ${i + 1}]\n${c.text}`)
+      .map((c, i) => `[Source: ${c.docName}]\n${c.text}`)
       .join('\n\n');
 
     const systemInstruction = `You are the "Thinker Brain" of a sophisticated RAG system.
@@ -171,7 +171,7 @@ export class GeminiRAGService {
     1. RESEARCH & ANALYSIS: Review the User Query and the Retrieved Context. Extract key insights and verify facts.
     2. LINKING: Connect separate pieces of information between different context segments.
     3. PLAN & REWRITE: Formulate a precise instruction for the Final Answer Generator.
-    4. PROVIDE RESOURCE: When you provide facts from segments, provide the segment file name and not the segment number.
+    4. PROVIDE RESOURCE: When you provide facts, provide the document name.
 
     CRITICAL REWRITING RULES:
     - IF the user specified files (e.g., "@file.txt"), the rewritten prompt MUST explicitly instruct the generator to look ONLY in those files.
@@ -234,7 +234,7 @@ export class GeminiRAGService {
     const hasContext = contextChunks.length > 0;
     const contextText = hasContext
       ? contextChunks
-        .map((c, i) => `[Document: ${c.docName} | Segment ${i + 1}]\n${c.text}`)
+        .map((c, i) => `[Document: ${c.docName}]\n${c.text}`)
         .join('\n\n')
       : "NO RELEVANT FRAGMENTS RETRIEVED FROM VAULT.";
 

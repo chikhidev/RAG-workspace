@@ -168,55 +168,96 @@ const PipelineDetails: React.FC<{
   msg: Message;
   onViewContexts: (fileName: string, sources: Chunk[], messageId: string) => void;
 }> = ({ msg, onViewContexts }) => {
+  const [expandedLogs, setExpandedLogs] = useState<Record<number, boolean>>({});
+  const [isMainExpanded, setIsMainExpanded] = useState(msg.status !== 'completed');
+
+  useEffect(() => {
+    if (msg.status === 'completed') {
+      setIsMainExpanded(false);
+      // Also clear individual expansions to ensure total collapse
+      setExpandedLogs({});
+    } else if (msg.status && msg.status !== 'error') {
+      setIsMainExpanded(true);
+    }
+  }, [msg.status]);
+
   if (!msg.status || msg.role === 'user') return null;
 
   const usedFiles = msg.sources ? Array.from(new Set(msg.sources.map(s => s.docName))) : [];
-
   const logs = msg.thoughtLogs || [];
+
+  const toggleLog = (idx: number) => {
+    setExpandedLogs(prev => ({ ...prev, [idx]: !prev[idx] }));
+  };
 
   return (
     <div className="w-full space-y-4 mt-6 mb-4 pl-2">
-      <div className="relative border-l border-white/10 ml-[5px] space-y-6 pb-2">
-        {logs.map((log, i) => {
-          const isSearching = log.step.toLowerCase().includes('searching');
-          const StepIcon = isSearching ? SearchIcon : Circle;
+      <button
+        onClick={() => setIsMainExpanded(!isMainExpanded)}
+        className="flex items-center gap-2 group/trace active:scale-95 transition-transform"
+      >
+        <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500 group-hover/trace:text-gray-300 transition-colors">
+          Reasoning Trace
+        </span>
+        <ChevronDown size={14} className={`text-gray-600 transition-transform duration-300 ${isMainExpanded ? 'rotate-180' : ''}`} />
+      </button>
 
-          return (
-            <div key={i} className="relative pl-6 group">
-              {/* Timeline Node */}
-              <div className={`absolute -left-[10px] top-1.5 p-0.5 rounded-full bg-brand-base transition-colors`}>
-                <StepIcon size={15} className={isSearching ? 'text-orange-400' : 'text-white'} fill={isSearching ? 'none' : 'currentColor'} />
+      {isMainExpanded && (
+        <div className="relative border-l border-white/5 ml-[7px] space-y-6 pb-2 mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
+          {logs.map((log, i) => {
+            const isSearching = log.step.toLowerCase().includes('searching');
+            const StepIcon = isSearching ? SearchIcon : null;
+            const isLast = i === logs.length - 1;
+            const isCompleted = msg.status === 'completed';
+
+            // Auto-expand if it's the last one during processing, otherwise use manual state
+            const isExpanded = expandedLogs[i] ?? (isLast && !isCompleted);
+
+            return (
+              <div key={i} className="relative pl-6 group">
+                {/* Timeline Node */}
+                <div className={`absolute -left-[10px] p-0.5 rounded-full bg-brand-base transition-colors`}>
+                  {StepIcon && <StepIcon size={15} className="text-gray-500" fill={isSearching ? 'none' : 'currentColor'} />}
+                </div>
+
+                {/* Content */}
+                <div className="flex flex-col gap-1">
+                  <button
+                    onClick={() => toggleLog(i)}
+                    className="flex items-center gap-2 text-left group/title"
+                  >
+                    <span className="text-[13px] font-bold text-gray-400 group-hover/title:text-gray-200 tracking-wide leading-none transition-colors">
+                      {log.step}
+                    </span>
+                    {log.thought && (
+                      <ChevronDown size={12} className={`text-gray-600 transition-transform duration-200 ${isExpanded ? '' : '-rotate-90'}`} />
+                    )}
+                  </button>
+
+                  {log.thought && isExpanded && (
+                    <div className="text-[13px] text-gray-500 font-medium leading-relaxed whitespace-pre-wrap animate-in fade-in slide-in-from-top-1 duration-200">
+                      {log.thought}
+                    </div>
+                  )}
+                </div>
               </div>
+            );
+          })}
 
-              {/* Content */}
-              <div className="flex flex-col gap-1">
-                <span className="text-[13px] font-bold text-white tracking-wide leading-none">
-                  {log.step}
+          {/* Active Status Indicator at the bottom of the timeline */}
+          {msg.status !== 'completed' && msg.status !== 'error' && (
+            <div className="relative pl-6 pt-2">
+              <div className="flex items-center gap-2">
+                <span className="text-[13px] font-bold text-brand-accent animate-pulse">
+                  {msg.status === 'searching' ? 'Searching...' :
+                    msg.status === 'planning' ? 'Planning...' :
+                      'Thinking...'}
                 </span>
-
-                {log.thought && (
-                  <div className="text-[13px] text-gray-400 font-medium leading-relaxed whitespace-pre-wrap">
-                    {log.thought}
-                  </div>
-                )}
               </div>
             </div>
-          );
-        })}
-
-        {/* Active Status Indicator at the bottom of the timeline */}
-        {msg.status !== 'completed' && msg.status !== 'error' && (
-          <div className="relative pl-6 pt-2">
-            <div className="flex items-center gap-2">
-              <span className="text-[13px] font-bold text-brand-accent animate-pulse">
-                {msg.status === 'searching' ? 'Searching...' :
-                  msg.status === 'planning' ? 'Planning...' :
-                    'Thinking...'}
-              </span>
-            </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
 
 

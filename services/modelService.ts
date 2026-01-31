@@ -415,35 +415,147 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   // --- X.AI MODELS ---
   {
-    id: 'grok-3',
-    name: 'Grok 3 (xAI)',
+    id: 'grok-4-1-fast-reasoning',
+    name: 'Grok 4.1 Fast Reasoning',
     provider: 'xai',
-    description: 'xAI - Latest flagship model by xAI.',
+    description: 'xAI - Ultra-fast reasoning model with 2M context.',
     size: 'large',
     logo: '/logos/xai.png',
     metadata: {
       author: 'xAI',
-      context: '128K',
-      inputPrice: 'Unknown',
-      outputPrice: 'Unknown',
+      context: '2M',
+      inputPrice: '$0.20/M',
+      outputPrice: '$0.50/M',
       latency: 'Unknown',
-      throughput: 'Unknown'
+      throughput: '4M tpm'
+    }
+  },
+  {
+    id: 'grok-4-1-fast-non-reasoning',
+    name: 'Grok 4.1 Fast',
+    provider: 'xai',
+    description: 'xAI - Ultra-fast general purpose model with 2M context.',
+    size: 'large',
+    logo: '/logos/xai.png',
+    metadata: {
+      author: 'xAI',
+      context: '2M',
+      inputPrice: '$0.20/M',
+      outputPrice: '$0.50/M',
+      latency: 'Unknown',
+      throughput: '4M tpm'
+    }
+  },
+  {
+    id: 'grok-code-fast-1',
+    name: 'Grok Code Fast',
+    provider: 'xai',
+    description: 'xAI - Optimized for ultra-fast coding tasks.',
+    size: 'large',
+    logo: '/logos/xai.png',
+    metadata: {
+      author: 'xAI',
+      context: '256K',
+      inputPrice: '$0.20/M',
+      outputPrice: '$1.50/M',
+      latency: 'Unknown',
+      throughput: '2M tpm'
+    }
+  },
+  {
+    id: 'grok-4-fast-reasoning',
+    name: 'Grok 4 Fast Reasoning',
+    provider: 'xai',
+    description: 'xAI - Fast reasoning model with 2M context.',
+    size: 'large',
+    logo: '/logos/xai.png',
+    metadata: {
+      author: 'xAI',
+      context: '2M',
+      inputPrice: '$0.20/M',
+      outputPrice: '$0.50/M',
+      latency: 'Unknown',
+      throughput: '4M tpm'
+    }
+  },
+  {
+    id: 'grok-4-fast-non-reasoning',
+    name: 'Grok 4 Fast',
+    provider: 'xai',
+    description: 'xAI - Fast general purpose model with 2M context.',
+    size: 'large',
+    logo: '/logos/xai.png',
+    metadata: {
+      author: 'xAI',
+      context: '2M',
+      inputPrice: '$0.20/M',
+      outputPrice: '$0.50/M',
+      latency: 'Unknown',
+      throughput: '4M tpm'
+    }
+  },
+  {
+    id: 'grok-4-0709',
+    name: 'Grok 4 (0709)',
+    provider: 'xai',
+    description: 'xAI - Legacy reasoning model.',
+    size: 'large',
+    logo: '/logos/xai.png',
+    metadata: {
+      author: 'xAI',
+      context: '256K',
+      inputPrice: '$3.00/M',
+      outputPrice: '$15.00/M',
+      latency: 'Unknown',
+      throughput: '2M tpm'
     }
   },
   {
     id: 'grok-3-mini',
-    name: 'Grok 3 Mini (xAI)',
+    name: 'Grok 3 Mini',
     provider: 'xai',
     description: 'xAI - Efficient reasoning model.',
     size: 'small',
     logo: '/logos/xai.png',
     metadata: {
       author: 'xAI',
-      context: '128K',
-      inputPrice: 'Unknown',
-      outputPrice: 'Unknown',
+      context: '131K',
+      inputPrice: '$0.30/M',
+      outputPrice: '$0.50/M',
       latency: 'Unknown',
-      throughput: 'Unknown'
+      throughput: '480 rpm'
+    }
+  },
+  {
+    id: 'grok-3',
+    name: 'Grok 3',
+    provider: 'xai',
+    description: 'xAI - High-intelligence flagship model.',
+    size: 'large',
+    logo: '/logos/xai.png',
+    metadata: {
+      author: 'xAI',
+      context: '131K',
+      inputPrice: '$3.00/M',
+      outputPrice: '$15.00/M',
+      latency: 'Unknown',
+      throughput: '600 rpm'
+    }
+  },
+  {
+    id: 'grok-2-vision-1212',
+    name: 'Grok 2 Vision',
+    provider: 'xai',
+    description: 'xAI - Multimodal vision model.',
+    size: 'large',
+    logo: '/logos/xai.png',
+    metadata: {
+      author: 'xAI',
+      context: '32K',
+      inputPrice: '$2.00/M',
+      outputPrice: '$10.00/M',
+      latency: 'Unknown',
+      throughput: '600 rpm'
     }
   },
   // --- PAID MODELS ---
@@ -625,104 +737,181 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   // --- OPENAI MODELS (Responses API) ---
   {
-    id: 'gpt-5.2',
-    name: 'GPT-5.2',
-    provider: 'openai',
-    description: 'OpenAI - Best model for coding and agentic tasks.',
-    size: 'large',
-    logo: '/logos/chatgpt.png',
-    metadata: { author: 'OpenAI', context: '200K', inputPrice: 'Unknown', outputPrice: 'Unknown', latency: 'Unknown', throughput: 'Unknown' }
+    "id": "gpt-5.2",
+    "name": "GPT-5.2",
+    "provider": "openai",
+    "description": "OpenAI - Flagship model. Best for coding, agentic tasks, and deep reasoning.",
+    "size": "large",
+    "logo": "/logos/chatgpt.png",
+    "metadata": { 
+      "author": "OpenAI", 
+      "context": "400K", 
+      "inputPrice": "$1.75", 
+      "outputPrice": "$14.00", 
+      "latency": "Medium", 
+      "throughput": "High" 
+    }
   },
   {
-    id: 'gpt-5-mini',
-    name: 'GPT-5 mini',
-    provider: 'openai',
-    description: 'OpenAI - Faster, cost-efficient version of GPT-5.',
-    size: 'small',
-    logo: '/logos/chatgpt.png',
-    metadata: { author: 'OpenAI', context: '128K', inputPrice: 'Unknown', outputPrice: 'Unknown', latency: 'Unknown', throughput: 'Unknown' }
+    "id": "gpt-5-mini",
+    "name": "GPT-5 mini",
+    "provider": "openai",
+    "description": "OpenAI - Cost-efficient, high-intelligence version of GPT-5 family.",
+    "size": "small",
+    "logo": "/logos/chatgpt.png",
+    "metadata": { 
+      "author": "OpenAI", 
+      "context": "400K", 
+      "inputPrice": "$0.25", 
+      "outputPrice": "$2.00", 
+      "latency": "Low", 
+      "throughput": "Very High" 
+    }
   },
   {
-    id: 'gpt-5-nano',
-    name: 'GPT-5 nano',
-    provider: 'openai',
-    description: 'OpenAI - Fastest, most cost-efficient version of GPT-5.',
-    size: 'small',
-    logo: '/logos/chatgpt.png',
-    metadata: { author: 'OpenAI', context: '64K', inputPrice: 'Unknown', outputPrice: 'Unknown', latency: 'Unknown', throughput: 'Unknown' }
+    "id": "gpt-5-nano",
+    "name": "GPT-5 nano",
+    "provider": "openai",
+    "description": "OpenAI - Fastest, most cost-efficient model for lightweight tasks.",
+    "size": "small",
+    "logo": "/logos/chatgpt.png",
+    "metadata": { 
+      "author": "OpenAI", 
+      "context": "400K", 
+      "inputPrice": "$0.05", 
+      "outputPrice": "$0.40", 
+      "latency": "Very Low", 
+      "throughput": "Extreme" 
+    }
   },
   {
-    id: 'gpt-5.2-pro',
-    name: 'GPT-5.2 pro',
-    provider: 'openai',
-    description: 'OpenAI - Smarter and more precise GPT-5.2.',
-    size: 'large',
-    logo: '/logos/chatgpt.png',
-    metadata: { author: 'OpenAI', context: '200K', inputPrice: 'Unknown', outputPrice: 'Unknown', latency: 'Unknown', throughput: 'Unknown' }
+    "id": "gpt-5.2-pro",
+    "name": "GPT-5.2 pro",
+    "provider": "openai",
+    "description": "OpenAI - Maximum reasoning capability. 12x cost of standard 5.2.",
+    "size": "large",
+    "logo": "/logos/chatgpt.png",
+    "metadata": { 
+      "author": "OpenAI", 
+      "context": "400K", 
+      "inputPrice": "$21.00", 
+      "outputPrice": "$168.00", 
+      "latency": "High", 
+      "throughput": "Low" 
+    }
   },
   {
-    id: 'gpt-5',
-    name: 'GPT-5',
-    provider: 'openai',
-    description: 'OpenAI - Previous intelligent reasoning model.',
-    size: 'large',
-    logo: '/logos/chatgpt.png',
-    metadata: { author: 'OpenAI', context: '128K', inputPrice: 'Unknown', outputPrice: 'Unknown', latency: 'Unknown', throughput: 'Unknown' }
+    "id": "gpt-5",
+    "name": "GPT-5",
+    "provider": "openai",
+    "description": "OpenAI - The original 5-series reasoning model (Aug 2025).",
+    "size": "large",
+    "logo": "/logos/chatgpt.png",
+    "metadata": { 
+      "author": "OpenAI", 
+      "context": "400K", 
+      "inputPrice": "$1.25", 
+      "outputPrice": "$10.00", 
+      "latency": "Medium", 
+      "throughput": "Medium" 
+    }
   },
   {
-    id: 'gpt-4.1',
-    name: 'GPT-4.1',
-    provider: 'openai',
-    description: 'OpenAI - Smartest non-reasoning model.',
-    size: 'large',
-    logo: '/logos/chatgpt.png',
-    metadata: { author: 'OpenAI', context: '128K', inputPrice: 'Unknown', outputPrice: 'Unknown', latency: 'Unknown', throughput: 'Unknown' }
+    "id": "gpt-4.1",
+    "name": "GPT-4.1",
+    "provider": "openai",
+    "description": "OpenAI - Smartest non-reasoning model. Massive context window.",
+    "size": "large",
+    "logo": "/logos/chatgpt.png",
+    "metadata": { 
+      "author": "OpenAI", 
+      "context": "1M", 
+      "inputPrice": "$2.00", 
+      "outputPrice": "$8.00", 
+      "latency": "Low", 
+      "throughput": "High" 
+    }
   },
   {
-    id: 'gpt-oss-120b',
-    name: 'gpt-oss-120b',
-    provider: 'openai',
-    description: 'OpenAI - Most powerful open-weight model.',
-    size: 'large',
-    logo: '/logos/chatgpt.png',
-    metadata: { author: 'OpenAI', context: '128K', inputPrice: 'Unknown', outputPrice: 'Unknown', latency: 'Unknown', throughput: 'Unknown' }
+    "id": "gpt-oss-120b",
+    "name": "gpt-oss-120b",
+    "provider": "openai",
+    "description": "OpenAI - Open-weight MoE model (117B params). Rivals o4-mini.",
+    "size": "large",
+    "logo": "/logos/chatgpt.png",
+    "metadata": { 
+      "author": "OpenAI", 
+      "context": "128K", 
+      "inputPrice": "Free (Self-Hosted)", 
+      "outputPrice": "Free (Self-Hosted)", 
+      "latency": "Variable", 
+      "throughput": "Variable" 
+    }
   },
   {
-    id: 'gpt-oss-20b',
-    name: 'gpt-oss-20b',
-    provider: 'openai',
-    description: 'OpenAI - Medium-sized open-weight model.',
-    size: 'large',
-    logo: '/logos/chatgpt.png',
-    metadata: { author: 'OpenAI', context: '128K', inputPrice: 'Unknown', outputPrice: 'Unknown', latency: 'Unknown', throughput: 'Unknown' }
+    "id": "gpt-oss-20b",
+    "name": "gpt-oss-20b",
+    "provider": "openai",
+    "description": "OpenAI - Open-weight MoE model (21B params). Optimized for consumer GPUs.",
+    "size": "small",
+    "logo": "/logos/chatgpt.png",
+    "metadata": { 
+      "author": "OpenAI", 
+      "context": "128K", 
+      "inputPrice": "Free (Self-Hosted)", 
+      "outputPrice": "Free (Self-Hosted)", 
+      "latency": "Low", 
+      "throughput": "High" 
+    }
   },
   {
-    id: 'o3-mini',
-    name: 'o3-mini',
-    provider: 'openai',
-    description: 'OpenAI - Small model alternative to o3.',
-    size: 'small',
-    logo: '/logos/chatgpt.png',
-    metadata: { author: 'OpenAI', context: '200K', inputPrice: 'Unknown', outputPrice: 'Unknown', latency: 'Unknown', throughput: 'Unknown' }
+    "id": "o3-mini",
+    "name": "o3-mini",
+    "provider": "openai",
+    "description": "OpenAI - High-speed reasoning model. Replaced o1-mini.",
+    "size": "small",
+    "logo": "/logos/chatgpt.png",
+    "metadata": { 
+      "author": "OpenAI", 
+      "context": "200K", 
+      "inputPrice": "$1.10", 
+      "outputPrice": "$4.40", 
+      "latency": "Low", 
+      "throughput": "High" 
+    }
   },
   {
-    id: 'o1',
-    name: 'o1',
-    provider: 'openai',
-    description: 'OpenAI - Previous full o-series reasoning model.',
-    size: 'large',
-    logo: '/logos/chatgpt.png',
-    metadata: { author: 'OpenAI', context: '200K', inputPrice: 'Unknown', outputPrice: 'Unknown', latency: 'Unknown', throughput: 'Unknown' }
+    "id": "o1",
+    "name": "o1",
+    "provider": "openai",
+    "description": "OpenAI - Legacy reasoning model (2024).",
+    "size": "large",
+    "logo": "/logos/chatgpt.png",
+    "metadata": { 
+      "author": "OpenAI", 
+      "context": "128K", 
+      "inputPrice": "$15.00", 
+      "outputPrice": "$60.00", 
+      "latency": "High", 
+      "throughput": "Low" 
+    }
   },
   {
-    id: 'o1-mini',
-    name: 'o1-mini',
-    provider: 'openai',
-    description: 'OpenAI - Small model alternative to o1.',
-    size: 'small',
-    logo: '/logos/chatgpt.png',
-    metadata: { author: 'OpenAI', context: '128K', inputPrice: 'Unknown', outputPrice: 'Unknown', latency: 'Unknown', throughput: 'Unknown' }
-  },
+    "id": "o1-mini",
+    "name": "o1-mini",
+    "provider": "openai",
+    "description": "OpenAI - Legacy small reasoning model (2024).",
+    "size": "small",
+    "logo": "/logos/chatgpt.png",
+    "metadata": { 
+      "author": "OpenAI", 
+      "context": "128K", 
+      "inputPrice": "$1.10", 
+      "outputPrice": "$4.40", 
+      "latency": "Low", 
+      "throughput": "High" 
+    }
+  }
 ];
 
 interface ExecutionParams {
