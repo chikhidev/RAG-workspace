@@ -1,14 +1,16 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { DocumentList } from './components/DocumentList';
-import { ChatInterface } from './components/ChatInterface';
-import { RightSidebar } from './components/RightSidebar';
+import React, { useState, useCallback, useEffect, useRef, Suspense, lazy } from 'react';
 import { AppState, Message, Document, Chunk, Toast } from './types';
 import { vectorService } from './services/vectorService';
 import { geminiRAG } from './services/geminiService';
 import { fileService } from './services/fileService';
-import { InputModal } from './components/InputModal';
-import { ModelSelectorModal } from './components/ModelSelectorModal';
 import { X, Key, Shield, ExternalLink, PanelLeft, PanelLeftClose } from 'lucide-react';
+
+import LoadingScreen from './components/LoadingScreen';
+const DocumentList = lazy(() => import('./components/DocumentList').then(m => ({ default: m.DocumentList })));
+const ChatInterface = lazy(() => import('./components/ChatInterface').then(m => ({ default: m.ChatInterface })));
+const RightSidebar = lazy(() => import('./components/RightSidebar').then(m => ({ default: m.RightSidebar })));
+const InputModal = lazy(() => import('./components/InputModal').then(m => ({ default: m.InputModal })));
+const ModelSelectorModal = lazy(() => import('./components/ModelSelectorModal').then(m => ({ default: m.ModelSelectorModal })));
 
 const STORAGE_KEYS = {
   DOCUMENTS: 'gemini_rag_docs',
@@ -263,6 +265,29 @@ const App: React.FC = () => {
   const [vaultWidth, setVaultWidth] = useState(350);
   const isResizingControls = useRef(false);
   const isResizingVault = useRef(false);
+
+  const [isOnboarding, setIsOnboarding] = useState(() => !localStorage.getItem('gemini_rag_onboarded'));
+
+  const handleOnboardingComplete = (settings: { provider: string; model: string; apiKey: string }) => {
+    localStorage.setItem(STORAGE_KEYS.SELECTED_MODEL, settings.model);
+    if (settings.provider === 'google') localStorage.setItem(STORAGE_KEYS.GOOGLE_KEY, settings.apiKey);
+    else if (settings.provider === 'openrouter') localStorage.setItem(STORAGE_KEYS.OPENROUTER_KEY, settings.apiKey);
+    else if (settings.provider === 'xai') localStorage.setItem(STORAGE_KEYS.XAI_KEY, settings.apiKey);
+    else if (settings.provider === 'openai') localStorage.setItem(STORAGE_KEYS.OPENAI_KEY, settings.apiKey);
+
+    localStorage.setItem('gemini_rag_onboarded', 'true');
+
+    setState(prev => ({
+      ...prev,
+      selectedModel: settings.model,
+      googleKey: settings.provider === 'google' ? settings.apiKey : prev.googleKey,
+      openRouterKey: settings.provider === 'openrouter' ? settings.apiKey : prev.openRouterKey,
+      xaiKey: settings.provider === 'xai' ? settings.apiKey : prev.xaiKey,
+      openaiKey: settings.provider === 'openai' ? settings.apiKey : prev.openaiKey,
+    }));
+
+    setIsOnboarding(false);
+  };
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -942,167 +967,173 @@ const App: React.FC = () => {
     }
   }, [promptHistory, historyIndex]);
 
+  if (isOnboarding) {
+    return <LoadingScreen isOnboarding onComplete={handleOnboardingComplete} />;
+  }
+
   return (
-    <div className="flex h-screen bg-brand-base text-gray-100 transition-colors overflow-hidden dark">
+    <Suspense fallback={<LoadingScreen />}>
+      <div className="flex h-screen bg-brand-base text-gray-100 transition-colors overflow-hidden dark">
 
-      {/* LEFT SIDEBAR: Controls */}
-      <div
-        className="shrink-0 flex relative z-30"
-        style={{ width: `${controlsWidth}px` }}
-      >
-        <div className="flex-1 min-w-0 h-full overflow-hidden border-r border-brand-border/50 relative">
-          <RightSidebar
-            inputValue={inputValue} setInputValue={setInputValue}
-            onSend={handleSend} onStop={handleStop} onHistoryNav={handleHistoryNav}
-            isProcessing={state.isProcessing}
-            useVault={state.useVault} setUseVault={(v) => setState(prev => ({ ...prev, useVault: v }))}
-            useContextHistory={state.useContextHistory}
-            setUseContextHistory={(v) => setState(prev => ({ ...prev, useContextHistory: v }))}
-            onClearContext={handleClearContextHistory}
-            selectedModel={state.selectedModel}
-            setSelectedModel={(m) => setState(prev => ({ ...prev, selectedModel: m }))}
-            openRouterKey={state.openRouterKey} setOpenRouterKey={(k) => setState(prev => ({ ...prev, openRouterKey: k }))}
-            onOpenApiManagement={() => setState(prev => ({ ...prev, isApiKeyModalOpen: true }))}
-            onOpenModelSelector={() => setIsModelSelectorOpen(true)}
-            availableDocuments={state.documents.filter(d => d.enabled)}
-            onClearChat={onClearChat}
-            maxTokens={state.maxTokens}
-            setMaxTokens={(n) => setState(prev => ({ ...prev, maxTokens: n }))}
-            maxAgentIterations={state.maxAgentIterations}
-            setMaxAgentIterations={(n) => setState(prev => ({ ...prev, maxAgentIterations: n }))}
-            customContext={state.customContext}
-            setCustomContext={(v) => setState(prev => ({ ...prev, customContext: v }))}
-          />
-
-          {/* INTERNAL COLLAPSE BUTTON REMOVED AS PER USER REQUEST */}
-        </div>
-        <div onMouseDown={startResizingControls} className="w-1.5 cursor-col-resize bg-brand-border hover:bg-brand-accent transition-all flex flex-col items-center justify-center gap-1 group shrink-0">
-          <div className="w-[1px] h-8 bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
-          <div className="w-[1px] h-8 bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
-        </div>
-      </div>
-
-      {/* FLOAT OPEN BUTTONS */}
-      {/* Controls Open Button Removed */}
-
-      {!isVaultOpen && (
-        <button
-          onClick={() => setIsVaultOpen(true)}
-          className="fixed top-4 right-4 z-[100] p-2 rounded-lg bg-brand-darker border border-brand-border text-gray-400 hover:text-orange-400 transition-all shadow-2xl animate-in fade-in slide-in-from-right-2"
-          title="Open Vault"
+        {/* LEFT SIDEBAR: Controls */}
+        <div
+          className="shrink-0 flex relative z-30"
+          style={{ width: `${controlsWidth}px` }}
         >
-          <PanelLeft size={18} className="rotate-180" />
-        </button>
-      )}
+          <div className="flex-1 min-w-0 h-full overflow-hidden border-r border-brand-border/50 relative">
+            <RightSidebar
+              inputValue={inputValue} setInputValue={setInputValue}
+              onSend={handleSend} onStop={handleStop} onHistoryNav={handleHistoryNav}
+              isProcessing={state.isProcessing}
+              useVault={state.useVault} setUseVault={(v) => setState(prev => ({ ...prev, useVault: v }))}
+              useContextHistory={state.useContextHistory}
+              setUseContextHistory={(v) => setState(prev => ({ ...prev, useContextHistory: v }))}
+              onClearContext={handleClearContextHistory}
+              selectedModel={state.selectedModel}
+              setSelectedModel={(m) => setState(prev => ({ ...prev, selectedModel: m }))}
+              openRouterKey={state.openRouterKey} setOpenRouterKey={(k) => setState(prev => ({ ...prev, openRouterKey: k }))}
+              onOpenApiManagement={() => setState(prev => ({ ...prev, isApiKeyModalOpen: true }))}
+              onOpenModelSelector={() => setIsModelSelectorOpen(true)}
+              availableDocuments={state.documents.filter(d => d.enabled)}
+              onClearChat={onClearChat}
+              maxTokens={state.maxTokens}
+              setMaxTokens={(n) => setState(prev => ({ ...prev, maxTokens: n }))}
+              maxAgentIterations={state.maxAgentIterations}
+              setMaxAgentIterations={(n) => setState(prev => ({ ...prev, maxAgentIterations: n }))}
+              customContext={state.customContext}
+              setCustomContext={(v) => setState(prev => ({ ...prev, customContext: v }))}
+            />
 
-      <main className="flex-1 flex flex-col min-w-0 bg-brand-base relative transition-all">
-        <ChatInterface
-          messages={state.messages}
-          selectedModelId={state.selectedModel}
-          onRetry={handleRetry}
-          onRegenerate={handleRegenerate}
-          onUpdateSources={handleUpdateSources}
-          onClearChat={onClearChat}
-          inputValue={inputValue}
-          setInputValue={setInputValue}
-          onSend={handleSend}
-          onStop={handleStop}
-          onClarifyAnswer={handleClarificationAnswer}
-          isProcessing={state.isProcessing}
-          availableDocuments={state.documents.filter(d => d.enabled)}
-          onHistoryNav={handleHistoryNav}
-        />
-      </main>
-
-      {/* RIGHT SIDEBAR: Vault */}
-      <div
-        style={{ width: isVaultOpen ? `${vaultWidth}px` : '0px', marginLeft: isVaultOpen ? '0' : `-${vaultWidth}px` }}
-        className={`shrink-0 flex transition-all duration-300 ease-in-out relative z-30 ${isVaultOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}`}
-      >
-        <div onMouseDown={startResizingVault} className="w-1.5 cursor-col-resize bg-brand-border hover:bg-brand-accent transition-all flex flex-col items-center justify-center gap-1 group shrink-0">
-          <div className="w-[1px] h-8 bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
-          <div className="w-[1px] h-8 bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
-        </div>
-
-        <div className="flex-1 min-w-0 h-full overflow-hidden border-l border-brand-border/50 relative">
-          <DocumentList
-            documents={state.documents} onUpload={handleFileUpload}
-            onRemove={(id) => setState(prev => ({ ...prev, documents: prev.documents.filter(d => d.id !== id) }))}
-            onToggle={(id) => setState(prev => ({ ...prev, documents: prev.documents.map(d => d.id === id ? { ...d, enabled: !d.enabled } : d) }))}
-            isIndexing={state.isIndexing}
-            onAddText={() => setState(prev => ({ ...prev, isInputModalOpen: true, inputModalType: 'text' }))}
-            onAddLink={() => setState(prev => ({ ...prev, isInputModalOpen: true, inputModalType: 'url' }))}
-            onCollapse={() => setIsVaultOpen(false)}
-          />
-
-          {/* INTERNAL COLLAPSE BUTTON REMOVED (NOW INSIDE DocumentList) */}
-        </div>
-      </div>
-
-      <ApiKeyModal
-        isOpen={state.isApiKeyModalOpen}
-        onClose={() => setState(prev => ({ ...prev, isApiKeyModalOpen: false }))}
-        openRouterKey={state.openRouterKey}
-        setOpenRouterKey={(k) => setState(prev => ({ ...prev, openRouterKey: k }))}
-        googleKey={state.googleKey}
-        setGoogleKey={(k) => setState(prev => ({ ...prev, googleKey: k }))}
-        xaiKey={state.xaiKey}
-        setXaiKey={(k) => setState(prev => ({ ...prev, xaiKey: k }))}
-        openaiKey={state.openaiKey}
-        setOpenaiKey={(k) => setState(prev => ({ ...prev, openaiKey: k }))}
-      />
-
-      {confirmationState && (
-        <ConfirmationModal
-          isOpen={confirmationState.isOpen}
-          onClose={() => setConfirmationState(null)}
-          onConfirm={confirmationState.onConfirm}
-          title={confirmationState.title}
-          message={confirmationState.message}
-        />
-      )}
-
-      <InputModal
-        isOpen={state.isInputModalOpen}
-        onClose={() => setState(prev => ({ ...prev, isInputModalOpen: false }))}
-        onConfirm={handleManualDocAdd}
-        type={state.inputModalType || 'text'} // Pass the type to the modal
-      />
-
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex flex-col gap-3 z-50 pointer-events-none w-full max-sm px-4">
-        {state.toasts.map(toast => (
-          <div key={toast.id} className="pointer-events-auto flex items-center gap-3 px-5 py-3.5 bg-brand-darker message-shadow rounded-2xl border border-brand-border animate-blur-text w-full">
-            <span className={`text-[11px] font-bold uppercase tracking-widest ${toast.type === 'error' ? 'text-red-500' : 'text-emerald-500'}`}>
-              {toast.type}
-            </span>
-            <div className="flex-1 flex flex-col">
-              <p className="text-[13px] text-gray-300 font-medium leading-normal">{toast.message}</p>
-              {toast.message.includes("OpenRouter Privacy Settings") && (
-                <a
-                  href="https://openrouter.ai/settings/privacy"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-2 inline-flex items-center text-[11px] font-bold text-brand-accent hover:text-white transition-colors uppercase tracking-wide gap-1 self-start border-b border-brand-accent/30 hover:border-brand-accent pb-0.5"
-                >
-                  Configure Settings &rarr;
-                </a>
-              )}
-            </div>
-            <button onClick={() => removeToast(toast.id)} className="text-gray-400 hover:text-white transition-colors">
-              <X size={14} />
-            </button>
+            {/* INTERNAL COLLAPSE BUTTON REMOVED AS PER USER REQUEST */}
           </div>
-        ))}
-      </div>
+          <div onMouseDown={startResizingControls} className="w-1.5 cursor-col-resize bg-brand-border hover:bg-brand-accent transition-all flex flex-col items-center justify-center gap-1 group shrink-0">
+            <div className="w-[1px] h-8 bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
+            <div className="w-[1px] h-8 bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
+          </div>
+        </div>
 
-      <ModelSelectorModal
-        isOpen={isModelSelectorOpen}
-        onClose={() => setIsModelSelectorOpen(false)}
-        currentModelId={state.selectedModel}
-        onSelect={(m) => setState(prev => ({ ...prev, selectedModel: m }))}
-        title="Select Primary Intelligence"
-      />
-    </div>
+        {/* FLOAT OPEN BUTTONS */}
+        {/* Controls Open Button Removed */}
+
+        {!isVaultOpen && (
+          <button
+            onClick={() => setIsVaultOpen(true)}
+            className="fixed top-4 right-4 z-[100] p-2 rounded-lg bg-brand-darker border border-brand-border text-gray-400 hover:text-orange-400 transition-all shadow-2xl animate-in fade-in slide-in-from-right-2"
+            title="Open Vault"
+          >
+            <PanelLeft size={18} className="rotate-180" />
+          </button>
+        )}
+
+        <main className="flex-1 flex flex-col min-w-0 bg-brand-base relative transition-all">
+          <ChatInterface
+            messages={state.messages}
+            selectedModelId={state.selectedModel}
+            onRetry={handleRetry}
+            onRegenerate={handleRegenerate}
+            onUpdateSources={handleUpdateSources}
+            onClearChat={onClearChat}
+            inputValue={inputValue}
+            setInputValue={setInputValue}
+            onSend={handleSend}
+            onStop={handleStop}
+            onClarifyAnswer={handleClarificationAnswer}
+            isProcessing={state.isProcessing}
+            availableDocuments={state.documents.filter(d => d.enabled)}
+            onHistoryNav={handleHistoryNav}
+          />
+        </main>
+
+        {/* RIGHT SIDEBAR: Vault */}
+        <div
+          style={{ width: isVaultOpen ? `${vaultWidth}px` : '0px', marginLeft: isVaultOpen ? '0' : `-${vaultWidth}px` }}
+          className={`shrink-0 flex transition-all duration-300 ease-in-out relative z-30 ${isVaultOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}`}
+        >
+          <div onMouseDown={startResizingVault} className="w-1.5 cursor-col-resize bg-brand-border hover:bg-brand-accent transition-all flex flex-col items-center justify-center gap-1 group shrink-0">
+            <div className="w-[1px] h-8 bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
+            <div className="w-[1px] h-8 bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
+          </div>
+
+          <div className="flex-1 min-w-0 h-full overflow-hidden border-l border-brand-border/50 relative">
+            <DocumentList
+              documents={state.documents} onUpload={handleFileUpload}
+              onRemove={(id) => setState(prev => ({ ...prev, documents: prev.documents.filter(d => d.id !== id) }))}
+              onToggle={(id) => setState(prev => ({ ...prev, documents: prev.documents.map(d => d.id === id ? { ...d, enabled: !d.enabled } : d) }))}
+              isIndexing={state.isIndexing}
+              onAddText={() => setState(prev => ({ ...prev, isInputModalOpen: true, inputModalType: 'text' }))}
+              onAddLink={() => setState(prev => ({ ...prev, isInputModalOpen: true, inputModalType: 'url' }))}
+              onCollapse={() => setIsVaultOpen(false)}
+            />
+
+            {/* INTERNAL COLLAPSE BUTTON REMOVED (NOW INSIDE DocumentList) */}
+          </div>
+        </div>
+
+        <ApiKeyModal
+          isOpen={state.isApiKeyModalOpen}
+          onClose={() => setState(prev => ({ ...prev, isApiKeyModalOpen: false }))}
+          openRouterKey={state.openRouterKey}
+          setOpenRouterKey={(k) => setState(prev => ({ ...prev, openRouterKey: k }))}
+          googleKey={state.googleKey}
+          setGoogleKey={(k) => setState(prev => ({ ...prev, googleKey: k }))}
+          xaiKey={state.xaiKey}
+          setXaiKey={(k) => setState(prev => ({ ...prev, xaiKey: k }))}
+          openaiKey={state.openaiKey}
+          setOpenaiKey={(k) => setState(prev => ({ ...prev, openaiKey: k }))}
+        />
+
+        {confirmationState && (
+          <ConfirmationModal
+            isOpen={confirmationState.isOpen}
+            onClose={() => setConfirmationState(null)}
+            onConfirm={confirmationState.onConfirm}
+            title={confirmationState.title}
+            message={confirmationState.message}
+          />
+        )}
+
+        <InputModal
+          isOpen={state.isInputModalOpen}
+          onClose={() => setState(prev => ({ ...prev, isInputModalOpen: false }))}
+          onConfirm={handleManualDocAdd}
+          type={state.inputModalType || 'text'} // Pass the type to the modal
+        />
+
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex flex-col gap-3 z-50 pointer-events-none w-full max-sm px-4">
+          {state.toasts.map(toast => (
+            <div key={toast.id} className="pointer-events-auto flex items-center gap-3 px-5 py-3.5 bg-brand-darker message-shadow rounded-2xl border border-brand-border animate-blur-text w-full">
+              <span className={`text-[11px] font-bold uppercase tracking-widest ${toast.type === 'error' ? 'text-red-500' : 'text-emerald-500'}`}>
+                {toast.type}
+              </span>
+              <div className="flex-1 flex flex-col">
+                <p className="text-[13px] text-gray-300 font-medium leading-normal">{toast.message}</p>
+                {toast.message.includes("OpenRouter Privacy Settings") && (
+                  <a
+                    href="https://openrouter.ai/settings/privacy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-flex items-center text-[11px] font-bold text-brand-accent hover:text-white transition-colors uppercase tracking-wide gap-1 self-start border-b border-brand-accent/30 hover:border-brand-accent pb-0.5"
+                  >
+                    Configure Settings &rarr;
+                  </a>
+                )}
+              </div>
+              <button onClick={() => removeToast(toast.id)} className="text-gray-400 hover:text-white transition-colors">
+                <X size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <ModelSelectorModal
+          isOpen={isModelSelectorOpen}
+          onClose={() => setIsModelSelectorOpen(false)}
+          currentModelId={state.selectedModel}
+          onSelect={(m) => setState(prev => ({ ...prev, selectedModel: m }))}
+          title="Select Primary Intelligence"
+        />
+      </div>
+    </Suspense>
   );
 };
 
