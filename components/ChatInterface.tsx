@@ -367,7 +367,7 @@ export const ChatInterface: React.FC<Props> = ({
           </div>
         ) : (
           messages.map((msg) => (
-            <div key={msg.id} className="max-w-4xl mx-auto w-full fade-in">
+            <div key={msg.id} className="max-w-5xl ml-8 w-full fade-in">
               <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start gap-4'}`}>
 
 
@@ -485,7 +485,7 @@ export const ChatInterface: React.FC<Props> = ({
       {inputPosition === 'floating' && (
         <>
           <div className="absolute bottom-0 left-0 w-full h-64 bg-gradient-to-t from-brand-base via-brand-base/95 to-transparent pointer-events-none z-40" />
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-4xl px-6 z-50">
+          <div className="absolute bottom-8 left-8 w-full max-w-5xl px-0 z-50">
 
             {/* FILE SUGGESTIONS PORTAL */}
             {showSuggestions && filteredDocs.length > 0 && (

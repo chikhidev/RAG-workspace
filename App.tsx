@@ -253,22 +253,17 @@ const App: React.FC = () => {
   });
 
   const [inputValue, setInputValue] = useState('');
-  const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(true);
-  const [confirmationState, setConfirmationState] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    onConfirm: () => void;
-  } | null>(null);
+  const [isControlsOpen, setIsControlsOpen] = useState(true);
+  const [isVaultOpen, setIsVaultOpen] = useState(true);
   const [promptHistory, setPromptHistory] = useState<string[]>(() => {
     const stored = localStorage.getItem(STORAGE_KEYS.PROMPT_HISTORY);
     return stored ? JSON.parse(stored) : [];
   });
   const [historyIndex, setHistoryIndex] = useState(-1);
-  const [rightWidth, setRightWidth] = useState(450);
-  const [leftWidth, setLeftWidth] = useState(350);
-  const isResizingRight = useRef(false);
-  const isResizingLeft = useRef(false);
+  const [controlsWidth, setControlsWidth] = useState(450);
+  const [vaultWidth, setVaultWidth] = useState(350);
+  const isResizingControls = useRef(false);
+  const isResizingVault = useRef(false);
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -324,40 +319,52 @@ const App: React.FC = () => {
     setState(prev => ({ ...prev, toasts: prev.toasts.filter(t => t.id !== id) }));
   };
 
-  const handleMouseMoveRight = useCallback((e: MouseEvent) => {
-    if (!isResizingRight.current) return;
-    const newWidth = window.innerWidth - e.clientX;
-    if (newWidth > 240 && newWidth < 800) setRightWidth(newWidth);
+  const startResizingControls = useCallback((e: React.MouseEvent) => {
+    isResizingControls.current = true;
+    document.addEventListener('mousemove', handleControlsResize);
+    document.addEventListener('mouseup', stopControlsResize);
+    document.body.style.cursor = 'col-resize';
   }, []);
 
-  const handleMouseMoveLeft = useCallback((e: MouseEvent) => {
-    if (!isResizingLeft.current) return;
-    const newWidth = e.clientX;
-    if (newWidth > 200 && newWidth < 500) setLeftWidth(newWidth);
+  const handleControlsResize = useCallback((e: MouseEvent) => {
+    if (!isResizingControls.current) return;
+    const newWidth = Math.max(250, Math.min(600, e.clientX));
+    setControlsWidth(newWidth);
   }, []);
 
-  const stopResizing = useCallback(() => {
-    isResizingRight.current = false;
-    isResizingLeft.current = false;
-    document.removeEventListener('mousemove', handleMouseMoveRight);
-    document.removeEventListener('mousemove', handleMouseMoveLeft);
-    document.removeEventListener('mouseup', stopResizing);
+  const stopControlsResize = useCallback(() => {
+    isResizingControls.current = false;
+    document.removeEventListener('mousemove', handleControlsResize);
+    document.removeEventListener('mouseup', stopControlsResize);
     document.body.style.cursor = 'default';
-  }, [handleMouseMoveRight, handleMouseMoveLeft]);
+  }, []);
 
-  const startResizingRight = useCallback(() => {
-    isResizingRight.current = true;
-    document.addEventListener('mousemove', handleMouseMoveRight);
-    document.addEventListener('mouseup', stopResizing);
+  const startResizingVault = useCallback((e: React.MouseEvent) => {
+    isResizingVault.current = true;
+    document.addEventListener('mousemove', handleVaultResize);
+    document.addEventListener('mouseup', stopVaultResize);
     document.body.style.cursor = 'col-resize';
-  }, [handleMouseMoveRight, stopResizing]);
+  }, []);
 
-  const startResizingLeft = useCallback(() => {
-    isResizingLeft.current = true;
-    document.addEventListener('mousemove', handleMouseMoveLeft);
-    document.addEventListener('mouseup', stopResizing);
-    document.body.style.cursor = 'col-resize';
-  }, [handleMouseMoveLeft, stopResizing]);
+  const handleVaultResize = useCallback((e: MouseEvent) => {
+    if (!isResizingVault.current) return;
+    const newWidth = Math.max(250, Math.min(600, window.innerWidth - e.clientX));
+    setVaultWidth(newWidth);
+  }, []);
+
+  const stopVaultResize = useCallback(() => {
+    isResizingVault.current = false;
+    document.removeEventListener('mousemove', handleVaultResize);
+    document.removeEventListener('mouseup', stopVaultResize);
+    document.body.style.cursor = 'default';
+  }, []);
+
+  const [confirmationState, setConfirmationState] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
 
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -417,9 +424,10 @@ const App: React.FC = () => {
     abortControllerRef.current = new AbortController();
 
     try {
-      // EXTRACT TAGS: Find @FileName mentions in the prompt
+      // EXTRACT TAGS: Find @FileName mentions in the prompt (case-insensitive)
+      const queryLower = query.toLowerCase();
       const taggedFileNames = state.documents
-        .filter(d => query.includes(`@${d.name}`))
+        .filter(d => queryLower.includes(`@${d.name.toLowerCase()}`))
         .map(d => d.name);
 
       let expandedQuery = '';
@@ -933,36 +941,60 @@ const App: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-brand-base text-gray-100 transition-colors overflow-hidden dark">
+
+      {/* LEFT SIDEBAR: Controls */}
       <div
-        className={`shrink-0 flex transition-all duration-300 ease-in-out ${isLeftSidebarOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 absolute z-0'}`}
-        style={{ width: isLeftSidebarOpen ? `${leftWidth}px` : '0px' }}
+        className={`shrink-0 flex transition-all duration-300 ease-in-out relative z-30 ${isControlsOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'}`}
+        style={{ width: isControlsOpen ? `${controlsWidth}px` : '0px', marginRight: isControlsOpen ? '0' : `-${controlsWidth}px` }}
       >
-        <div className="flex-1 min-w-0 h-full overflow-hidden border-r border-brand-border/50">
-          <DocumentList
-            documents={state.documents} onUpload={handleFileUpload}
-            onRemove={(id) => setState(prev => ({ ...prev, documents: prev.documents.filter(d => d.id !== id) }))}
-            onToggle={(id) => setState(prev => ({ ...prev, documents: prev.documents.map(d => d.id === id ? { ...d, enabled: !d.enabled } : d) }))}
-            isIndexing={state.isIndexing}
-            onAddText={() => setState(prev => ({ ...prev, isInputModalOpen: true, inputModalType: 'text' }))}
-            onAddLink={() => setState(prev => ({ ...prev, isInputModalOpen: true, inputModalType: 'url' }))}
+        <div className="flex-1 min-w-0 h-full overflow-hidden border-r border-brand-border/50 relative">
+          <RightSidebar
+            inputValue={inputValue} setInputValue={setInputValue}
+            onSend={handleSend} onStop={handleStop} onHistoryNav={(d) => { }}
+            isProcessing={state.isProcessing}
+            useVault={state.useVault} setUseVault={(v) => setState(prev => ({ ...prev, useVault: v }))}
+            useContextHistory={state.useContextHistory}
+            setUseContextHistory={(v) => setState(prev => ({ ...prev, useContextHistory: v }))}
+            onClearContext={handleClearContextHistory}
+            selectedModel={state.selectedModel}
+            setSelectedModel={(m) => setState(prev => ({ ...prev, selectedModel: m }))}
+            openRouterKey={state.openRouterKey} setOpenRouterKey={(k) => setState(prev => ({ ...prev, openRouterKey: k }))}
+            onOpenApiManagement={() => setState(prev => ({ ...prev, isApiKeyModalOpen: true }))}
+            inputPosition={state.inputPosition}
+            setInputPosition={(pos) => setState(prev => ({ ...prev, inputPosition: pos }))}
+            availableDocuments={state.documents.filter(d => d.enabled)}
+            onClearChat={onClearChat}
+            maxTokens={state.maxTokens}
+            setMaxTokens={(n) => setState(prev => ({ ...prev, maxTokens: n }))}
+            maxAgentIterations={state.maxAgentIterations}
+            setMaxAgentIterations={(n) => setState(prev => ({ ...prev, maxAgentIterations: n }))}
+            sessionStats={state.sessionStats}
+            customContext={state.customContext}
+            setCustomContext={(v) => setState(prev => ({ ...prev, customContext: v }))}
           />
+
+          {/* INTERNAL COLLAPSE BUTTON REMOVED AS PER USER REQUEST */}
         </div>
-        <div onMouseDown={startResizingLeft} className="w-1.5 cursor-col-resize bg-brand-border hover:bg-brand-accent transition-all flex flex-col items-center justify-center gap-1 group shrink-0 z-10">
+        <div onMouseDown={startResizingControls} className="w-1.5 cursor-col-resize bg-brand-border hover:bg-brand-accent transition-all flex flex-col items-center justify-center gap-1 group shrink-0">
           <div className="w-[1px] h-8 bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
           <div className="w-[1px] h-8 bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
         </div>
       </div>
 
-      <main className="flex-1 flex flex-col min-w-0 bg-brand-base relative transition-all">
-        {/* Sidebar Toggle Button */}
+      {/* FLOAT OPEN BUTTONS */}
+      {/* Controls Open Button Removed */}
+
+      {!isVaultOpen && (
         <button
-          onClick={() => setIsLeftSidebarOpen(!isLeftSidebarOpen)}
-          className={`absolute top-4 left-4 z-40 p-2 rounded-lg bg-brand-darker border border-brand-border text-gray-400 hover:text-white hover:border-brand-accent transition-all shadow-lg ${!isLeftSidebarOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 pointer-events-none'}`}
-          title={isLeftSidebarOpen ? "Close Sidebar" : "Open Sidebar"}
-          style={{ pointerEvents: 'auto' }}
+          onClick={() => setIsVaultOpen(true)}
+          className="fixed top-4 right-4 z-[100] p-2 rounded-lg bg-brand-darker border border-brand-border text-gray-400 hover:text-orange-400 transition-all shadow-2xl animate-in fade-in slide-in-from-right-2"
+          title="Open Vault"
         >
-          {isLeftSidebarOpen ? <PanelLeftClose size={18} /> : <PanelLeft size={18} />}
+          <PanelLeft size={18} className="rotate-180" />
         </button>
+      )}
+
+      <main className="flex-1 flex flex-col min-w-0 bg-brand-base relative transition-all">
         <ChatInterface
           messages={state.messages}
           selectedModelId={state.selectedModel}
@@ -981,36 +1013,29 @@ const App: React.FC = () => {
         />
       </main>
 
-      <div style={{ width: `${rightWidth}px` }} className="shrink-0 flex">
-        <div onMouseDown={startResizingRight} className="w-1.5 cursor-col-resize bg-brand-border hover:bg-brand-accent transition-all flex flex-col items-center justify-center gap-1 group shrink-0">
+      {/* RIGHT SIDEBAR: Vault */}
+      <div
+        style={{ width: isVaultOpen ? `${vaultWidth}px` : '0px', marginLeft: isVaultOpen ? '0' : `-${vaultWidth}px` }}
+        className={`shrink-0 flex transition-all duration-300 ease-in-out relative z-30 ${isVaultOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}`}
+      >
+        <div onMouseDown={startResizingVault} className="w-1.5 cursor-col-resize bg-brand-border hover:bg-brand-accent transition-all flex flex-col items-center justify-center gap-1 group shrink-0">
           <div className="w-[1px] h-8 bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
           <div className="w-[1px] h-8 bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
         </div>
 
-        <RightSidebar
-          inputValue={inputValue} setInputValue={setInputValue}
-          onSend={handleSend} onStop={handleStop} onHistoryNav={(d) => { }}
-          isProcessing={state.isProcessing}
-          useVault={state.useVault} setUseVault={(v) => setState(prev => ({ ...prev, useVault: v }))}
-          useContextHistory={state.useContextHistory}
-          setUseContextHistory={(v) => setState(prev => ({ ...prev, useContextHistory: v }))}
-          onClearContext={handleClearContextHistory}
-          selectedModel={state.selectedModel}
-          setSelectedModel={(m) => setState(prev => ({ ...prev, selectedModel: m }))}
-          openRouterKey={state.openRouterKey} setOpenRouterKey={(k) => setState(prev => ({ ...prev, openRouterKey: k }))}
-          onOpenApiManagement={() => setState(prev => ({ ...prev, isApiKeyModalOpen: true }))}
-          inputPosition={state.inputPosition}
-          setInputPosition={(pos) => setState(prev => ({ ...prev, inputPosition: pos }))}
-          availableDocuments={state.documents.filter(d => d.enabled)}
-          onClearChat={onClearChat}
-          maxTokens={state.maxTokens}
-          setMaxTokens={(n) => setState(prev => ({ ...prev, maxTokens: n }))}
-          maxAgentIterations={state.maxAgentIterations}
-          setMaxAgentIterations={(n) => setState(prev => ({ ...prev, maxAgentIterations: n }))}
-          sessionStats={state.sessionStats}
-          customContext={state.customContext}
-          setCustomContext={(v) => setState(prev => ({ ...prev, customContext: v }))}
-        />
+        <div className="flex-1 min-w-0 h-full overflow-hidden border-l border-brand-border/50 relative">
+          <DocumentList
+            documents={state.documents} onUpload={handleFileUpload}
+            onRemove={(id) => setState(prev => ({ ...prev, documents: prev.documents.filter(d => d.id !== id) }))}
+            onToggle={(id) => setState(prev => ({ ...prev, documents: prev.documents.map(d => d.id === id ? { ...d, enabled: !d.enabled } : d) }))}
+            isIndexing={state.isIndexing}
+            onAddText={() => setState(prev => ({ ...prev, isInputModalOpen: true, inputModalType: 'text' }))}
+            onAddLink={() => setState(prev => ({ ...prev, isInputModalOpen: true, inputModalType: 'url' }))}
+            onCollapse={() => setIsVaultOpen(false)}
+          />
+
+          {/* INTERNAL COLLAPSE BUTTON REMOVED (NOW INSIDE DocumentList) */}
+        </div>
       </div>
 
       <ApiKeyModal

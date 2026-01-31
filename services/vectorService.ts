@@ -59,7 +59,7 @@ export class VectorService {
 
     return scored
       .sort((a, b) => b.score - a.score)
-      .filter(s => s.score > 0)
+      .filter(s => s.score > 0 || taggedFileNames.length > 0) // Allow results if we have tags
       .slice(0, limit)
       .map(s => s.chunk);
   }

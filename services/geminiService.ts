@@ -15,10 +15,11 @@ ACTION TYPES:
 
 ### CRITICAL PROTOCOL: @ MENTIONS (FOCUS MODE)
 If your input contains "DETECTED @ TAGS":
-1. YOU MUST execute a 'search' action targeting these files to retrieve their FULL content.
+1. YOU MUST execute a 'search' action targeting these files to retrieve their FULL content immediately.
 2. DO NOT rely on the "FILE PREVIEWS" to answer questions about these files. The preview is truncated and insufficient.
 3. Your understanding must state: "User wants to read @[file], so I must retrieve its full text."
-4. If you have not yet executed a specific search for the tagged file in this session, you CANNOT conclude.
+4. If you have not yet executed a specific search for the tagged file in this session, you CANNOT conclude or ask for clarification regarding the file's content until you have read it.
+5. Treating tags as absolute priority: If tagged files are present, your first action must be to search them.
 
 ### CRITICAL PROTOCOL: FUZZY CLARIFICATION (ANTI-TYPO)
 If a user query mentions a term (like "Meren") that appears once or has zero matches:

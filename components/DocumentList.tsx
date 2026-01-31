@@ -10,19 +10,29 @@ interface Props {
   isIndexing: boolean;
   onAddText: () => void;
   onAddLink: () => void;
+  onCollapse?: () => void;
 }
 
-export const DocumentList: React.FC<Props> = ({ documents, onUpload, onRemove, onToggle, isIndexing, onAddText, onAddLink }) => {
+export const DocumentList: React.FC<Props> = ({ documents, onUpload, onRemove, onToggle, isIndexing, onAddText, onAddLink, onCollapse }) => {
   const isAtLimit = documents.length >= 10;
 
   return (
     <div className="flex flex-col h-full bg-brand-darker p-6 w-full transition-colors overflow-hidden">
       <div className="flex items-center justify-between mb-2 overflow-hidden shrink-0">
         <div className="flex items-center gap-3 min-w-0">
-          <Box size={18} className="text-gray-100 shrink-0" />
+          {onCollapse && (
+            <button
+              onClick={onCollapse}
+              className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+              title="Collapse Vault"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-panel-right-close"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M15 3v18" /><path d="m8 9 3 3-3 3" /></svg>
+            </button>
+          )}
           <h2 className="text-[20px] font-serif italic text-gray-100 tracking-tight truncate">
             Knowledge Vault
           </h2>
+          
         </div>
         <div className="flex items-center gap-2">
           <button
