@@ -35,24 +35,29 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
     const providers = ['all', ...new Set(SUPPORTED_MODELS.map(m => m.provider))];
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-
-            <div className="relative w-full max-w-4xl bg-[#1e1e1e] border border-brand-border rounded-2xl shadow-2xl flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-200">
-
-                {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-brand-border">
-                    <div>
-                        <h2 className="text-xl font-bold text-white tracking-tight">{title}</h2>
-                        <p className="text-sm text-brand-muted mt-1">Select the best model for your task</p>
-                    </div>
-                    <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full text-gray-400 hover:text-white transition-colors">
-                        <X size={20} />
-                    </button>
+        <div className="fixed inset-0 z-[1000] flex flex-col bg-brand-darker animate-in fade-in duration-200">
+            <div className="flex items-center justify-between px-8 py-6 border-b border-brand-border bg-brand-base/50">
+                <div className="flex items-center gap-3">
+                    <h2 className="text-xl font-bold text-gray-100 tracking-tight">{title}</h2>
                 </div>
+                <button
+                    onClick={onClose}
+                    className="p-2 hover:bg-brand-border/50 rounded-full transition-colors text-gray-400 hover:text-white"
+                >
+                    <X size={24} />
+                </button>
+            </div>
 
-                {/* Search & Filters */}
-                <div className="px-6 py-4 border-b border-brand-border/50 bg-[#1e1e1e] space-y-4">
+            <div className="flex-1 overflow-y-auto">
+                <div className="max-w-6xl mx-auto px-8 py-12 space-y-8">
+                    <div className="space-y-2">
+                        <h3 className="text-lg font-bold text-white">Select Primary Intelligence</h3>
+                        <p className="text-sm text-brand-muted">Choose the best model for your task. Each model offers different strengths in reasoning, speed, and cost.</p>
+                    </div>
+
+
+
+                    {/* Search & Filters */}
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
                         <input
@@ -60,7 +65,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                             placeholder="Search models..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="w-full bg-[#252525] border border-brand-border rounded-xl pl-10 pr-4 py-2.5 text-sm text-gray-200 placeholder:text-gray-600 focus:border-brand-accent outline-none transition-colors"
+                            className="w-full bg-[#1a1a1a] border border-brand-border rounded-xl pl-10 pr-4 py-3 text-sm text-gray-200 placeholder:text-gray-600 focus:border-brand-accent outline-none transition-colors"
                         />
                     </div>
 
@@ -71,9 +76,9 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                                 <button
                                     key={p}
                                     onClick={() => setProviderFilter(p)}
-                                    className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border flex items-center gap-2 ${providerFilter === p
+                                    className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border flex items-center gap-2.5 ${providerFilter === p
                                         ? 'bg-brand-accent/20 border-brand-accent text-brand-accent'
-                                        : 'bg-white/5 border-transparent text-gray-500 hover:bg-white/10 hover:text-gray-300'
+                                        : 'bg-brand-base border-brand-border text-gray-500 hover:border-gray-400 hover:text-gray-300'
                                         }`}
                                 >
                                     <img src={logoPath} alt={p} className='w-4 h-4 object-contain' />
@@ -85,7 +90,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                 </div>
 
                 {/* Grid Content */}
-                <div className="flex-1 overflow-y-auto p-6 bg-[#1a1a1a]">
+                <div className="bg-[#1a1a1a] border border-brand-border rounded-2xl p-6 max-w-6xl mx-auto">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {models.map(model => (
                             <button
@@ -153,6 +158,18 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                             </button>
                         ))}
                     </div>
+                </div>
+            </div>
+
+            {/* Sticky Footer */}
+            <div className="border-t border-brand-border bg-brand-base/80 backdrop-blur-md px-8 py-6 shrink-0 z-50 sticky bottom-0">
+                <div className="max-w-6xl mx-auto flex justify-end">
+                    <button
+                        onClick={onClose}
+                        className="px-8 py-3 bg-brand-accent hover:bg-brand-accent/90 text-white rounded-xl text-sm font-bold tracking-wide transition-all hover:-translate-y-0.5 active:translate-y-0"
+                    >
+                        Done
+                    </button>
                 </div>
             </div>
         </div>

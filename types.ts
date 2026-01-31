@@ -86,7 +86,6 @@ export interface AppState {
   googleKey: string;
   xaiKey: string;
   openaiKey: string;
-  inputPosition: 'floating' | 'sidebar';
   isInputModalOpen?: boolean;
   inputModalType?: 'text' | 'url';
   maxTokens: number;

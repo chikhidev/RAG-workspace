@@ -7,6 +7,7 @@ import { vectorService } from './services/vectorService';
 import { geminiRAG } from './services/geminiService';
 import { fileService } from './services/fileService';
 import { InputModal } from './components/InputModal';
+import { ModelSelectorModal } from './components/ModelSelectorModal';
 import { X, Key, Shield, ExternalLink, PanelLeft, PanelLeftClose } from 'lucide-react';
 
 const STORAGE_KEYS = {
@@ -37,7 +38,7 @@ const ApiKeyModal: React.FC<{
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-brand-darker animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[1000] flex flex-col bg-brand-darker animate-in fade-in duration-200">
       <div className="flex items-center justify-between px-8 py-6 border-b border-brand-border bg-brand-base/50">
         <div className="flex items-center gap-3">
           <h2 className="text-xl font-bold text-gray-100 tracking-tight">API Key Management</h2>
@@ -172,7 +173,7 @@ const ConfirmationModal: React.FC<{
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-brand-darker w-full max-w-sm rounded-2xl border border-brand-border shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
         <div className="px-6 py-4 border-b border-brand-border flex items-center justify-between bg-brand-base/50">
           <h3 className="text-sm font-bold text-gray-100">{title}</h3>
@@ -220,7 +221,6 @@ const App: React.FC = () => {
       useContextHistory: false,
       expanderModel: 'cohere/command-r7b-12-2024',
       reasonerModel: 'openai/gpt-oss-safeguard-20b',
-      inputPosition: 'floating' as const,
       maxTokens: 2000,
       maxAgentIterations: 5
     };
@@ -243,7 +243,6 @@ const App: React.FC = () => {
     googleKey: localStorage.getItem(STORAGE_KEYS.GOOGLE_KEY) || "",
     xaiKey: localStorage.getItem(STORAGE_KEYS.XAI_KEY) || "",
     openaiKey: localStorage.getItem(STORAGE_KEYS.OPENAI_KEY) || "",
-    inputPosition: initialSettings.inputPosition,
     isApiKeyModalOpen: false,
     isInputModalOpen: false,
     maxTokens: initialSettings.maxTokens,
@@ -252,8 +251,9 @@ const App: React.FC = () => {
     customContext: localStorage.getItem(STORAGE_KEYS.CUSTOM_CONTEXT) || '',
   });
 
+  const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false);
+
   const [inputValue, setInputValue] = useState('');
-  const [isControlsOpen, setIsControlsOpen] = useState(true);
   const [isVaultOpen, setIsVaultOpen] = useState(true);
   const [promptHistory, setPromptHistory] = useState<string[]>(() => {
     const stored = localStorage.getItem(STORAGE_KEYS.PROMPT_HISTORY);
@@ -276,10 +276,9 @@ const App: React.FC = () => {
       useVault: state.useVault,
       useContextHistory: state.useContextHistory,
       selectedModel: state.selectedModel,
-      inputPosition: state.inputPosition,
       maxTokens: state.maxTokens
     }));
-  }, [state.useVault, state.useContextHistory, state.selectedModel, state.inputPosition, state.maxTokens]);
+  }, [state.useVault, state.useContextHistory, state.selectedModel, state.maxTokens]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.OPENROUTER_KEY, state.openRouterKey);
@@ -308,6 +307,10 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.SELECTED_MODEL, state.selectedModel);
   }, [state.selectedModel]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.PROMPT_HISTORY, JSON.stringify(promptHistory));
+  }, [promptHistory]);
 
   const addToast = (message: string, type: Toast['type'] = 'error') => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -939,18 +942,28 @@ const App: React.FC = () => {
     });
   }, []);
 
+  const handleHistoryNav = useCallback((direction: 'up' | 'down') => {
+    if (promptHistory.length === 0) return;
+    let newIndex = (direction === 'up') ? historyIndex + 1 : historyIndex - 1;
+    newIndex = Math.max(-1, Math.min(newIndex, promptHistory.length - 1));
+    if (newIndex !== historyIndex) {
+      setHistoryIndex(newIndex);
+      setInputValue(newIndex === -1 ? '' : promptHistory[newIndex]);
+    }
+  }, [promptHistory, historyIndex]);
+
   return (
     <div className="flex h-screen bg-brand-base text-gray-100 transition-colors overflow-hidden dark">
 
       {/* LEFT SIDEBAR: Controls */}
       <div
-        className={`shrink-0 flex transition-all duration-300 ease-in-out relative z-30 ${isControlsOpen ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0'}`}
-        style={{ width: isControlsOpen ? `${controlsWidth}px` : '0px', marginRight: isControlsOpen ? '0' : `-${controlsWidth}px` }}
+        className="shrink-0 flex relative z-30"
+        style={{ width: `${controlsWidth}px` }}
       >
         <div className="flex-1 min-w-0 h-full overflow-hidden border-r border-brand-border/50 relative">
           <RightSidebar
             inputValue={inputValue} setInputValue={setInputValue}
-            onSend={handleSend} onStop={handleStop} onHistoryNav={(d) => { }}
+            onSend={handleSend} onStop={handleStop} onHistoryNav={handleHistoryNav}
             isProcessing={state.isProcessing}
             useVault={state.useVault} setUseVault={(v) => setState(prev => ({ ...prev, useVault: v }))}
             useContextHistory={state.useContextHistory}
@@ -960,8 +973,7 @@ const App: React.FC = () => {
             setSelectedModel={(m) => setState(prev => ({ ...prev, selectedModel: m }))}
             openRouterKey={state.openRouterKey} setOpenRouterKey={(k) => setState(prev => ({ ...prev, openRouterKey: k }))}
             onOpenApiManagement={() => setState(prev => ({ ...prev, isApiKeyModalOpen: true }))}
-            inputPosition={state.inputPosition}
-            setInputPosition={(pos) => setState(prev => ({ ...prev, inputPosition: pos }))}
+            onOpenModelSelector={() => setIsModelSelectorOpen(true)}
             availableDocuments={state.documents.filter(d => d.enabled)}
             onClearChat={onClearChat}
             maxTokens={state.maxTokens}
@@ -1002,7 +1014,6 @@ const App: React.FC = () => {
           onRegenerate={handleRegenerate}
           onUpdateSources={handleUpdateSources}
           onClearChat={onClearChat}
-          inputPosition={state.inputPosition}
           inputValue={inputValue}
           setInputValue={setInputValue}
           onSend={handleSend}
@@ -1010,6 +1021,7 @@ const App: React.FC = () => {
           onClarifyAnswer={handleClarificationAnswer}
           isProcessing={state.isProcessing}
           availableDocuments={state.documents.filter(d => d.enabled)}
+          onHistoryNav={handleHistoryNav}
         />
       </main>
 
@@ -1093,6 +1105,14 @@ const App: React.FC = () => {
           </div>
         ))}
       </div>
+
+      <ModelSelectorModal
+        isOpen={isModelSelectorOpen}
+        onClose={() => setIsModelSelectorOpen(false)}
+        currentModelId={state.selectedModel}
+        onSelect={(m) => setState(prev => ({ ...prev, selectedModel: m }))}
+        title="Select Primary Intelligence"
+      />
     </div>
   );
 };

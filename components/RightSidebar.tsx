@@ -23,8 +23,7 @@ interface Props {
   openRouterKey: string;
   setOpenRouterKey: (k: string) => void;
   onOpenApiManagement: () => void;
-  inputPosition: 'floating' | 'sidebar';
-  setInputPosition: (pos: 'floating' | 'sidebar') => void;
+  onOpenModelSelector: () => void;
   availableDocuments: Document[];
   onClearChat: () => void;
   maxTokens: number;
@@ -68,73 +67,14 @@ export const RightSidebar: React.FC<Props> = ({
   inputValue, setInputValue, onSend, onStop, onHistoryNav, isProcessing,
   useVault, setUseVault, useContextHistory, setUseContextHistory,
   onClearContext, selectedModel, setSelectedModel,
-  onOpenApiManagement, inputPosition, setInputPosition, availableDocuments, onClearChat,
+  onOpenApiManagement, onOpenModelSelector, availableDocuments, onClearChat,
   maxTokens, setMaxTokens, maxAgentIterations, setMaxAgentIterations, sessionStats,
   customContext, setCustomContext
 }) => {
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [suggestionFilter, setSuggestionFilter] = useState('');
-  const [cursorPosition, setCursorPosition] = useState(0);
-  const [activeModal, setActiveModal] = useState<boolean>(false);
-  const [showCustomContext, setShowCustomContext] = useState(false);
-  const sidebarTextareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // Handle Tagging in Sidebar
-  useEffect(() => {
-    const lastAtPos = inputValue.lastIndexOf('@', cursorPosition - 1);
-    if (lastAtPos !== -1 && !inputValue.slice(lastAtPos, cursorPosition).includes(' ')) {
-      const filter = inputValue.slice(lastAtPos + 1, cursorPosition);
-      setSuggestionFilter(filter);
-      setShowSuggestions(true);
-    } else {
-      setShowSuggestions(false);
-    }
-  }, [inputValue, cursorPosition]);
-
-  const insertTag = (fileName: string) => {
-    const lastAtPos = inputValue.lastIndexOf('@', cursorPosition - 1);
-    const beforeAt = inputValue.slice(0, lastAtPos);
-    const afterAt = inputValue.slice(cursorPosition);
-    const newValue = `${beforeAt}@${fileName} ${afterAt}`;
-    setInputValue(newValue);
-    setShowSuggestions(false);
-
-    setTimeout(() => {
-      if (sidebarTextareaRef.current) {
-        sidebarTextareaRef.current.focus();
-        const newPos = lastAtPos + fileName.length + 2;
-        sidebarTextareaRef.current.setSelectionRange(newPos, newPos);
-      }
-    }, 0);
-  };
-
-  const filteredDocs = availableDocuments.filter(doc =>
-    doc.name.toLowerCase().includes(suggestionFilter.toLowerCase())
-  );
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (showSuggestions && filteredDocs.length > 0) {
-      if (e.key === 'Tab' || e.key === 'Enter') {
-        e.preventDefault();
-        insertTag(filteredDocs[0].name);
-        return;
-      }
-      if (e.key === 'Escape') {
-        setShowSuggestions(false);
-        return;
-      }
-    }
-
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      onSend();
-    }
-  };
-
   const toggleBtnClass = "w-full flex items-center justify-between p-4 rounded-xl border border-brand-border bg-[#252525] transition-all hover:bg-brand-border/50";
-  const selectClass = "w-full bg-[#252525] border border-brand-border rounded-xl p-3 text-[13px] font-bold text-gray-200 outline-none focus:border-brand-accent/50 appearance-none cursor-pointer hover:border-brand-accent/30 transition-all pl-10";
-
   const selectedModelDef = SUPPORTED_MODELS.find(m => m.id === selectedModel);
+
+  const [showCustomContext, setShowCustomContext] = useState(false);
 
   return (
     <div className="flex flex-col h-full bg-brand-darker border-l border-transparent p-6 w-full transition-colors overflow-y-auto relative">
@@ -152,84 +92,7 @@ export const RightSidebar: React.FC<Props> = ({
         </button>
       </div>
 
-      <div className="mb-10">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg text-white tracking-tight">Synthesis Query</h2>
-          <button
-            onClick={() => setInputPosition(inputPosition === 'floating' ? 'sidebar' : 'floating')}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${inputPosition === 'floating'
-              ? 'bg-brand-accent/10 text-brand-accent border border-brand-accent/20'
-              : 'bg-brand-border text-gray-500'
-              }`}
-            title="Toggle Floating Input"
-          >
-            {inputPosition === 'floating' ? <Maximize2 size={12} /> : <Layout size={12} />}
-            {inputPosition === 'floating' ? 'Floating' : 'Sidebar'}
-          </button>
-        </div>
-
-        {inputPosition === 'sidebar' ? (
-          <div className="relative group">
-            <textarea
-              ref={sidebarTextareaRef}
-              value={inputValue}
-              onChange={(e) => {
-                setInputValue(e.target.value);
-                setCursorPosition(e.target.selectionStart || 0);
-              }}
-              onKeyUp={(e) => setCursorPosition((e.target as any).selectionStart || 0)}
-              onClick={(e) => setCursorPosition((e.target as any).selectionStart || 0)}
-              onKeyDown={handleKeyDown}
-              placeholder="Describe task... Use @ for files"
-              className="w-full bg-brand-base border border-brand-border rounded-xl p-5 focus:border-brand-accent transition-all text-[14px] font-medium h-48 resize-none text-gray-200 outline-none leading-relaxed placeholder:text-brand-muted/50 shadow-inner"
-            />
-
-            {/* Sidebar Suggestions Portal (Now listing downwards) */}
-            {showSuggestions && filteredDocs.length > 0 && (
-              <div className="absolute top-full left-0 mt-2 w-full bg-brand-base border border-brand-border rounded-xl shadow-2xl overflow-hidden z-[60] backdrop-blur-md">
-                <div className="px-3 py-1.5 border-b border-brand-border flex items-center justify-between bg-brand-darker/50">
-                  <span className="text-[8px] font-mono text-brand-muted uppercase tracking-widest">Vault Matches</span>
-                </div>
-                <div className="max-h-48 overflow-y-auto">
-                  {filteredDocs.map((doc) => (
-                    <button
-                      key={doc.id}
-                      onClick={() => insertTag(doc.name)}
-                      className="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-brand-accent/10 border-b border-brand-border/30 last:border-0 transition-colors text-left group"
-                    >
-                      <FileText size={10} className="text-emerald-500" />
-                      <span className="text-[11px] font-medium text-gray-300 truncate">
-                        @{doc.name}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <button
-              onClick={() => isProcessing ? onStop() : onSend()}
-              disabled={!isProcessing && !inputValue.trim()}
-              className={`absolute bottom-4 right-4 h-10 w-10 flex items-center justify-center rounded-lg transition-all shadow-xl ${isProcessing
-                ? 'bg-red-500 hover:bg-red-600'
-                : 'bg-brand-accent hover:bg-brand-accent/90 disabled:bg-brand-border disabled:text-brand-muted'
-                }`}
-            >
-              {isProcessing ? <div className="w-3 h-3 bg-white rounded-sm" /> : <Send className="text-white" size={16} />}
-            </button>
-          </div>
-        ) : (
-          <div className="p-5 border border-dashed border-brand-border rounded-xl text-center">
-            <p className="text-[11px] text-brand-muted italic leading-relaxed">
-              Input is currently detached and floating in the chat area for better focus.
-            </p>
-          </div>
-        )}
-      </div>
-
       <div className="mb-4 space-y-8">
-
-
         <div className="pt-8 border-t border-brand-border/30">
           <button
             onClick={() => setShowCustomContext(!showCustomContext)}
@@ -272,7 +135,7 @@ export const RightSidebar: React.FC<Props> = ({
               </label>
 
               <div
-                onClick={() => setActiveModal(true)}
+                onClick={onOpenModelSelector}
                 className="w-full bg-[#252525] border border-brand-border rounded-xl p-3 flex items-center justify-between cursor-pointer hover:border-brand-accent/50 group transition-all"
               >
                 <div className="flex items-center gap-3">
@@ -397,15 +260,6 @@ export const RightSidebar: React.FC<Props> = ({
           </div>
         </div>
       </div>
-
-      <ModelSelectorModal
-        isOpen={activeModal}
-        onClose={() => setActiveModal(false)}
-        currentModelId={selectedModel}
-        onSelect={setSelectedModel}
-        title="Select Primary Intelligence"
-      />
-
     </div>
   );
 };
