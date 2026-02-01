@@ -11,10 +11,30 @@ interface Props {
   onAddText: () => void;
   onAddLink: () => void;
   onCollapse?: () => void;
+  activeFileNames?: string[];
 }
 
-export const DocumentList: React.FC<Props> = ({ documents, onUpload, onRemove, onToggle, isIndexing, onAddText, onAddLink, onCollapse }) => {
+export const DocumentList: React.FC<Props> = ({ documents, onUpload, onRemove, onToggle, isIndexing, onAddText, onAddLink, onCollapse, activeFileNames = [] }) => {
   const isAtLimit = documents.length >= 10;
+  const [fadingFileNames, setFadingFileNames] = React.useState<string[]>([]);
+  const [allGlowingFiles, setAllGlowingFiles] = React.useState<string[]>([]);
+
+  // Handle active files and fade-out animation
+  React.useEffect(() => {
+    if (activeFileNames.length > 0) {
+      console.log('Active files being accessed:', activeFileNames);
+      setAllGlowingFiles(activeFileNames);
+      setFadingFileNames([]);
+    } else if (allGlowingFiles.length > 0) {
+      // Start fade-out
+      setFadingFileNames(allGlowingFiles);
+      const timer = setTimeout(() => {
+        setFadingFileNames([]);
+        setAllGlowingFiles([]);
+      }, 300); // Match CSS transition duration
+      return () => clearTimeout(timer);
+    }
+  }, [activeFileNames]);
 
   return (
     <div className="flex flex-col h-full bg-brand-darker p-6 w-full transition-colors overflow-hidden">
@@ -72,10 +92,16 @@ export const DocumentList: React.FC<Props> = ({ documents, onUpload, onRemove, o
             Drop context files to begin indexing.
           </div>
         ) : (
-          documents.map((doc) => (
+          documents.map((doc) => {
+            const isActive = activeFileNames.includes(doc.name);
+            const isFading = fadingFileNames.includes(doc.name);
+            const shouldGlow = isActive || isFading;
+            return (
             <div
               key={doc.id}
-              className={`group flex items-center justify-between p-3 rounded-lg border transition-all ${doc.enabled
+              className={`group flex items-center justify-between p-3 rounded-lg border transition-all relative z-[1] ${
+                shouldGlow ? (isFading ? 'ai-glow-box ai-glow-box-fading' : 'ai-glow-box') : ''
+              } ${doc.enabled
                 ? 'bg-brand-base border-brand-border/50'
                 : 'bg-transparent border-transparent opacity-60'
                 }`}
@@ -83,7 +109,7 @@ export const DocumentList: React.FC<Props> = ({ documents, onUpload, onRemove, o
               <div className="flex items-center gap-3 overflow-hidden flex-1">
                 <button
                   onClick={() => onToggle(doc.id)}
-                  className={`shrink-0 w-7 h-4 rounded-full relative transition-colors ${doc.enabled ? 'bg-brand-accent' : 'bg-brand-border'
+                  className={`shrink-0 w-7 h-4 rounded-full relative transition-colors  ${doc.enabled ? 'bg-brand-accent' : 'bg-brand-border'
                     }`}
                 >
                   <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${doc.enabled ? 'left-3.5' : 'left-0.5'
@@ -104,7 +130,8 @@ export const DocumentList: React.FC<Props> = ({ documents, onUpload, onRemove, o
                 <Trash2 size={13} />
               </button>
             </div>
-          ))
+          );
+          })
         )}
       </div>
 

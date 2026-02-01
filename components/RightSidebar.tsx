@@ -78,6 +78,15 @@ export const RightSidebar: React.FC<Props> = ({
   return (
     <div className="flex flex-col h-full bg-brand-darker border-l border-transparent p-6 w-full transition-colors overflow-y-auto relative">
 
+      {/* Main Logo */}
+      <div className="mb-2">
+        <img 
+          src="/logos/main_logo.png" 
+          alt="Main Logo" 
+          className="h-10 object-contain"
+        />
+      </div>
+
       <div className="mb-4 space-y-8">
         <div className="pt-8 border-t border-brand-border/30">
           <button

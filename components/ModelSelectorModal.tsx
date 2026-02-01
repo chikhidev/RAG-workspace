@@ -81,7 +81,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                                         : 'bg-brand-base border-brand-border text-gray-500 hover:border-gray-400 hover:text-gray-300'
                                         }`}
                                 >
-                                    <img src={logoPath} alt={p} className='w-4 h-4 object-contain' />
+                                    { p !== 'all' && <img src={logoPath} alt={p} className='w-4 h-4 object-contain rounded' /> }
                                     {p}
                                 </button>
                             );

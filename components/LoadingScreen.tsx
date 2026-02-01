@@ -16,7 +16,7 @@ interface Props {
 const LoadingScreen: React.FC<Props> = ({ isOnboarding, onComplete }) => {
     const [step, setStep] = React.useState(1);
     const [selectedProvider, setSelectedProvider] = React.useState<string>('google');
-    const [selectedModel, setSelectedModel] = React.useState<string>('google/gemini-2.0-flash-thinking-exp:free');
+    const [selectedModel, setSelectedModel] = React.useState<string>('gemini-2.0-flash-thinking-exp');
     const [apiKey, setApiKey] = React.useState('');
 
     const providers = [
@@ -24,6 +24,7 @@ const LoadingScreen: React.FC<Props> = ({ isOnboarding, onComplete }) => {
         { id: 'openrouter', name: 'OpenRouter', icon: Zap, desc: 'Aggregator of all top-tier models', logo: '/logos/openrouter.png' },
         { id: 'xai', name: 'xAI (Grok)', icon: Cpu, desc: 'Fast, concise, and smart reasoning', logo: '/logos/xai.png' },
         { id: 'openai', name: 'OpenAI', icon: Shield, desc: 'The industry standard for capability', logo: '/logos/chatgpt.png' },
+        { id: 'anthropic', name: 'Anthropic', icon: Shield, desc: 'Claude models with extended thinking', logo: '/logos/anthropic.png' },
     ];
 
     const filteredModels = SUPPORTED_MODELS.filter(m => m.provider === selectedProvider);

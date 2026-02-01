@@ -158,11 +158,12 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
     }
   },
   // --- GOOGLE MODELS (GEMINI 3 & 2.5) ---
+  // Gemini 3 Pro - Most Intelligent Model
   {
-    id: 'google/gemini-3-pro-preview:free',
+    id: 'gemini-3-pro-preview',
     name: 'Gemini 3 Pro Preview',
     provider: 'google',
-    description: 'Google - Most powerful agentic model with state-of-the-art reasoning.',
+    description: 'The best model in the world for multimodal understanding, delivering richer visuals and deeper interactivity with state-of-the-art reasoning.',
     size: 'large',
     logo: '/logos/gemini.png',
     isFree: true,
@@ -172,14 +173,16 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       inputPrice: '$0.00/M',
       outputPrice: '$0.00/M',
       latency: '1.2s',
-      throughput: '60tps'
+      throughput: '60tps',
+      updated: 'November 2025',
+      cutoff: 'January 2025'
     }
   },
   {
-    id: 'google/gemini-3-pro-image-preview:free',
+    id: 'gemini-3-pro-image-preview',
     name: 'Gemini 3 Pro Image Preview',
     provider: 'google',
-    description: 'Google - Most powerful model with image generation and reasoning.',
+    description: 'Gemini 3 Pro with image generation capabilities. Supports image and text inputs/outputs with thinking.',
     size: 'large',
     logo: '/logos/gemini.png',
     isFree: true,
@@ -189,14 +192,17 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       inputPrice: '$0.00/M',
       outputPrice: '$0.00/M',
       latency: '1.8s',
-      throughput: '40tps'
+      throughput: '40tps',
+      updated: 'November 2025',
+      cutoff: 'January 2025'
     }
   },
+  // Gemini 3 Flash - Most Balanced Model
   {
-    id: 'google/gemini-3-flash-preview:free',
+    id: 'gemini-3-flash-preview',
     name: 'Gemini 3 Flash Preview',
     provider: 'google',
-    description: 'Google - Most balanced model for speed, scale, and frontier intelligence.',
+    description: 'Most balanced model built for speed, scale, and frontier intelligence.',
     size: 'small',
     logo: '/logos/gemini.png',
     isFree: true,
@@ -206,14 +212,17 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       inputPrice: '$0.00/M',
       outputPrice: '$0.00/M',
       latency: '0.4s',
-      throughput: '200tps'
+      throughput: '200tps',
+      updated: 'December 2025',
+      cutoff: 'January 2025'
     }
   },
+  // Gemini 2.5 Pro - Advanced Thinking Model
   {
-    id: 'google/gemini-2.5-pro:free',
+    id: 'gemini-2.5-pro',
     name: 'Gemini 2.5 Pro',
     provider: 'google',
-    description: 'Google - SOTA thinking model for complex reasoning and long context.',
+    description: 'State-of-the-art thinking model for complex reasoning in code, math, and STEM, plus analyzing large datasets with long context.',
     size: 'large',
     logo: '/logos/gemini.png',
     isFree: true,
@@ -223,14 +232,16 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       inputPrice: '$0.00/M',
       outputPrice: '$0.00/M',
       latency: '1.0s',
-      throughput: '60tps'
+      throughput: '60tps',
+      updated: 'June 2025',
+      cutoff: 'January 2025'
     }
   },
   {
-    id: 'google/gemini-2.5-pro-preview-tts:free',
+    id: 'gemini-2.5-pro-preview-tts',
     name: 'Gemini 2.5 Pro TTS',
     provider: 'google',
-    description: 'Google - High-fidelity text-to-audio preview.',
+    description: 'Text-to-audio model with high-fidelity voice generation.',
     size: 'large',
     logo: '/logos/gemini.png',
     isFree: true,
@@ -240,14 +251,16 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       inputPrice: '$0.00/M',
       outputPrice: '$0.00/M',
       latency: '0.8s',
-      throughput: '50tps'
+      throughput: '50tps',
+      updated: 'December 2025'
     }
   },
+  // Gemini 2.5 Flash - Fast and Intelligent
   {
-    id: 'google/gemini-2.5-flash:free',
+    id: 'gemini-2.5-flash',
     name: 'Gemini 2.5 Flash',
     provider: 'google',
-    description: 'Google - Best price-performance with thinking and agentic capabilities.',
+    description: 'Best price-performance model for large-scale processing, low-latency, high-volume tasks with thinking and agentic capabilities.',
     size: 'small',
     logo: '/logos/gemini.png',
     isFree: true,
@@ -257,14 +270,16 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       inputPrice: '$0.00/M',
       outputPrice: '$0.00/M',
       latency: '0.3s',
-      throughput: '250tps'
+      throughput: '250tps',
+      updated: 'June 2025',
+      cutoff: 'January 2025'
     }
   },
   {
-    id: 'google/gemini-2.5-flash-preview-09-2025:free',
+    id: 'gemini-2.5-flash-preview-09-2025',
     name: 'Gemini 2.5 Flash Preview',
     provider: 'google',
-    description: 'Google - Preview version (09-2025) of the balanced 2.5 Flash model.',
+    description: 'Preview version of Gemini 2.5 Flash with latest improvements.',
     size: 'small',
     logo: '/logos/gemini.png',
     isFree: true,
@@ -274,14 +289,16 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       inputPrice: '$0.00/M',
       outputPrice: '$0.00/M',
       latency: '0.3s',
-      throughput: '250tps'
+      throughput: '250tps',
+      updated: 'September 2025',
+      cutoff: 'January 2025'
     }
   },
   {
-    id: 'google/gemini-2.5-flash-image:free',
+    id: 'gemini-2.5-flash-image',
     name: 'Gemini 2.5 Flash Image',
     provider: 'google',
-    description: 'Google - High-speed image and text understanding/generation.',
+    description: 'Optimized for image generation and understanding with text. Supports caching and structured outputs.',
     size: 'small',
     logo: '/logos/gemini.png',
     isFree: true,
@@ -291,14 +308,16 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       inputPrice: '$0.00/M',
       outputPrice: '$0.00/M',
       latency: '0.7s',
-      throughput: '120tps'
+      throughput: '120tps',
+      updated: 'October 2025',
+      cutoff: 'June 2025'
     }
   },
   {
-    id: 'google/gemini-2.5-flash-native-audio-preview-12-2025:free',
+    id: 'gemini-2.5-flash-native-audio-preview-12-2025',
     name: 'Gemini 2.5 Flash Live',
     provider: 'google',
-    description: 'Google - Specialized for real-time audio and video interaction (preview).',
+    description: 'Real-time audio and video interaction with audio generation support. Optimized for Live API.',
     size: 'small',
     logo: '/logos/gemini.png',
     isFree: true,
@@ -308,14 +327,16 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       inputPrice: '$0.00/M',
       outputPrice: '$0.00/M',
       latency: '0.1s',
-      throughput: '500tps'
+      throughput: '500tps',
+      updated: 'September 2025',
+      cutoff: 'January 2025'
     }
   },
   {
-    id: 'google/gemini-2.5-flash-preview-tts:free',
+    id: 'gemini-2.5-flash-preview-tts',
     name: 'Gemini 2.5 Flash TTS',
     provider: 'google',
-    description: 'Google - Text-to-Audio specialized preview model.',
+    description: 'Text-to-audio specialized model with audio generation.',
     size: 'small',
     logo: '/logos/gemini.png',
     isFree: true,
@@ -325,14 +346,16 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       inputPrice: '$0.00/M',
       outputPrice: '$0.00/M',
       latency: '0.4s',
-      throughput: '150tps'
+      throughput: '150tps',
+      updated: 'December 2025'
     }
   },
+  // Gemini 2.5 Flash-Lite - Ultra Fast
   {
-    id: 'google/gemini-2.5-flash-lite:free',
+    id: 'gemini-2.5-flash-lite',
     name: 'Gemini 2.5 Flash-Lite',
     provider: 'google',
-    description: 'Google - Fastest model optimized for cost-efficiency and high throughput.',
+    description: 'Fastest flash model optimized for cost-efficiency and high throughput.',
     size: 'small',
     logo: '/logos/gemini.png',
     isFree: true,
@@ -342,14 +365,16 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       inputPrice: '$0.00/M',
       outputPrice: '$0.00/M',
       latency: '0.2s',
-      throughput: '450tps'
+      throughput: '450tps',
+      updated: 'July 2025',
+      cutoff: 'January 2025'
     }
   },
   {
-    id: 'google/gemini-2.5-flash-lite-preview-09-2025:free',
+    id: 'gemini-2.5-flash-lite-preview-09-2025',
     name: 'Gemini 2.5 Flash-Lite Preview',
     provider: 'google',
-    description: 'Google - Preview of the ultra-fast 2.5 Flash-Lite model.',
+    description: 'Preview of the ultra-fast 2.5 Flash-Lite model.',
     size: 'small',
     logo: '/logos/gemini.png',
     isFree: true,
@@ -359,14 +384,17 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       inputPrice: '$0.00/M',
       outputPrice: '$0.00/M',
       latency: '0.2s',
-      throughput: '450tps'
+      throughput: '450tps',
+      updated: 'September 2025',
+      cutoff: 'January 2025'
     }
   },
+  // Gemini 2.0 - Deprecated (shut down March 31, 2026)
   {
-    id: 'google/gemini-2.0-flash:free',
-    name: 'Gemini 2.0 Flash (Stable)',
+    id: 'gemini-2.0-flash',
+    name: 'Gemini 2.0 Flash (DEPRECATED)',
     provider: 'google',
-    description: 'Google - Reliable performance, native tool use, and 1M context.',
+    description: '⚠️ DEPRECATED - Will be shut down on March 31, 2026. Use Gemini 2.5 Flash instead.',
     size: 'small',
     logo: '/logos/gemini.png',
     isFree: true,
@@ -376,14 +404,17 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       inputPrice: '$0.00/M',
       outputPrice: '$0.00/M',
       latency: '0.3s',
-      throughput: '250tps'
+      throughput: '250tps',
+      updated: 'February 2025',
+      cutoff: 'August 2024',
+      deprecated: 'March 31, 2026'
     }
   },
   {
-    id: 'google/gemini-2.0-flash-lite:free',
-    name: 'Gemini 2.0 Flash-Lite (Stable)',
+    id: 'gemini-2.0-flash-lite',
+    name: 'Gemini 2.0 Flash-Lite (DEPRECATED)',
     provider: 'google',
-    description: 'Google - Low latency and cost efficiency.',
+    description: '⚠️ DEPRECATED - Will be shut down on March 31, 2026. Use Gemini 2.5 Flash-Lite instead.',
     size: 'small',
     logo: '/logos/gemini.png',
     isFree: true,
@@ -393,14 +424,17 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       inputPrice: '$0.00/M',
       outputPrice: '$0.00/M',
       latency: '0.2s',
-      throughput: '350tps'
+      throughput: '350tps',
+      updated: 'February 2025',
+      cutoff: 'August 2024',
+      deprecated: 'March 31, 2026'
     }
   },
   {
-    id: 'google/gemini-2.0-flash-thinking-exp:free',
+    id: 'gemini-2.0-flash-thinking-exp',
     name: 'Gemini 2.0 Thinking (Experimental)',
     provider: 'google',
-    description: 'Google - Specialized in complex reasoning and multi-step tasks.',
+    description: 'Experimental thinking model with extended reasoning capabilities.',
     size: 'large',
     logo: '/logos/gemini.png',
     isFree: true,
@@ -410,7 +444,8 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       inputPrice: '$0.00/M',
       outputPrice: '$0.00/M',
       latency: '1.2s',
-      throughput: '60tps'
+      throughput: '60tps',
+      cutoff: 'August 2024'
     }
   },
   // --- X.AI MODELS ---
@@ -735,6 +770,208 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       throughput: '250tps'
     }
   },
+  // --- ANTHROPIC MODELS (CLAUDE) ---
+  // Claude 4.5 - Latest Models
+  {
+    id: 'claude-sonnet-4-5-20250929',
+    name: 'Claude Sonnet 4.5',
+    provider: 'anthropic',
+    description: 'Anthropic - Smart model for complex agents and coding. Best balance of intelligence, speed, and cost.',
+    size: 'large',
+    logo: '/logos/claude.png',
+    metadata: {
+      author: 'Anthropic',
+      context: '200K',
+      inputPrice: '$3.00/M',
+      outputPrice: '$15.00/M',
+      latency: 'Fast',
+      throughput: 'High',
+      updated: 'September 2025',
+      cutoff: 'January 2025'
+    }
+  },
+  {
+    id: 'claude-haiku-4-5-20251001',
+    name: 'Claude Haiku 4.5',
+    provider: 'anthropic',
+    description: 'Anthropic - Fastest model with near-frontier intelligence. Optimized for speed and efficiency.',
+    size: 'small',
+    logo: '/logos/claude.png',
+    metadata: {
+      author: 'Anthropic',
+      context: '200K',
+      inputPrice: '$1.00/M',
+      outputPrice: '$5.00/M',
+      latency: 'Fastest',
+      throughput: 'Very High',
+      updated: 'October 2025',
+      cutoff: 'February 2025'
+    }
+  },
+  {
+    id: 'claude-opus-4-5-20251101',
+    name: 'Claude Opus 4.5',
+    provider: 'anthropic',
+    description: 'Anthropic - Premium model combining maximum intelligence with practical performance.',
+    size: 'large',
+    logo: '/logos/claude.png',
+    metadata: {
+      author: 'Anthropic',
+      context: '200K',
+      inputPrice: '$5.00/M',
+      outputPrice: '$25.00/M',
+      latency: 'Moderate',
+      throughput: 'High',
+      updated: 'November 2025',
+      cutoff: 'May 2025'
+    }
+  },
+  // Claude 4.5 - Aliases (auto-update to latest)
+  {
+    id: 'claude-sonnet-4-5',
+    name: 'Claude Sonnet 4.5 (Latest)',
+    provider: 'anthropic',
+    description: 'Anthropic - Alias that auto-updates to the latest Sonnet 4.5 snapshot.',
+    size: 'large',
+    logo: '/logos/claude.png',
+    metadata: {
+      author: 'Anthropic',
+      context: '200K',
+      inputPrice: '$3.00/M',
+      outputPrice: '$15.00/M',
+      latency: 'Fast',
+      throughput: 'High',
+      updated: 'Auto-updates',
+      cutoff: 'January 2025'
+    }
+  },
+  {
+    id: 'claude-haiku-4-5',
+    name: 'Claude Haiku 4.5 (Latest)',
+    provider: 'anthropic',
+    description: 'Anthropic - Alias that auto-updates to the latest Haiku 4.5 snapshot.',
+    size: 'small',
+    logo: '/logos/claude.png',
+    metadata: {
+      author: 'Anthropic',
+      context: '200K',
+      inputPrice: '$1.00/M',
+      outputPrice: '$5.00/M',
+      latency: 'Fastest',
+      throughput: 'Very High',
+      updated: 'Auto-updates',
+      cutoff: 'February 2025'
+    }
+  },
+  {
+    id: 'claude-opus-4-5',
+    name: 'Claude Opus 4.5 (Latest)',
+    provider: 'anthropic',
+    description: 'Anthropic - Alias that auto-updates to the latest Opus 4.5 snapshot.',
+    size: 'large',
+    logo: '/logos/claude.png',
+    metadata: {
+      author: 'Anthropic',
+      context: '200K',
+      inputPrice: '$5.00/M',
+      outputPrice: '$25.00/M',
+      latency: 'Moderate',
+      throughput: 'High',
+      updated: 'Auto-updates',
+      cutoff: 'May 2025'
+    }
+  },
+  // Claude 4 & Legacy Models
+  {
+    id: 'claude-opus-4-1-20250805',
+    name: 'Claude Opus 4.1',
+    provider: 'anthropic',
+    description: 'Anthropic - Legacy model. Recommend migrating to Claude 4.5 models.',
+    size: 'large',
+    logo: '/logos/claude.png',
+    metadata: {
+      author: 'Anthropic',
+      context: '200K',
+      inputPrice: '$15.00/M',
+      outputPrice: '$75.00/M',
+      latency: 'Moderate',
+      throughput: 'High',
+      updated: 'August 2025',
+      cutoff: 'January 2025'
+    }
+  },
+  {
+    id: 'claude-sonnet-4-20250514',
+    name: 'Claude Sonnet 4',
+    provider: 'anthropic',
+    description: 'Anthropic - Legacy model. Recommend migrating to Claude Sonnet 4.5.',
+    size: 'large',
+    logo: '/logos/claude.png',
+    metadata: {
+      author: 'Anthropic',
+      context: '200K',
+      inputPrice: '$3.00/M',
+      outputPrice: '$15.00/M',
+      latency: 'Fast',
+      throughput: 'High',
+      updated: 'May 2025',
+      cutoff: 'January 2025'
+    }
+  },
+  {
+    id: 'claude-3-7-sonnet-20250219',
+    name: 'Claude Sonnet 3.7',
+    provider: 'anthropic',
+    description: 'Anthropic - Legacy model. Recommend migrating to Claude 4.5 models.',
+    size: 'large',
+    logo: '/logos/claude.png',
+    metadata: {
+      author: 'Anthropic',
+      context: '200K',
+      inputPrice: '$3.00/M',
+      outputPrice: '$15.00/M',
+      latency: 'Fast',
+      throughput: 'High',
+      updated: 'February 2025',
+      cutoff: 'October 2024'
+    }
+  },
+  {
+    id: 'claude-opus-4-20250514',
+    name: 'Claude Opus 4',
+    provider: 'anthropic',
+    description: 'Anthropic - Legacy model. Recommend migrating to Claude Opus 4.5.',
+    size: 'large',
+    logo: '/logos/claude.png',
+    metadata: {
+      author: 'Anthropic',
+      context: '200K',
+      inputPrice: '$15.00/M',
+      outputPrice: '$75.00/M',
+      latency: 'Moderate',
+      throughput: 'High',
+      updated: 'May 2025',
+      cutoff: 'January 2025'
+    }
+  },
+  {
+    id: 'claude-3-haiku-20240307',
+    name: 'Claude Haiku 3',
+    provider: 'anthropic',
+    description: 'Anthropic - Legacy fast model. Recommend migrating to Claude Haiku 4.5.',
+    size: 'small',
+    logo: '/logos/claude.png',
+    metadata: {
+      author: 'Anthropic',
+      context: '200K',
+      inputPrice: '$0.25/M',
+      outputPrice: '$1.25/M',
+      latency: 'Fast',
+      throughput: 'High',
+      updated: 'March 2024',
+      cutoff: 'August 2023'
+    }
+  },
   // --- OPENAI MODELS (Responses API) ---
   {
     "id": "gpt-5.2",
@@ -924,6 +1161,7 @@ interface ExecutionParams {
   googleKey?: string;
   xaiKey?: string;
   openaiKey?: string;
+  anthropicKey?: string;
   maxTokens?: number;
 }
 
@@ -951,6 +1189,8 @@ class ModelService {
       return 'xai';
     } else if (provider === 'openai' && !params.openaiKey) {
       return 'openai';
+    } else if (provider === 'anthropic' && !params.anthropicKey) {
+      return 'anthropic';
     }
     
     return null;
@@ -1448,6 +1688,120 @@ class ModelService {
     }
   }
 
+  // Anthropic Execution
+  private async executeAnthropic(params: ExecutionParams): Promise<string> {
+    if (!params.anthropicKey) {
+      throw new Error("Anthropic API Key is missing. Please set it in the settings.");
+    }
+
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': params.anthropicKey,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: params.modelId,
+          max_tokens: params.maxTokens || 4096,
+          system: params.systemInstruction,
+          messages: [
+            { role: "user", content: params.prompt }
+          ],
+          temperature: params.temperature
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error?.message || `Anthropic API Error ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.content[0]?.text || "";
+    } catch (error: any) {
+      console.error("Anthropic API Error:", error);
+      
+      if (error.status === 429 || error.message?.includes('rate_limit')) {
+        throw new Error("⚠️ Anthropic rate limit exceeded. Please wait and try again.");
+      }
+      
+      throw new Error(error.message || "Failed to execute Anthropic request.");
+    }
+  }
+
+  // Anthropic Streaming
+  private async *streamAnthropic(params: ExecutionParams): AsyncGenerator<string, void, unknown> {
+    if (!params.anthropicKey) {
+      throw new Error("Anthropic API Key is missing. Please set it in the settings.");
+    }
+
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': params.anthropicKey,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: params.modelId,
+          max_tokens: params.maxTokens || 4096,
+          system: params.systemInstruction,
+          messages: [
+            { role: "user", content: params.prompt }
+          ],
+          temperature: params.temperature,
+          stream: true
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error?.message || `Anthropic API Error ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("No response body from Anthropic stream.");
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith('event:')) continue;
+          if (trimmed.startsWith('data: ')) {
+            try {
+              const json = JSON.parse(trimmed.slice(6));
+              if (json.type === 'content_block_delta' && json.delta?.text) {
+                yield json.delta.text;
+              }
+            } catch (e) {
+              console.warn("Failed to parse Anthropic stream chunk", e);
+            }
+          }
+        }
+      }
+    } catch (error: any) {
+      console.error("Anthropic Stream Error:", error);
+      
+      if (error.status === 429 || error.message?.includes('rate_limit')) {
+        throw new Error("⚠️ Anthropic rate limit exceeded. Please wait and try again.");
+      }
+      
+      throw new Error(error.message || "Failed to stream from Anthropic.");
+    }
+  }
+
   public async run(params: ExecutionParams): Promise<string> {
     const definition = SUPPORTED_MODELS.find(m => m.id === params.modelId);
     if (!definition) throw new Error(`Unsupported model: ${params.modelId}`);
@@ -1460,6 +1814,8 @@ class ModelService {
       return this.executeXai(params);
     } else if (definition.provider === 'openai') {
       return this.executeOpenAi(params);
+    } else if (definition.provider === 'anthropic') {
+      return this.executeAnthropic(params);
     } else {
       throw new Error(`Provider ${definition.provider} is not currently supported.`);
     }
@@ -1477,6 +1833,8 @@ class ModelService {
       yield* this.streamXai(params);
     } else if (definition.provider === 'openai') {
       yield* this.streamOpenAi(params);
+    } else if (definition.provider === 'anthropic') {
+      yield* this.streamAnthropic(params);
     } else {
       throw new Error(`Provider ${definition.provider} is not currently supported.`);
     }

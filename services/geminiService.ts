@@ -251,12 +251,13 @@ export class GeminiRAGService {
     contextChunks: any[],
     temperature: number = 0.7,
     useVault: boolean = true,
-    modelId: string = 'google/gemini-1.5-pro',
+    modelId: string = 'gemini-1.5-pro',
     contextScript: string = "",
     openRouterKey?: string,
     googleKey?: string,
     xaiKey?: string,
     openaiKey?: string,
+    anthropicKey?: string,
     taggedFileNames: string[] = [],
     thinkerResult?: { rewrittenPrompt: string; thoughts: string; customContext?: string },
     maxTokens: number = 2000
@@ -314,6 +315,7 @@ export class GeminiRAGService {
       googleKey,
       xaiKey,
       openaiKey,
+      anthropicKey,
       maxTokens
     });
   }
@@ -327,18 +329,19 @@ export class GeminiRAGService {
     contextChunks: any[],
     temperature: number = 0.7,
     useVault: boolean = true,
-    modelId: string = 'google/gemini-1.5-pro',
+    modelId: string = 'gemini-1.5-pro',
     contextScript: string = "",
     openRouterKey?: string,
     googleKey?: string,
     xaiKey?: string,
     openaiKey?: string,
+    anthropicKey?: string,
     taggedFileNames: string[] = [],
     maxTokens: number = 2000
   ): Promise<{ answer: string }> {
     let answer = "";
     for await (const chunk of this.generateAnswerStream(
-      userQuery, expandedQuery, contextChunks, temperature, useVault, modelId, contextScript, openRouterKey, googleKey, xaiKey, openaiKey, taggedFileNames, undefined, maxTokens
+      userQuery, expandedQuery, contextChunks, temperature, useVault, modelId, contextScript, openRouterKey, googleKey, xaiKey, openaiKey, anthropicKey, taggedFileNames, undefined, maxTokens
     )) {
       answer += chunk;
     }
@@ -355,11 +358,12 @@ export class GeminiRAGService {
     conversationHistory: string = "",
     currentContext: string = "",
     taggedFileNames: string[] = [],
-    modelId: string = 'google/gemini-2.0-flash-thinking-exp:free',
+    modelId: string = 'gemini-2.0-flash-thinking-exp',
     openRouterKey?: string,
     googleKey?: string,
     xaiKey?: string,
     openaiKey?: string,
+    anthropicKey?: string,
     customContext: string = ""
   ): Promise<ResearchPlan> {
     const contextAwareness = conversationHistory
@@ -402,7 +406,8 @@ Based on what we know so far, decide the SINGLE next action.
           openRouterKey,
           googleKey,
           xaiKey,
-          openaiKey
+          openaiKey,
+          anthropicKey
         });
 
         const parsed = this.cleanAndParseJSON(response);
@@ -455,13 +460,14 @@ Based on what we know so far, decide the SINGLE next action.
     filePreviews: string[],
     conversationHistory: string = "",
     taggedFileNames: string[] = [],
-    modelId: string = 'google/gemini-2.0-flash-thinking-exp:free',
+    modelId: string = 'gemini-2.0-flash-thinking-exp',
     openRouterKey?: string,
     googleKey?: string,
     xaiKey?: string,
-    openaiKey?: string
+    openaiKey?: string,
+    anthropicKey?: string
   ): Promise<ResearchPlan> {
-    return this.decideNextAction(userQuery, availableFileNames, filePreviews, conversationHistory, "", taggedFileNames, modelId, openRouterKey, googleKey, xaiKey, openaiKey);
+    return this.decideNextAction(userQuery, availableFileNames, filePreviews, conversationHistory, "", taggedFileNames, modelId, openRouterKey, googleKey, xaiKey, openaiKey, anthropicKey);
   }
 
   /**

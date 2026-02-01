@@ -20,6 +20,7 @@ export interface Message {
   role: 'user' | 'assistant';
   content: string;
   status?: PipelineStatus;
+  modelId?: string;
   expandedQuery?: string;
   sources?: Chunk[];
   thoughtProcess?: string; // The "self-discussion"
@@ -50,7 +51,7 @@ export interface Toast {
   type: 'error' | 'success' | 'info';
 }
 
-export type ModelProviderId = 'google' | 'openrouter' | 'xai' | 'openai';
+export type ModelProviderId = 'google' | 'openrouter' | 'xai' | 'openai' | 'anthropic';
 
 export interface ModelMetadata {
   author: string;
@@ -59,6 +60,9 @@ export interface ModelMetadata {
   outputPrice: string;
   latency: string;
   throughput: string;
+  updated?: string;
+  cutoff?: string;
+  deprecated?: string;
 }
 
 export interface ModelDefinition {
@@ -86,6 +90,7 @@ export interface AppState {
   googleKey: string;
   xaiKey: string;
   openaiKey: string;
+  anthropicKey: string;
   isInputModalOpen?: boolean;
   inputModalType?: 'text' | 'url';
   maxTokens: number;

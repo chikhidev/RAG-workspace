@@ -409,7 +409,7 @@ export const ChatInterface: React.FC<Props> = ({
           </div>
         ) : (
           messages.map((msg) => (
-            <div key={msg.id} className="max-w-4xl mx-auto w-full fade-in">
+            <div key={msg.id} className="max-w-5xl mx-auto w-full fade-in">
               <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start gap-4'}`}>
 
 
@@ -518,6 +518,20 @@ export const ChatInterface: React.FC<Props> = ({
                         </div>
                       </div>
                     )}
+                  
+                    {/* Model Badge - shown at bottom left for completed assistant messages */}
+                    {msg.role === 'assistant' && msg.status === 'completed' && msg.modelId && (() => {
+                      const model = SUPPORTED_MODELS.find(m => m.id === msg.modelId);
+                      if (!model) return null;
+                      return (
+                        <div className="mt-3 flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity">
+                          <div className="w-4 h-4 rounded bg-white/10 p-0.5 flex items-center justify-center">
+                            <img src={model.logo} alt={model.name} className="w-full h-full object-contain" />
+                          </div>
+                          <span className="text-[10px] text-gray-500 font-medium">{model.name}</span>
+                        </div>
+                      );
+                    })()}
                   
                     {/* Copy Button - positioned absolutely, hidden until hover */}
                     {((msg.status === 'completed' && msg.content) || msg.role === 'user') && (

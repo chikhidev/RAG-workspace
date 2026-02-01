@@ -24,6 +24,7 @@ const STORAGE_KEYS = {
   GOOGLE_KEY: 'gemini_rag_google_key',
   XAI_KEY: 'gemini_rag_xai_key',
   OPENAI_KEY: 'gemini_rag_openai_key',
+  ANTHROPIC_KEY: 'gemini_rag_anthropic_key',
   CUSTOM_CONTEXT: 'gemini_rag_custom_context'
 };
 
@@ -38,7 +39,9 @@ const ApiKeyModal: React.FC<{
   setXaiKey: (k: string) => void;
   openaiKey: string;
   setOpenaiKey: (k: string) => void;
-}> = ({ isOpen, onClose, openRouterKey, setOpenRouterKey, googleKey, setGoogleKey, xaiKey, setXaiKey, openaiKey, setOpenaiKey }) => {
+  anthropicKey: string;
+  setAnthropicKey: (k: string) => void;
+}> = ({ isOpen, onClose, openRouterKey, setOpenRouterKey, googleKey, setGoogleKey, xaiKey, setXaiKey, openaiKey, setOpenaiKey, anthropicKey, setAnthropicKey }) => {
   if (!isOpen) return null;
 
   return (
@@ -151,6 +154,28 @@ const ApiKeyModal: React.FC<{
                 />
               </div>
             </div>
+
+            {/* Anthropic Row */}
+            <div className="flex items-center gap-6 p-6 hover:bg-brand-base/30 transition-colors group">
+              <div className="w-10 h-10 bg-white rounded-lg p-1.5 shrink-0 flex items-center justify-center">
+                <img src="/logos/anthropic.png" alt="Anthropic" className="w-full h-full object-contain" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm font-bold text-gray-200">Anthropic</span>
+                </div>
+                <p className="text-[11px] text-brand-muted">Access Claude 4.5 models with extended thinking</p>
+              </div>
+              <div className="w-[400px]">
+                <input
+                  type="password"
+                  value={anthropicKey}
+                  onChange={(e) => setAnthropicKey(e.target.value)}
+                  placeholder="sk-ant-..."
+                  className="w-full bg-brand-darker border border-brand-border rounded-lg px-4 py-2.5 text-[13px] font-mono text-gray-200 outline-none focus:border-brand-accent/50 transition-all placeholder:text-gray-700"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="flex justify-end pt-4">
@@ -242,11 +267,12 @@ const App: React.FC = () => {
     useVault: initialSettings.useVault,
     useContextHistory: initialSettings.useContextHistory,
     contextScript: localStorage.getItem(STORAGE_KEYS.CONTEXT_SCRIPT) || "",
-    selectedModel: localStorage.getItem(STORAGE_KEYS.SELECTED_MODEL) || 'google/gemini-2.0-flash-thinking-exp:free',
+    selectedModel: localStorage.getItem(STORAGE_KEYS.SELECTED_MODEL) || 'gemini-2.0-flash-thinking-exp',
     openRouterKey: localStorage.getItem(STORAGE_KEYS.OPENROUTER_KEY) || "",
     googleKey: localStorage.getItem(STORAGE_KEYS.GOOGLE_KEY) || "",
     xaiKey: localStorage.getItem(STORAGE_KEYS.XAI_KEY) || "",
     openaiKey: localStorage.getItem(STORAGE_KEYS.OPENAI_KEY) || "",
+    anthropicKey: localStorage.getItem(STORAGE_KEYS.ANTHROPIC_KEY) || "",
     isApiKeyModalOpen: false,
     isInputModalOpen: false,
     maxTokens: initialSettings.maxTokens,
@@ -258,6 +284,7 @@ const App: React.FC = () => {
 
   const [inputValue, setInputValue] = useState('');
   const [isVaultOpen, setIsVaultOpen] = useState(true);
+  const [activeFileNames, setActiveFileNames] = useState<string[]>([]);
   const [promptHistory, setPromptHistory] = useState<string[]>(() => {
     const stored = localStorage.getItem(STORAGE_KEYS.PROMPT_HISTORY);
     return stored ? JSON.parse(stored) : [];
@@ -276,6 +303,7 @@ const App: React.FC = () => {
     else if (settings.provider === 'openrouter') localStorage.setItem(STORAGE_KEYS.OPENROUTER_KEY, settings.apiKey);
     else if (settings.provider === 'xai') localStorage.setItem(STORAGE_KEYS.XAI_KEY, settings.apiKey);
     else if (settings.provider === 'openai') localStorage.setItem(STORAGE_KEYS.OPENAI_KEY, settings.apiKey);
+    else if (settings.provider === 'anthropic') localStorage.setItem(STORAGE_KEYS.ANTHROPIC_KEY, settings.apiKey);
 
     localStorage.setItem('gemini_rag_onboarded', 'true');
 
@@ -286,6 +314,7 @@ const App: React.FC = () => {
       openRouterKey: settings.provider === 'openrouter' ? settings.apiKey : prev.openRouterKey,
       xaiKey: settings.provider === 'xai' ? settings.apiKey : prev.xaiKey,
       openaiKey: settings.provider === 'openai' ? settings.apiKey : prev.openaiKey,
+      anthropicKey: settings.provider === 'anthropic' ? settings.apiKey : prev.anthropicKey,
     }));
 
     setIsOnboarding(false);
@@ -321,6 +350,10 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.OPENAI_KEY, state.openaiKey);
   }, [state.openaiKey]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.ANTHROPIC_KEY, state.anthropicKey);
+  }, [state.anthropicKey]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.CONTEXT_SCRIPT, state.contextScript);
@@ -562,12 +595,17 @@ const App: React.FC = () => {
               } : m)
             }));
 
+            const searchTargets = sub.targetFiles || plan.targetFiles || taggedFileNames;
+            setActiveFileNames(searchTargets.length > 0 ? searchTargets : activeDocs.map(d => d.name));
+            
             const subResults = await vectorService.search(
               sub.query,
               sub.expectedChunks || 3,
-              sub.targetFiles || plan.targetFiles || taggedFileNames
+              searchTargets
             );
 
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            setActiveFileNames([]);
             // Accumulate results
             const resultText = subResults.map(c => `[From ${c.docName}]: ${c.text}`).join('\n');
             currentKnowledgeBuffer += `\n--- Search Result (Iter ${iterations}) ---\n${resultText}\n`;
@@ -609,6 +647,8 @@ const App: React.FC = () => {
               } : m)
             }));
 
+            setActiveFileNames(grepParams.targetFiles || activeDocs.map(d => d.name));
+            
             const grepResult = await commandService.executeGrep(
               grepParams.pattern,
               grepParams.targetFiles,
@@ -616,6 +656,9 @@ const App: React.FC = () => {
               grepParams.caseSensitive || false,
               grepParams.maxResults || 20
             );
+
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            setActiveFileNames([]);
 
             // Add grep results to knowledge buffer
             if (grepResult.success && grepResult.results) {
@@ -655,12 +698,17 @@ const App: React.FC = () => {
               } : m)
             }));
 
+            setActiveFileNames([readParams.fileName]);
+            
             const readResult = await commandService.readLines(
               readParams.fileName,
               readParams.startLine,
               readParams.endLine,
               activeDocs
             );
+
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            setActiveFileNames([]);
 
             // Add read lines results to knowledge buffer
             if (readResult.success && readResult.results) {
@@ -816,6 +864,7 @@ const App: React.FC = () => {
         state.googleKey,
         state.xaiKey,
         state.openaiKey,
+        state.anthropicKey,
         taggedFileNames,
         thinkerResult,
         state.maxTokens
@@ -868,6 +917,7 @@ const App: React.FC = () => {
         setState(prev => ({ ...prev, contextScript: prev.contextScript ? `${prev.contextScript}\n${scriptLine}` : scriptLine }));
       }
     } catch (err: any) {
+      setActiveFileNames([]);
       if (err.message === "Aborted") {
         setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, status: 'error', content: prev.messages.find(msg => msg.id === assistantId)?.content || 'Generation stopped by user.' } : m) }));
       } else {
@@ -875,6 +925,7 @@ const App: React.FC = () => {
         setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, status: 'error' } : m) }));
       }
     } finally {
+      setActiveFileNames([]);
       setState(prev => ({ ...prev, isProcessing: false }));
       abortControllerRef.current = null;
     }
@@ -899,7 +950,8 @@ const App: React.FC = () => {
       openRouterKey: state.openRouterKey,
       googleKey: state.googleKey,
       xaiKey: state.xaiKey,
-      openaiKey: state.openaiKey
+      openaiKey: state.openaiKey,
+      anthropicKey: state.anthropicKey
     });
 
     if (missingProvider) {
@@ -908,7 +960,8 @@ const App: React.FC = () => {
         'openrouter': 'OpenRouter',
         'google': 'Google AI',
         'xai': 'xAI',
-        'openai': 'OpenAI'
+        'openai': 'OpenAI',
+        'anthropic': 'Anthropic'
       };
       addToast(`Please set your ${providerNames[missingProvider] || missingProvider} API Key first.`);
       return;
@@ -925,6 +978,7 @@ const App: React.FC = () => {
       role: 'assistant',
       content: '',
       status: state.useVault ? 'searching' : 'reasoning',
+      modelId: state.selectedModel,
       timestamp: new Date(),
       subtasks: state.useVault ? [
         { label: 'Planning', status: 'loading' },
@@ -1166,8 +1220,8 @@ const App: React.FC = () => {
 
         {/* RIGHT SIDEBAR: Vault */}
         <div
-          style={{ width: isVaultOpen ? `${vaultWidth}px` : '0px', marginLeft: isVaultOpen ? '0' : `-${vaultWidth}px` }}
-          className={`shrink-0 flex transition-all duration-300 ease-in-out relative z-30 ${isVaultOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}`}
+          style={{ width: isVaultOpen ? `${vaultWidth}px` : '0px' }}
+          className="shrink-0 flex transition-all duration-300 ease-in-out relative z-30 overflow-hidden"
         >
           <div onMouseDown={startResizingVault} className="w-1.5 cursor-col-resize bg-brand-border hover:bg-brand-accent transition-all flex flex-col items-center justify-center gap-1 group shrink-0">
             <div className="w-[1px] h-8 bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
@@ -1183,6 +1237,7 @@ const App: React.FC = () => {
               onAddText={() => setState(prev => ({ ...prev, isInputModalOpen: true, inputModalType: 'text' }))}
               onAddLink={() => setState(prev => ({ ...prev, isInputModalOpen: true, inputModalType: 'url' }))}
               onCollapse={() => setIsVaultOpen(false)}
+              activeFileNames={activeFileNames}
             />
 
             {/* INTERNAL COLLAPSE BUTTON REMOVED (NOW INSIDE DocumentList) */}
@@ -1200,6 +1255,8 @@ const App: React.FC = () => {
           setXaiKey={(k) => setState(prev => ({ ...prev, xaiKey: k }))}
           openaiKey={state.openaiKey}
           setOpenaiKey={(k) => setState(prev => ({ ...prev, openaiKey: k }))}
+          anthropicKey={state.anthropicKey}
+          setAnthropicKey={(k) => setState(prev => ({ ...prev, anthropicKey: k }))}
         />
 
         {confirmationState && (

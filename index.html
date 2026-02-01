@@ -21,7 +21,7 @@
           },
           colors: {
             brand: {
-              accent: '#F25912',
+              accent: '#ff3b3b',
               base: '#191919', // Dark Slate Gray
               darker: '#111111',
               border: '#2A2A2A',
@@ -154,7 +154,7 @@
 
     .prose th {
       background-color: #252525;
-      color: #F25912;
+      color: #ff3b3b;
       padding: 0.75rem 1rem;
       text-align: left;
       border: 1px solid #2A2A2A;
@@ -195,7 +195,7 @@
       aspect-ratio: 1;
       border-radius: 50%;
       margin: auto auto 0;
-      background: #F25912;
+      background: #ff3b3b;
       animation: l9-0 .5s cubic-bezier(0, 800, 1, 800) infinite;
     }
 
@@ -237,34 +237,29 @@
 
     .ai-glow-box {
       position: relative;
+      border-color: #ff3b3b !important;
+      animation: borderFadeIn 0.3s ease-in;
     }
 
-    .ai-glow-box::after {
-      position: absolute;
-      content: "";
-      top: -2px;
-      left: -2px;
-      right: -2px;
-      bottom: -2px;
-      z-index: -1;
-      transform: translateZ(0);
-      filter: blur(15px);
-      border-radius: inherit;
-      background: linear-gradient(to left,
-          #ff5770,
-          #ff5770);
-      background-size: 200% 200%;
-      animation: animateGlow 1s linear infinite;
-      opacity: 1;
+    .ai-glow-box-fading {
+      animation: borderFadeOut 0.3s ease-out forwards;
     }
 
-    @keyframes animateGlow {
+    @keyframes borderFadeIn {
       0% {
-        background-position: 0% 50%;
+        border-color: transparent;
       }
-
       100% {
-        background-position: 200% 50%;
+        border-color: #ff3b3b;
+      }
+    }
+
+    @keyframes borderFadeOut {
+      0% {
+        border-color: #ff3b3b;
+      }
+      100% {
+        border-color: transparent;
       }
     }
   </style>
