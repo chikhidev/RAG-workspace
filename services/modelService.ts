@@ -928,6 +928,34 @@ interface ExecutionParams {
 }
 
 class ModelService {
+  /**
+   * Get the provider for a given model ID
+   */
+  public getModelProvider(modelId: string): string | null {
+    const definition = SUPPORTED_MODELS.find(m => m.id === modelId);
+    return definition?.provider || null;
+  }
+
+  /**
+   * Get the required API key for a model based on its provider
+   * Returns the provider name if key is missing, or null if key is present
+   */
+  public getRequiredApiKey(modelId: string, params: ExecutionParams): string | null {
+    const provider = this.getModelProvider(modelId);
+    
+    if (provider === 'openrouter' && !params.openRouterKey) {
+      return 'openrouter';
+    } else if (provider === 'google' && !params.googleKey) {
+      return 'google';
+    } else if (provider === 'xai' && !params.xaiKey) {
+      return 'xai';
+    } else if (provider === 'openai' && !params.openaiKey) {
+      return 'openai';
+    }
+    
+    return null;
+  }
+
   private getClient(apiKey: string) {
     return new OpenRouter({
       apiKey: apiKey,

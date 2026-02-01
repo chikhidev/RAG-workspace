@@ -3,6 +3,7 @@ import { AppState, Message, Document, Chunk, Toast } from './types';
 import { vectorService } from './services/vectorService';
 import { geminiRAG } from './services/geminiService';
 import { fileService } from './services/fileService';
+import { modelService } from './services/modelService';
 import { X, Key, Shield, ExternalLink, PanelLeft, PanelLeftClose } from 'lucide-react';
 
 import LoadingScreen from './components/LoadingScreen';
@@ -788,9 +789,28 @@ const App: React.FC = () => {
   const handleSend = useCallback(async (customValue?: string) => {
     const valToUse = customValue ?? inputValue;
     if (!valToUse.trim() || state.isProcessing) return;
-    if (!state.openRouterKey) {
+    
+    // Check if the API key for the selected model's provider is set
+    const missingProvider = modelService.getRequiredApiKey(state.selectedModel, {
+      modelId: state.selectedModel,
+      systemInstruction: '',
+      prompt: '',
+      temperature: 0.7,
+      openRouterKey: state.openRouterKey,
+      googleKey: state.googleKey,
+      xaiKey: state.xaiKey,
+      openaiKey: state.openaiKey
+    });
+
+    if (missingProvider) {
       setState(prev => ({ ...prev, isApiKeyModalOpen: true }));
-      addToast("Please set your OpenRouter API Key first.");
+      const providerNames: Record<string, string> = {
+        'openrouter': 'OpenRouter',
+        'google': 'Google AI',
+        'xai': 'xAI',
+        'openai': 'OpenAI'
+      };
+      addToast(`Please set your ${providerNames[missingProvider] || missingProvider} API Key first.`);
       return;
     }
 
@@ -817,7 +837,7 @@ const App: React.FC = () => {
     setInputValue('');
 
     await processQuery(currentQuery, assistantId);
-  }, [inputValue, state.isProcessing, state.documents, state.useVault, state.selectedModel, state.contextScript, state.useContextHistory, state.openRouterKey]);
+  }, [inputValue, state.isProcessing, state.documents, state.useVault, state.selectedModel, state.contextScript, state.useContextHistory, state.openRouterKey, state.googleKey, state.xaiKey, state.openaiKey]);
 
   const handleRetry = useCallback(async (failedMessageId: string) => {
     if (state.isProcessing) return;
@@ -1099,9 +1119,9 @@ const App: React.FC = () => {
           type={state.inputModalType || 'text'} // Pass the type to the modal
         />
 
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex flex-col gap-3 z-50 pointer-events-none w-full max-sm px-4">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex flex-col gap-3 z-50 pointer-events-none w-full max-sm px-4 shadow-2xl">
           {state.toasts.map(toast => (
-            <div key={toast.id} className="pointer-events-auto flex items-center gap-3 px-5 py-3.5 bg-brand-darker message-shadow rounded-2xl border border-brand-border animate-blur-text w-full">
+            <div key={toast.id} className="pointer-events-auto flex items-center gap-3 px-5 py-3.5 bg-brand-darker message-shadow rounded-2xl border border-brand-border animate-blur-text w-full max-w-md">
               <span className={`text-[11px] font-bold uppercase tracking-widest ${toast.type === 'error' ? 'text-red-500' : 'text-emerald-500'}`}>
                 {toast.type}
               </span>
