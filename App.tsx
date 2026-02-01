@@ -24,7 +24,7 @@ const STORAGE_KEYS = {
   GOOGLE_KEY: 'gemini_rag_google_key',
   XAI_KEY: 'gemini_rag_xai_key',
   OPENAI_KEY: 'gemini_rag_openai_key',
-  ANTHROPIC_KEY: 'gemini_rag_anthropic_key',
+  MISTRAL_KEY: 'gemini_rag_mistral_key',
   CUSTOM_CONTEXT: 'gemini_rag_custom_context'
 };
 
@@ -39,9 +39,9 @@ const ApiKeyModal: React.FC<{
   setXaiKey: (k: string) => void;
   openaiKey: string;
   setOpenaiKey: (k: string) => void;
-  anthropicKey: string;
-  setAnthropicKey: (k: string) => void;
-}> = ({ isOpen, onClose, openRouterKey, setOpenRouterKey, googleKey, setGoogleKey, xaiKey, setXaiKey, openaiKey, setOpenaiKey, anthropicKey, setAnthropicKey }) => {
+  mistralKey: string;
+  setMistralKey: (k: string) => void;
+}> = ({ isOpen, onClose, openRouterKey, setOpenRouterKey, googleKey, setGoogleKey, xaiKey, setXaiKey, openaiKey, setOpenaiKey, mistralKey, setMistralKey }) => {
   if (!isOpen) return null;
 
   return (
@@ -155,23 +155,23 @@ const ApiKeyModal: React.FC<{
               </div>
             </div>
 
-            {/* Anthropic Row */}
+            {/* Mistral Row */}
             <div className="flex items-center gap-6 p-6 hover:bg-brand-base/30 transition-colors group">
               <div className="w-10 h-10 bg-white rounded-lg p-1.5 shrink-0 flex items-center justify-center">
-                <img src="/logos/anthropic.png" alt="Anthropic" className="w-full h-full object-contain" />
+                <img src="/logos/mistral.png" alt="Mistral" className="w-full h-full object-contain" />
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-bold text-gray-200">Anthropic</span>
+                  <span className="text-sm font-bold text-gray-200">Mistral AI</span>
                 </div>
-                <p className="text-[11px] text-brand-muted">Access Claude 4.5 models with extended thinking</p>
+                <p className="text-[11px] text-brand-muted">Access Mistral Large, Small, and specialized coding models</p>
               </div>
               <div className="w-[400px]">
                 <input
                   type="password"
-                  value={anthropicKey}
-                  onChange={(e) => setAnthropicKey(e.target.value)}
-                  placeholder="sk-ant-..."
+                  value={mistralKey}
+                  onChange={(e) => setMistralKey(e.target.value)}
+                  placeholder="..."
                   className="w-full bg-brand-darker border border-brand-border rounded-lg px-4 py-2.5 text-[13px] font-mono text-gray-200 outline-none focus:border-brand-accent/50 transition-all placeholder:text-gray-700"
                 />
               </div>
@@ -272,7 +272,7 @@ const App: React.FC = () => {
     googleKey: localStorage.getItem(STORAGE_KEYS.GOOGLE_KEY) || "",
     xaiKey: localStorage.getItem(STORAGE_KEYS.XAI_KEY) || "",
     openaiKey: localStorage.getItem(STORAGE_KEYS.OPENAI_KEY) || "",
-    anthropicKey: localStorage.getItem(STORAGE_KEYS.ANTHROPIC_KEY) || "",
+    mistralKey: localStorage.getItem(STORAGE_KEYS.MISTRAL_KEY) || "",
     isApiKeyModalOpen: false,
     isInputModalOpen: false,
     maxTokens: initialSettings.maxTokens,
@@ -303,7 +303,7 @@ const App: React.FC = () => {
     else if (settings.provider === 'openrouter') localStorage.setItem(STORAGE_KEYS.OPENROUTER_KEY, settings.apiKey);
     else if (settings.provider === 'xai') localStorage.setItem(STORAGE_KEYS.XAI_KEY, settings.apiKey);
     else if (settings.provider === 'openai') localStorage.setItem(STORAGE_KEYS.OPENAI_KEY, settings.apiKey);
-    else if (settings.provider === 'anthropic') localStorage.setItem(STORAGE_KEYS.ANTHROPIC_KEY, settings.apiKey);
+    else if (settings.provider === 'mistral') localStorage.setItem(STORAGE_KEYS.MISTRAL_KEY, settings.apiKey);
 
     localStorage.setItem('gemini_rag_onboarded', 'true');
 
@@ -314,7 +314,7 @@ const App: React.FC = () => {
       openRouterKey: settings.provider === 'openrouter' ? settings.apiKey : prev.openRouterKey,
       xaiKey: settings.provider === 'xai' ? settings.apiKey : prev.xaiKey,
       openaiKey: settings.provider === 'openai' ? settings.apiKey : prev.openaiKey,
-      anthropicKey: settings.provider === 'anthropic' ? settings.apiKey : prev.anthropicKey,
+      mistralKey: settings.provider === 'mistral' ? settings.apiKey : prev.mistralKey,
     }));
 
     setIsOnboarding(false);
@@ -352,8 +352,8 @@ const App: React.FC = () => {
   }, [state.openaiKey]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.ANTHROPIC_KEY, state.anthropicKey);
-  }, [state.anthropicKey]);
+    localStorage.setItem(STORAGE_KEYS.MISTRAL_KEY, state.mistralKey);
+  }, [state.mistralKey]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.CONTEXT_SCRIPT, state.contextScript);
@@ -560,6 +560,7 @@ const App: React.FC = () => {
             state.googleKey,
             state.xaiKey,
             state.openaiKey,
+            state.mistralKey,
             state.customContext
           );
 
@@ -864,7 +865,7 @@ const App: React.FC = () => {
         state.googleKey,
         state.xaiKey,
         state.openaiKey,
-        state.anthropicKey,
+        state.mistralKey,
         taggedFileNames,
         thinkerResult,
         state.maxTokens
@@ -951,7 +952,7 @@ const App: React.FC = () => {
       googleKey: state.googleKey,
       xaiKey: state.xaiKey,
       openaiKey: state.openaiKey,
-      anthropicKey: state.anthropicKey
+      mistralKey: state.mistralKey
     });
 
     if (missingProvider) {
@@ -961,7 +962,7 @@ const App: React.FC = () => {
         'google': 'Google AI',
         'xai': 'xAI',
         'openai': 'OpenAI',
-        'anthropic': 'Anthropic'
+        'mistral': 'Mistral AI'
       };
       addToast(`Please set your ${providerNames[missingProvider] || missingProvider} API Key first.`);
       return;
@@ -1060,6 +1061,7 @@ const App: React.FC = () => {
         state.googleKey,
         state.xaiKey,
         state.openaiKey,
+        state.mistralKey,
         taggedFileNames
       );
       const reasoningDuration = (performance.now() - t3) / 1000;
@@ -1255,8 +1257,8 @@ const App: React.FC = () => {
           setXaiKey={(k) => setState(prev => ({ ...prev, xaiKey: k }))}
           openaiKey={state.openaiKey}
           setOpenaiKey={(k) => setState(prev => ({ ...prev, openaiKey: k }))}
-          anthropicKey={state.anthropicKey}
-          setAnthropicKey={(k) => setState(prev => ({ ...prev, anthropicKey: k }))}
+          mistralKey={state.mistralKey}
+          setMistralKey={(k) => setState(prev => ({ ...prev, mistralKey: k }))}
         />
 
         {confirmationState && (

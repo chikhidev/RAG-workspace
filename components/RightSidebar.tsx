@@ -78,46 +78,7 @@ export const RightSidebar: React.FC<Props> = ({
   return (
     <div className="flex flex-col h-full bg-brand-darker border-l border-transparent p-6 w-full transition-colors overflow-y-auto relative">
 
-      {/* Main Logo */}
-      <div className="mb-2">
-        <img 
-          src="/logos/main_logo.png" 
-          alt="Main Logo" 
-          className="h-10 object-contain"
-        />
-      </div>
-
-      <div className="mb-4 space-y-8">
-        <div className="pt-8 border-t border-brand-border/30">
-          <button
-            onClick={() => setShowCustomContext(!showCustomContext)}
-            className="w-full flex items-center justify-between mb-4 hover:opacity-80 transition-opacity"
-          >
-            <div className="flex items-center gap-2">
-              <h2 className="text-md text-white tracking-tight">Custom Instructions</h2>
-            </div>
-            {showCustomContext ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400" />}
-          </button>
-
-          {showCustomContext && (
-            <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
-              <textarea
-                value={customContext}
-                onChange={(e) => setCustomContext(e.target.value)}
-                placeholder="Record developer preferences, specific answer styles, or permanent context here..."
-                className="w-full bg-[#1a1a1a] border border-brand-border rounded-xl p-4 focus:border-brand-accent/50 transition-all text-[12px] font-mono h-40 resize-none text-gray-300 outline-none leading-relaxed placeholder:text-gray-600 shadow-inner"
-              />
-              <div className="flex items-start gap-2 px-1">
-                <p className="text-[9px] text-brand-muted italic leading-relaxed">
-                  Content here is ALWAYS analyzed by the agent during planning to prevent recurring reasoning failures.
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="pt-10 border-t border-brand-border space-y-10">
+      <div className="space-y-10">
         <div>
           <h2 className="text-md text-white mb-6 tracking-tight">Intelligence</h2>
           <div className="space-y-8">
@@ -155,7 +116,37 @@ export const RightSidebar: React.FC<Props> = ({
           </div>
         </div>
 
-        <div>
+              <div className="mb-4 space-y-8">
+        <div className="pt-8 border-t border-brand-border/30">
+          <button
+            onClick={() => setShowCustomContext(!showCustomContext)}
+            className="w-full flex items-center justify-between mb-4 hover:opacity-80 transition-opacity"
+          >
+            <div className="flex items-center gap-2">
+              <h2 className="text-md text-white tracking-tight">Custom Instructions</h2>
+            </div>
+            {showCustomContext ? <ChevronDown size={14} className="text-gray-400" /> : <ChevronRight size={14} className="text-gray-400" />}
+          </button>
+
+          {showCustomContext && (
+            <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+              <textarea
+                value={customContext}
+                onChange={(e) => setCustomContext(e.target.value)}
+                placeholder="Record developer preferences, specific answer styles, or permanent context here..."
+                className="w-full bg-[#1a1a1a] border border-brand-border rounded-xl p-4 focus:border-brand-accent/50 transition-all text-[12px] font-mono h-40 resize-none text-gray-300 outline-none leading-relaxed placeholder:text-gray-600 shadow-inner"
+              />
+              <div className="flex items-start gap-2 px-1">
+                <p className="text-[9px] text-brand-muted italic leading-relaxed">
+                  Content here is ALWAYS analyzed by the agent during planning to prevent recurring reasoning failures.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+        <div className='border-t border-brand-border/30 pt-10 space-y-10'>
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-md text-white tracking-tight">Generation Controls</h2>
             <div className="flex items-center gap-2">

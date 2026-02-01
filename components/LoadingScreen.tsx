@@ -24,7 +24,7 @@ const LoadingScreen: React.FC<Props> = ({ isOnboarding, onComplete }) => {
         { id: 'openrouter', name: 'OpenRouter', icon: Zap, desc: 'Aggregator of all top-tier models', logo: '/logos/openrouter.png' },
         { id: 'xai', name: 'xAI (Grok)', icon: Cpu, desc: 'Fast, concise, and smart reasoning', logo: '/logos/xai.png' },
         { id: 'openai', name: 'OpenAI', icon: Shield, desc: 'The industry standard for capability', logo: '/logos/chatgpt.png' },
-        { id: 'anthropic', name: 'Anthropic', icon: Shield, desc: 'Claude models with extended thinking', logo: '/logos/anthropic.png' },
+        { id: 'mistral', name: 'Mistral AI', icon: Zap, desc: 'European AI with powerful multilingual models', logo: '/logos/mistral.png' },
     ];
 
     const filteredModels = SUPPORTED_MODELS.filter(m => m.provider === selectedProvider);

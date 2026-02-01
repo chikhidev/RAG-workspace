@@ -51,7 +51,7 @@ export interface Toast {
   type: 'error' | 'success' | 'info';
 }
 
-export type ModelProviderId = 'google' | 'openrouter' | 'xai' | 'openai' | 'anthropic';
+export type ModelProviderId = 'google' | 'openrouter' | 'xai' | 'openai' | 'mistral';
 
 export interface ModelMetadata {
   author: string;
@@ -90,7 +90,7 @@ export interface AppState {
   googleKey: string;
   xaiKey: string;
   openaiKey: string;
-  anthropicKey: string;
+  mistralKey: string;
   isInputModalOpen?: boolean;
   inputModalType?: 'text' | 'url';
   maxTokens: number;

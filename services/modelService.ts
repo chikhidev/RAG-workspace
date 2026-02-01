@@ -107,6 +107,23 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
     }
   },
   {
+    id: 'arcee-ai/trinity-large-preview:free',
+    name: 'Trinity Large Preview',
+    provider: 'openrouter',
+    description: 'Arcee AI - 400B-parameter sparse MoE with 13B active parameters per token.',
+    size: 'large',
+    logo: '/logos/arceeai.png',
+    isFree: true,
+    metadata: {
+      author: 'Arcee AI',
+      context: '131K',
+      inputPrice: '$0.00/M',
+      outputPrice: '$0.00/M',
+      latency: '1.00s',
+      throughput: '100tps'
+    }
+  },
+  {
     id: 'deepseek/deepseek-r1-0528:free',
     name: 'DeepSeek R1 0528',
     provider: 'openrouter',
@@ -659,6 +676,406 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
     }
   },
   {
+    id: 'moonshotai/kimi-k2.5',
+    name: 'Kimi K2.5',
+    provider: 'openrouter',
+    description: 'MoonshotAI - Native multimodal model with state-of-the-art visual coding and agentic tool-calling.',
+    size: 'large',
+    logo: '/logos/kimi.png',
+    metadata: {
+      author: 'MoonshotAI',
+      context: '262K',
+      inputPrice: '$0.50/M',
+      outputPrice: '$2.80/M',
+      latency: '1.5s',
+      throughput: '75tps'
+    }
+  },
+  {
+    id: 'minimax/minimax-m2-her',
+    name: 'MiniMax M2-her',
+    provider: 'openrouter',
+    description: 'MiniMax - Dialogue-first model for immersive roleplay and character-driven conversations.',
+    size: 'small',
+    logo: '/logos/minimax.png',
+    metadata: {
+      author: 'MiniMax',
+      context: '65K',
+      inputPrice: '$0.30/M',
+      outputPrice: '$1.20/M',
+      latency: '0.8s',
+      throughput: '110tps'
+    }
+  },
+  {
+    id: 'writer/palmyra-x5',
+    name: 'Palmyra X5',
+    provider: 'openrouter',
+    description: 'Writer - Enterprise AI agents model with 1M context window and hybrid attention mechanisms.',
+    size: 'large',
+    logo: '/logos/palmyra.png',
+    metadata: {
+      author: 'Writer',
+      context: '1M',
+      inputPrice: '$0.60/M',
+      outputPrice: '$6.00/M',
+      latency: '1.8s',
+      throughput: '65tps'
+    }
+  },
+  {
+    id: 'openai/gpt-4.1',
+    name: 'GPT-4.1 (OpenRouter)',
+    provider: 'openrouter',
+    description: 'OpenAI - Flagship model for advanced instruction following and long-context reasoning with 1M tokens.',
+    size: 'large',
+    logo: '/logos/chatgpt.png',
+    metadata: {
+      author: 'OpenAI',
+      context: '1.05M',
+      inputPrice: '$2.00/M',
+      outputPrice: '$8.00/M',
+      latency: '1.0s',
+      throughput: '80tps'
+    }
+  },
+  {
+    id: 'openai/gpt-4.1-mini',
+    name: 'GPT-4.1 Mini (OpenRouter)',
+    provider: 'openrouter',
+    description: 'OpenAI - Mid-sized model competitive with GPT-4o at lower latency and cost.',
+    size: 'small',
+    logo: '/logos/chatgpt.png',
+    metadata: {
+      author: 'OpenAI',
+      context: '1.05M',
+      inputPrice: '$0.40/M',
+      outputPrice: '$1.60/M',
+      latency: '0.6s',
+      throughput: '140tps'
+    }
+  },
+  {
+    id: 'openai/gpt-4.1-nano',
+    name: 'GPT-4.1 Nano (OpenRouter)',
+    provider: 'openrouter',
+    description: 'OpenAI - Fastest and cheapest in GPT-4.1 series with 1M context.',
+    size: 'small',
+    logo: '/logos/chatgpt.png',
+    metadata: {
+      author: 'OpenAI',
+      context: '1.05M',
+      inputPrice: '$0.10/M',
+      outputPrice: '$0.40/M',
+      latency: '0.4s',
+      throughput: '200tps'
+    }
+  },
+  {
+    id: 'minimax/minimax-01',
+    name: 'MiniMax-01 (OpenRouter)',
+    provider: 'openrouter',
+    description: 'MiniMax - 456B parameter MoE combining text generation and image understanding with 4M context.',
+    size: 'large',
+    logo: '/logos/minimax.png',
+    metadata: {
+      author: 'MiniMax',
+      context: '1M',
+      inputPrice: '$0.20/M',
+      outputPrice: '$1.10/M',
+      latency: '1.2s',
+      throughput: '75tps'
+    }
+  },
+  {
+    id: 'amazon/nova-2-lite-v1',
+    name: 'Nova 2 Lite (OpenRouter)',
+    provider: 'openrouter',
+    description: 'Amazon - Fast, cost-effective reasoning model for everyday multimodal workloads.',
+    size: 'small',
+    logo: '/logos/nova.png',
+    metadata: {
+      author: 'Amazon',
+      context: '1M',
+      inputPrice: '$0.30/M',
+      outputPrice: '$2.50/M',
+      latency: '0.7s',
+      throughput: '120tps'
+    }
+  },
+  {
+    id: 'amazon/nova-premier-v1',
+    name: 'Nova Premier 1.0 (OpenRouter)',
+    provider: 'openrouter',
+    description: 'Amazon - Most capable multimodal model for complex reasoning and custom model distillation.',
+    size: 'large',
+    logo: '/logos/nova.png',
+    metadata: {
+      author: 'Amazon',
+      context: '1M',
+      inputPrice: '$2.50/M',
+      outputPrice: '$12.50/M',
+      latency: '1.5s',
+      throughput: '60tps'
+    }
+  },
+  {
+    id: 'qwen/qwen-plus-2025-07-28',
+    name: 'Qwen Plus 0728 (OpenRouter)',
+    provider: 'openrouter',
+    description: 'Qwen - 1M context hybrid reasoning model with balanced performance, speed, and cost.',
+    size: 'large',
+    logo: '/logos/qwen.png',
+    metadata: {
+      author: 'Qwen',
+      context: '1M',
+      inputPrice: '$0.40/M',
+      outputPrice: '$1.20/M',
+      latency: '0.8s',
+      throughput: '110tps'
+    }
+  },
+  {
+    id: 'qwen/qwen-plus-0728-thinking',
+    name: 'Qwen Plus 0728 Thinking (OpenRouter)',
+    provider: 'openrouter',
+    description: 'Qwen - 1M context hybrid reasoning model with enhanced thinking capabilities.',
+    size: 'large',
+    logo: '/logos/qwen.png',
+    metadata: {
+      author: 'Qwen',
+      context: '1M',
+      inputPrice: '$0.40/M',
+      outputPrice: '$4.00/M',
+      latency: '1.2s',
+      throughput: '80tps'
+    }
+  },
+  {
+    id: 'minimax/minimax-m1',
+    name: 'MiniMax M1 (OpenRouter)',
+    provider: 'openrouter',
+    description: 'MiniMax - 456B parameter open-weight MoE with lightning attention for long-context reasoning.',
+    size: 'large',
+    logo: '/logos/minimax.png',
+    metadata: {
+      author: 'MiniMax',
+      context: '1M',
+      inputPrice: '$0.40/M',
+      outputPrice: '$2.20/M',
+      latency: '1.0s',
+      throughput: '85tps'
+    }
+  },
+  {
+    id: 'anthropic/claude-sonnet-4',
+    name: 'Claude Sonnet 4 (OpenRouter)',
+    provider: 'openrouter',
+    description: 'Anthropic - Enhanced coding and reasoning with 72.7% SWE-bench performance.',
+    size: 'large',
+    logo: '/logos/claude.png',
+    metadata: {
+      author: 'Anthropic',
+      context: '1M',
+      inputPrice: '$3.00/M',
+      outputPrice: '$15.00/M',
+      latency: '1.1s',
+      throughput: '75tps'
+    }
+  },
+  {
+    id: 'qwen/qwen-turbo',
+    name: 'Qwen-Turbo (OpenRouter)',
+    provider: 'openrouter',
+    description: 'Qwen - Fast speed and low cost 1M context model for simple tasks.',
+    size: 'small',
+    logo: '/logos/qwen.png',
+    metadata: {
+      author: 'Qwen',
+      context: '1M',
+      inputPrice: '$0.05/M',
+      outputPrice: '$0.20/M',
+      latency: '0.4s',
+      throughput: '180tps'
+    }
+  },
+  {
+    id: 'openai/gpt-5.2-pro',
+    name: 'GPT-5.2 Pro (OpenRouter)',
+    provider: 'openrouter',
+    description: 'OpenAI - Most advanced model with major improvements in agentic coding and long context.',
+    size: 'large',
+    logo: '/logos/chatgpt.png',
+    metadata: {
+      author: 'OpenAI',
+      context: '400K',
+      inputPrice: '$21.00/M',
+      outputPrice: '$168.00/M',
+      latency: '2.0s',
+      throughput: '40tps'
+    }
+  },
+  {
+    id: 'openai/gpt-5.2',
+    name: 'GPT-5.2 (OpenRouter)',
+    provider: 'openrouter',
+    description: 'OpenAI - Latest frontier-grade with adaptive reasoning and stronger agentic performance.',
+    size: 'large',
+    logo: '/logos/chatgpt.png',
+    metadata: {
+      author: 'OpenAI',
+      context: '400K',
+      inputPrice: '$1.75/M',
+      outputPrice: '$14.00/M',
+      latency: '1.5s',
+      throughput: '60tps'
+    }
+  },
+  {
+    id: 'openai/gpt-5',
+    name: 'GPT-5 (OpenRouter)',
+    provider: 'openrouter',
+    description: 'OpenAI - Most advanced model with major improvements in reasoning, code quality, and user experience.',
+    size: 'large',
+    logo: '/logos/chatgpt.png',
+    metadata: {
+      author: 'OpenAI',
+      context: '400K',
+      inputPrice: '$1.25/M',
+      outputPrice: '$10.00/M',
+      latency: '1.3s',
+      throughput: '70tps'
+    }
+  },
+  {
+    id: 'openai/gpt-5-image-mini',
+    name: 'GPT-5 Image Mini (OpenRouter)',
+    provider: 'openrouter',
+    description: 'OpenAI - Combines GPT-5 Mini with image generation for efficient visual creation.',
+    size: 'small',
+    logo: '/logos/chatgpt.png',
+    metadata: {
+      author: 'OpenAI',
+      context: '400K',
+      inputPrice: '$2.50/M',
+      outputPrice: '$8.00/M',
+      latency: '1.0s',
+      throughput: '90tps'
+    }
+  },
+  {
+    id: 'openai/gpt-5-image',
+    name: 'GPT-5 Image (OpenRouter)',
+    provider: 'openrouter',
+    description: 'OpenAI - Combines GPT-5 with state-of-the-art image generation capabilities.',
+    size: 'large',
+    logo: '/logos/chatgpt.png',
+    metadata: {
+      author: 'OpenAI',
+      context: '400K',
+      inputPrice: '$10.00/M',
+      outputPrice: '$40.00/M',
+      latency: '1.8s',
+      throughput: '50tps'
+    }
+  },
+  {
+    id: 'openai/gpt-5-pro',
+    name: 'GPT-5 Pro (OpenRouter)',
+    provider: 'openrouter',
+    description: 'OpenAI - Most advanced model optimized for complex reasoning and high-stakes tasks.',
+    size: 'large',
+    logo: '/logos/chatgpt.png',
+    metadata: {
+      author: 'OpenAI',
+      context: '400K',
+      inputPrice: '$15.00/M',
+      outputPrice: '$120.00/M',
+      latency: '1.8s',
+      throughput: '45tps'
+    }
+  },
+  {
+    id: 'openai/gpt-5-codex',
+    name: 'GPT-5 Codex (OpenRouter)',
+    provider: 'openrouter',
+    description: 'OpenAI - Specialized for software engineering with superior code quality and project building.',
+    size: 'large',
+    logo: '/logos/chatgpt.png',
+    metadata: {
+      author: 'OpenAI',
+      context: '400K',
+      inputPrice: '$1.25/M',
+      outputPrice: '$10.00/M',
+      latency: '1.4s',
+      throughput: '65tps'
+    }
+  },
+  {
+    id: 'openai/gpt-5-mini',
+    name: 'GPT-5 Mini (OpenRouter)',
+    provider: 'openrouter',
+    description: 'OpenAI - Compact version with reduced latency and cost for lighter reasoning tasks.',
+    size: 'small',
+    logo: '/logos/chatgpt.png',
+    metadata: {
+      author: 'OpenAI',
+      context: '400K',
+      inputPrice: '$0.25/M',
+      outputPrice: '$2.00/M',
+      latency: '0.7s',
+      throughput: '120tps'
+    }
+  },
+  {
+    id: 'openai/gpt-5-nano',
+    name: 'GPT-5 Nano (OpenRouter)',
+    provider: 'openrouter',
+    description: 'OpenAI - Smallest and fastest variant optimized for ultra-low latency.',
+    size: 'small',
+    logo: '/logos/chatgpt.png',
+    metadata: {
+      author: 'OpenAI',
+      context: '400K',
+      inputPrice: '$0.05/M',
+      outputPrice: '$0.40/M',
+      latency: '0.4s',
+      throughput: '200tps'
+    }
+  },
+  {
+    id: 'amazon/nova-lite-v1',
+    name: 'Nova Lite 1.0 (OpenRouter)',
+    provider: 'openrouter',
+    description: 'Amazon - Very low-cost multimodal model for fast image, video, and text processing.',
+    size: 'small',
+    logo: '/logos/nova.png',
+    metadata: {
+      author: 'Amazon',
+      context: '300K',
+      inputPrice: '$0.06/M',
+      outputPrice: '$0.24/M',
+      latency: '0.5s',
+      throughput: '150tps'
+    }
+  },
+  {
+    id: 'amazon/nova-pro-v1',
+    name: 'Nova Pro 1.0 (OpenRouter)',
+    provider: 'openrouter',
+    description: 'Amazon - Capable multimodal model with state-of-the-art visual understanding.',
+    size: 'large',
+    logo: '/logos/nova.png',
+    metadata: {
+      author: 'Amazon',
+      context: '300K',
+      inputPrice: '$0.80/M',
+      outputPrice: '$3.20/M',
+      latency: '1.0s',
+      throughput: '90tps'
+    }
+  },
+  {
     id: 'mistralai/ministral-8b',
     name: 'Ministral 8B',
     provider: 'openrouter',
@@ -739,6 +1156,199 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
     }
   },
   {
+    id: 'x-ai/grok-4.1-fast',
+    name: 'Grok 4.1 Fast (OpenRouter)',
+    provider: 'openrouter',
+    description: 'xAI - Best agentic tool calling model for customer support and research with 2M context.',
+    size: 'large',
+    logo: '/logos/xai.png',
+    metadata: {
+      author: 'xAI',
+      context: '2M',
+      inputPrice: '$0.20/M',
+      outputPrice: '$0.50/M',
+      latency: '0.9s',
+      throughput: '100tps'
+    }
+  },
+  {
+    id: 'x-ai/grok-4-fast',
+    name: 'Grok 4 Fast (OpenRouter)',
+    provider: 'openrouter',
+    description: 'xAI - Latest multimodal model with SOTA cost-efficiency and 2M context.',
+    size: 'large',
+    logo: '/logos/xai.png',
+    metadata: {
+      author: 'xAI',
+      context: '2M',
+      inputPrice: '$0.20/M',
+      outputPrice: '$0.50/M',
+      latency: '0.8s',
+      throughput: '110tps'
+    }
+  },
+  {
+    id: 'google/gemini-3-flash-preview',
+    name: 'Gemini 3 Flash Preview (OpenRouter)',
+    provider: 'openrouter',
+    description: 'Google - High speed thinking model for agentic workflows with 1M context.',
+    size: 'large',
+    logo: '/logos/gemini.png',
+    metadata: {
+      author: 'Google',
+      context: '1.05M',
+      inputPrice: '$0.50/M',
+      outputPrice: '$3.00/M',
+      latency: '0.6s',
+      throughput: '150tps'
+    }
+  },
+  {
+    id: 'google/gemini-3-pro-preview',
+    name: 'Gemini 3 Pro Preview (OpenRouter)',
+    provider: 'openrouter',
+    description: 'Google - Flagship frontier model for high-precision multimodal reasoning with 1M context.',
+    size: 'large',
+    logo: '/logos/gemini.png',
+    metadata: {
+      author: 'Google',
+      context: '1.05M',
+      inputPrice: '$2.00/M',
+      outputPrice: '$12.00/M',
+      latency: '1.2s',
+      throughput: '70tps'
+    }
+  },
+  {
+    id: 'google/gemini-2.5-flash-preview-09-2025',
+    name: 'Gemini 2.5 Flash Preview 09-2025 (OpenRouter)',
+    provider: 'openrouter',
+    description: 'Google - State-of-the-art workhorse with built-in thinking. Going away February 17, 2026.',
+    size: 'small',
+    logo: '/logos/gemini.png',
+    metadata: {
+      author: 'Google',
+      context: '1.05M',
+      inputPrice: '$0.30/M',
+      outputPrice: '$2.50/M',
+      latency: '0.5s',
+      throughput: '180tps',
+      deprecated: 'February 17, 2026'
+    }
+  },
+  {
+    id: 'google/gemini-2.5-flash-lite-preview-09-2025',
+    name: 'Gemini 2.5 Flash-Lite Preview 09-2025 (OpenRouter)',
+    provider: 'openrouter',
+    description: 'Google - Lightweight reasoning model optimized for ultra-low latency and cost efficiency.',
+    size: 'small',
+    logo: '/logos/gemini.png',
+    metadata: {
+      author: 'Google',
+      context: '1.05M',
+      inputPrice: '$0.10/M',
+      outputPrice: '$0.40/M',
+      latency: '0.3s',
+      throughput: '250tps'
+    }
+  },
+  {
+    id: 'google/gemini-2.5-flash-lite',
+    name: 'Gemini 2.5 Flash-Lite (OpenRouter)',
+    provider: 'openrouter',
+    description: 'Google - Lightweight reasoning model with improved throughput and faster token generation.',
+    size: 'small',
+    logo: '/logos/gemini.png',
+    metadata: {
+      author: 'Google',
+      context: '1.05M',
+      inputPrice: '$0.10/M',
+      outputPrice: '$0.40/M',
+      latency: '0.3s',
+      throughput: '280tps'
+    }
+  },
+  {
+    id: 'google/gemini-2.5-flash',
+    name: 'Gemini 2.5 Flash (OpenRouter)',
+    provider: 'openrouter',
+    description: 'Google - State-of-the-art workhorse model with built-in thinking capabilities.',
+    size: 'small',
+    logo: '/logos/gemini.png',
+    metadata: {
+      author: 'Google',
+      context: '1.05M',
+      inputPrice: '$0.30/M',
+      outputPrice: '$2.50/M',
+      latency: '0.5s',
+      throughput: '180tps'
+    }
+  },
+  {
+    id: 'google/gemini-2.5-pro',
+    name: 'Gemini 2.5 Pro (OpenRouter)',
+    provider: 'openrouter',
+    description: 'Google - State-of-the-art AI with advanced reasoning and thinking capabilities.',
+    size: 'large',
+    logo: '/logos/gemini.png',
+    metadata: {
+      author: 'Google',
+      context: '1.05M',
+      inputPrice: '$1.25/M',
+      outputPrice: '$10.00/M',
+      latency: '1.0s',
+      throughput: '90tps'
+    }
+  },
+  {
+    id: 'google/gemini-2.5-pro-preview',
+    name: 'Gemini 2.5 Pro Preview 06-05 (OpenRouter)',
+    provider: 'openrouter',
+    description: 'Google - State-of-the-art AI model achieving top-tier benchmark performance.',
+    size: 'large',
+    logo: '/logos/gemini.png',
+    metadata: {
+      author: 'Google',
+      context: '1.05M',
+      inputPrice: '$1.25/M',
+      outputPrice: '$10.00/M',
+      latency: '1.0s',
+      throughput: '90tps'
+    }
+  },
+  {
+    id: 'google/gemini-2.5-pro-preview-05-06',
+    name: 'Gemini 2.5 Pro Preview 05-06 (OpenRouter)',
+    provider: 'openrouter',
+    description: 'Google - State-of-the-art AI model with enhanced accuracy and context handling.',
+    size: 'large',
+    logo: '/logos/gemini.png',
+    metadata: {
+      author: 'Google',
+      context: '1.05M',
+      inputPrice: '$1.25/M',
+      outputPrice: '$10.00/M',
+      latency: '1.0s',
+      throughput: '90tps'
+    }
+  },
+  {
+    id: 'meta-llama/llama-4-maverick',
+    name: 'Llama 4 Maverick (OpenRouter)',
+    provider: 'openrouter',
+    description: 'Meta - High-capacity multimodal MoE with 128 experts and 17B active parameters. Vision-language optimized.',
+    size: 'large',
+    logo: '/logos/meta.png',
+    metadata: {
+      author: 'Meta',
+      context: '1.05M',
+      inputPrice: '$0.15/M',
+      outputPrice: '$0.60/M',
+      latency: '0.7s',
+      throughput: '130tps'
+    }
+  },
+  {
     id: 'google/gemini-1.5-pro',
     name: 'Gemini 1.5 Pro',
     provider: 'google',
@@ -770,206 +1380,314 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       throughput: '250tps'
     }
   },
-  // --- ANTHROPIC MODELS (CLAUDE) ---
-  // Claude 4.5 - Latest Models
+  // --- MISTRAL AI MODELS ---
+  // Latest Models
   {
-    id: 'claude-sonnet-4-5-20250929',
-    name: 'Claude Sonnet 4.5',
-    provider: 'anthropic',
-    description: 'Anthropic - Smart model for complex agents and coding. Best balance of intelligence, speed, and cost.',
+    id: 'mistral-large-latest',
+    name: 'Mistral Large Latest',
+    provider: 'mistral',
+    description: 'Mistral - Flagship model with top-tier reasoning, 128K context, and multimodal capabilities.',
     size: 'large',
-    logo: '/logos/claude.png',
+    logo: '/logos/mistral.png',
     metadata: {
-      author: 'Anthropic',
-      context: '200K',
-      inputPrice: '$3.00/M',
-      outputPrice: '$15.00/M',
+      author: 'Mistral AI',
+      context: '128K',
+      inputPrice: '$2.00/M',
+      outputPrice: '$6.00/M',
       latency: 'Fast',
       throughput: 'High',
-      updated: 'September 2025',
-      cutoff: 'January 2025'
+      updated: 'July 2024'
     }
   },
   {
-    id: 'claude-haiku-4-5-20251001',
-    name: 'Claude Haiku 4.5',
-    provider: 'anthropic',
-    description: 'Anthropic - Fastest model with near-frontier intelligence. Optimized for speed and efficiency.',
+    id: 'mistral-small-latest',
+    name: 'Mistral Small Latest',
+    provider: 'mistral',
+    description: 'Mistral - Enterprise-grade small model optimized for low latency workloads.',
     size: 'small',
-    logo: '/logos/claude.png',
+    logo: '/logos/mistral.png',
     metadata: {
-      author: 'Anthropic',
-      context: '200K',
-      inputPrice: '$1.00/M',
-      outputPrice: '$5.00/M',
+      author: 'Mistral AI',
+      context: '128K',
+      inputPrice: '$0.20/M',
+      outputPrice: '$0.60/M',
+      latency: 'Very Fast',
+      throughput: 'Very High',
+      updated: 'September 2024'
+    }
+  },
+  {
+    id: 'pixtral-large-latest',
+    name: 'Pixtral Large Latest',
+    provider: 'mistral',
+    description: 'Mistral - Flagship multimodal model with 128K context and vision capabilities.',
+    size: 'large',
+    logo: '/logos/mistral.png',
+    metadata: {
+      author: 'Mistral AI',
+      context: '128K',
+      inputPrice: '$2.00/M',
+      outputPrice: '$6.00/M',
+      latency: 'Fast',
+      throughput: 'High',
+      updated: 'November 2024'
+    }
+  },
+  {
+    id: 'ministral-3b-latest',
+    name: 'Ministral 3B Latest',
+    provider: 'mistral',
+    description: 'Mistral - Ultra-efficient 3B model for edge and on-device deployment.',
+    size: 'small',
+    logo: '/logos/mistral.png',
+    metadata: {
+      author: 'Mistral AI',
+      context: '128K',
+      inputPrice: '$0.04/M',
+      outputPrice: '$0.04/M',
       latency: 'Fastest',
       throughput: 'Very High',
-      updated: 'October 2025',
-      cutoff: 'February 2025'
+      updated: 'October 2024'
     }
   },
   {
-    id: 'claude-opus-4-5-20251101',
-    name: 'Claude Opus 4.5',
-    provider: 'anthropic',
-    description: 'Anthropic - Premium model combining maximum intelligence with practical performance.',
-    size: 'large',
-    logo: '/logos/claude.png',
+    id: 'ministral-8b-latest',
+    name: 'Ministral 8B Latest',
+    provider: 'mistral',
+    description: 'Mistral - Knowledge-dense 8B model balancing efficiency and performance.',
+    size: 'small',
+    logo: '/logos/mistral.png',
     metadata: {
-      author: 'Anthropic',
-      context: '200K',
-      inputPrice: '$5.00/M',
-      outputPrice: '$25.00/M',
-      latency: 'Moderate',
+      author: 'Mistral AI',
+      context: '128K',
+      inputPrice: '$0.10/M',
+      outputPrice: '$0.10/M',
+      latency: 'Very Fast',
+      throughput: 'Very High',
+      updated: 'October 2024'
+    }
+  },
+  {
+    id: 'devstral-small-latest',
+    name: 'Devstral Small Latest',
+    provider: 'mistral',
+    description: 'Mistral - Specialized coding model with 256K context window.',
+    size: 'small',
+    logo: '/logos/mistral.png',
+    metadata: {
+      author: 'Mistral AI',
+      context: '256K',
+      inputPrice: '$0.20/M',
+      outputPrice: '$0.60/M',
+      latency: 'Very Fast',
       throughput: 'High',
-      updated: 'November 2025',
-      cutoff: 'May 2025'
+      updated: 'February 2025'
     }
   },
-  // Claude 4.5 - Aliases (auto-update to latest)
   {
-    id: 'claude-sonnet-4-5',
-    name: 'Claude Sonnet 4.5 (Latest)',
-    provider: 'anthropic',
-    description: 'Anthropic - Alias that auto-updates to the latest Sonnet 4.5 snapshot.',
+    id: 'codestral-latest',
+    name: 'Codestral Latest',
+    provider: 'mistral',
+    description: 'Mistral - Premier code generation model with 256K context.',
     size: 'large',
-    logo: '/logos/claude.png',
+    logo: '/logos/mistral.png',
     metadata: {
-      author: 'Anthropic',
-      context: '200K',
-      inputPrice: '$3.00/M',
-      outputPrice: '$15.00/M',
+      author: 'Mistral AI',
+      context: '256K',
+      inputPrice: '$0.20/M',
+      outputPrice: '$0.60/M',
       latency: 'Fast',
       throughput: 'High',
-      updated: 'Auto-updates',
-      cutoff: 'January 2025'
+      updated: 'May 2024'
+    }
+  },
+  // Dated Models
+  {
+    id: 'mistral-large-2411',
+    name: 'Mistral Large 2411',
+    provider: 'mistral',
+    description: 'Mistral - Stable snapshot from November 2024.',
+    size: 'large',
+    logo: '/logos/mistral.png',
+    metadata: {
+      author: 'Mistral AI',
+      context: '128K',
+      inputPrice: '$2.00/M',
+      outputPrice: '$6.00/M',
+      latency: 'Fast',
+      throughput: 'High',
+      updated: 'November 2024'
     }
   },
   {
-    id: 'claude-haiku-4-5',
-    name: 'Claude Haiku 4.5 (Latest)',
-    provider: 'anthropic',
-    description: 'Anthropic - Alias that auto-updates to the latest Haiku 4.5 snapshot.',
+    id: 'mistral-small-2501',
+    name: 'Mistral Small 2501',
+    provider: 'mistral',
+    description: 'Mistral - Stable snapshot from January 2025.',
     size: 'small',
-    logo: '/logos/claude.png',
+    logo: '/logos/mistral.png',
     metadata: {
-      author: 'Anthropic',
-      context: '200K',
-      inputPrice: '$1.00/M',
-      outputPrice: '$5.00/M',
+      author: 'Mistral AI',
+      context: '128K',
+      inputPrice: '$0.20/M',
+      outputPrice: '$0.60/M',
+      latency: 'Very Fast',
+      throughput: 'Very High',
+      updated: 'January 2025'
+    }
+  },
+  {
+    id: 'pixtral-large-2411',
+    name: 'Pixtral Large 2411',
+    provider: 'mistral',
+    description: 'Mistral - Multimodal snapshot from November 2024.',
+    size: 'large',
+    logo: '/logos/mistral.png',
+    metadata: {
+      author: 'Mistral AI',
+      context: '128K',
+      inputPrice: '$2.00/M',
+      outputPrice: '$6.00/M',
+      latency: 'Fast',
+      throughput: 'High',
+      updated: 'November 2024'
+    }
+  },
+  {
+    id: 'pixtral-12b-2409',
+    name: 'Pixtral 12B 2409',
+    provider: 'mistral',
+    description: 'Mistral - 12B multimodal model from September 2024.',
+    size: 'small',
+    logo: '/logos/mistral.png',
+    metadata: {
+      author: 'Mistral AI',
+      context: '128K',
+      inputPrice: '$0.15/M',
+      outputPrice: '$0.15/M',
+      latency: 'Very Fast',
+      throughput: 'High',
+      updated: 'September 2024'
+    }
+  },
+  {
+    id: 'ministral-3b-2410',
+    name: 'Ministral 3B 2410',
+    provider: 'mistral',
+    description: 'Mistral - 3B edge model from October 2024.',
+    size: 'small',
+    logo: '/logos/mistral.png',
+    metadata: {
+      author: 'Mistral AI',
+      context: '128K',
+      inputPrice: '$0.04/M',
+      outputPrice: '$0.04/M',
       latency: 'Fastest',
       throughput: 'Very High',
-      updated: 'Auto-updates',
-      cutoff: 'February 2025'
+      updated: 'October 2024'
     }
   },
   {
-    id: 'claude-opus-4-5',
-    name: 'Claude Opus 4.5 (Latest)',
-    provider: 'anthropic',
-    description: 'Anthropic - Alias that auto-updates to the latest Opus 4.5 snapshot.',
-    size: 'large',
-    logo: '/logos/claude.png',
-    metadata: {
-      author: 'Anthropic',
-      context: '200K',
-      inputPrice: '$5.00/M',
-      outputPrice: '$25.00/M',
-      latency: 'Moderate',
-      throughput: 'High',
-      updated: 'Auto-updates',
-      cutoff: 'May 2025'
-    }
-  },
-  // Claude 4 & Legacy Models
-  {
-    id: 'claude-opus-4-1-20250805',
-    name: 'Claude Opus 4.1',
-    provider: 'anthropic',
-    description: 'Anthropic - Legacy model. Recommend migrating to Claude 4.5 models.',
-    size: 'large',
-    logo: '/logos/claude.png',
-    metadata: {
-      author: 'Anthropic',
-      context: '200K',
-      inputPrice: '$15.00/M',
-      outputPrice: '$75.00/M',
-      latency: 'Moderate',
-      throughput: 'High',
-      updated: 'August 2025',
-      cutoff: 'January 2025'
-    }
-  },
-  {
-    id: 'claude-sonnet-4-20250514',
-    name: 'Claude Sonnet 4',
-    provider: 'anthropic',
-    description: 'Anthropic - Legacy model. Recommend migrating to Claude Sonnet 4.5.',
-    size: 'large',
-    logo: '/logos/claude.png',
-    metadata: {
-      author: 'Anthropic',
-      context: '200K',
-      inputPrice: '$3.00/M',
-      outputPrice: '$15.00/M',
-      latency: 'Fast',
-      throughput: 'High',
-      updated: 'May 2025',
-      cutoff: 'January 2025'
-    }
-  },
-  {
-    id: 'claude-3-7-sonnet-20250219',
-    name: 'Claude Sonnet 3.7',
-    provider: 'anthropic',
-    description: 'Anthropic - Legacy model. Recommend migrating to Claude 4.5 models.',
-    size: 'large',
-    logo: '/logos/claude.png',
-    metadata: {
-      author: 'Anthropic',
-      context: '200K',
-      inputPrice: '$3.00/M',
-      outputPrice: '$15.00/M',
-      latency: 'Fast',
-      throughput: 'High',
-      updated: 'February 2025',
-      cutoff: 'October 2024'
-    }
-  },
-  {
-    id: 'claude-opus-4-20250514',
-    name: 'Claude Opus 4',
-    provider: 'anthropic',
-    description: 'Anthropic - Legacy model. Recommend migrating to Claude Opus 4.5.',
-    size: 'large',
-    logo: '/logos/claude.png',
-    metadata: {
-      author: 'Anthropic',
-      context: '200K',
-      inputPrice: '$15.00/M',
-      outputPrice: '$75.00/M',
-      latency: 'Moderate',
-      throughput: 'High',
-      updated: 'May 2025',
-      cutoff: 'January 2025'
-    }
-  },
-  {
-    id: 'claude-3-haiku-20240307',
-    name: 'Claude Haiku 3',
-    provider: 'anthropic',
-    description: 'Anthropic - Legacy fast model. Recommend migrating to Claude Haiku 4.5.',
+    id: 'ministral-8b-2410',
+    name: 'Ministral 8B 2410',
+    provider: 'mistral',
+    description: 'Mistral - 8B model from October 2024.',
     size: 'small',
-    logo: '/logos/claude.png',
+    logo: '/logos/mistral.png',
     metadata: {
-      author: 'Anthropic',
-      context: '200K',
-      inputPrice: '$0.25/M',
-      outputPrice: '$1.25/M',
+      author: 'Mistral AI',
+      context: '128K',
+      inputPrice: '$0.10/M',
+      outputPrice: '$0.10/M',
+      latency: 'Very Fast',
+      throughput: 'Very High',
+      updated: 'October 2024'
+    }
+  },
+  {
+    id: 'devstral-small-2501',
+    name: 'Devstral Small 2501',
+    provider: 'mistral',
+    description: 'Mistral - Coding model snapshot from January 2025.',
+    size: 'small',
+    logo: '/logos/mistral.png',
+    metadata: {
+      author: 'Mistral AI',
+      context: '256K',
+      inputPrice: '$0.20/M',
+      outputPrice: '$0.60/M',
+      latency: 'Very Fast',
+      throughput: 'High',
+      updated: 'January 2025'
+    }
+  },
+  {
+    id: 'codestral-2501',
+    name: 'Codestral 2501',
+    provider: 'mistral',
+    description: 'Mistral - Code generation snapshot from January 2025.',
+    size: 'large',
+    logo: '/logos/mistral.png',
+    metadata: {
+      author: 'Mistral AI',
+      context: '256K',
+      inputPrice: '$0.20/M',
+      outputPrice: '$0.60/M',
       latency: 'Fast',
       throughput: 'High',
-      updated: 'March 2024',
-      cutoff: 'August 2023'
+      updated: 'January 2025'
+    }
+  },
+  // Legacy Models
+  {
+    id: 'mistral-large-2407',
+    name: 'Mistral Large 2407 (Legacy)',
+    provider: 'mistral',
+    description: 'Mistral - Legacy flagship model from July 2024.',
+    size: 'large',
+    logo: '/logos/mistral.png',
+    metadata: {
+      author: 'Mistral AI',
+      context: '128K',
+      inputPrice: '$2.00/M',
+      outputPrice: '$6.00/M',
+      latency: 'Fast',
+      throughput: 'High',
+      updated: 'July 2024'
+    }
+  },
+  {
+    id: 'mistral-small-2409',
+    name: 'Mistral Small 2409 (Legacy)',
+    provider: 'mistral',
+    description: 'Mistral - Legacy small model from September 2024.',
+    size: 'small',
+    logo: '/logos/mistral.png',
+    metadata: {
+      author: 'Mistral AI',
+      context: '128K',
+      inputPrice: '$0.20/M',
+      outputPrice: '$0.60/M',
+      latency: 'Very Fast',
+      throughput: 'Very High',
+      updated: 'September 2024'
+    }
+  },
+  {
+    id: 'codestral-2405',
+    name: 'Codestral 2405 (Legacy)',
+    provider: 'mistral',
+    description: 'Mistral - Legacy code model from May 2024.',
+    size: 'large',
+    logo: '/logos/mistral.png',
+    metadata: {
+      author: 'Mistral AI',
+      context: '32K',
+      inputPrice: '$0.20/M',
+      outputPrice: '$0.60/M',
+      latency: 'Fast',
+      throughput: 'High',
+      updated: 'May 2024'
     }
   },
   // --- OPENAI MODELS (Responses API) ---
@@ -1161,7 +1879,7 @@ interface ExecutionParams {
   googleKey?: string;
   xaiKey?: string;
   openaiKey?: string;
-  anthropicKey?: string;
+  mistralKey?: string;
   maxTokens?: number;
 }
 
@@ -1189,8 +1907,8 @@ class ModelService {
       return 'xai';
     } else if (provider === 'openai' && !params.openaiKey) {
       return 'openai';
-    } else if (provider === 'anthropic' && !params.anthropicKey) {
-      return 'anthropic';
+    } else if (provider === 'mistral' && !params.mistralKey) {
+      return 'mistral';
     }
     
     return null;
@@ -1688,82 +2406,85 @@ class ModelService {
     }
   }
 
-  // Anthropic Execution
-  private async executeAnthropic(params: ExecutionParams): Promise<string> {
-    if (!params.anthropicKey) {
-      throw new Error("Anthropic API Key is missing. Please set it in the settings.");
+  // Mistral Execution
+  private async executeMistral(params: ExecutionParams): Promise<string> {
+    if (!params.mistralKey) {
+      throw new Error("Mistral API Key is missing. Please set it in the settings.");
     }
 
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': params.anthropicKey,
-          'anthropic-version': '2023-06-01'
+          'Authorization': `Bearer ${params.mistralKey}`
         },
         body: JSON.stringify({
           model: params.modelId,
-          max_tokens: params.maxTokens || 4096,
-          system: params.systemInstruction,
           messages: [
+            { role: "system", content: params.systemInstruction },
             { role: "user", content: params.prompt }
           ],
-          temperature: params.temperature
+          temperature: params.temperature,
+          max_tokens: params.maxTokens || 4096
         })
       });
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
-        throw new Error(err.error?.message || `Anthropic API Error ${response.status}`);
+        throw new Error(err.message || `Mistral API Error ${response.status}`);
       }
 
       const data = await response.json();
-      return data.content[0]?.text || "";
+      return data.choices[0]?.message?.content || "";
     } catch (error: any) {
-      console.error("Anthropic API Error:", error);
+      console.error("Mistral API Error:", error);
       
-      if (error.status === 429 || error.message?.includes('rate_limit')) {
-        throw new Error("⚠️ Anthropic rate limit exceeded. Please wait and try again.");
+      // Check for CORS/network errors
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        throw new Error("⚠️ Cannot connect to Mistral API directly from browser due to CORS restrictions. Use OpenRouter for Mistral models or set up a proxy server.");
       }
       
-      throw new Error(error.message || "Failed to execute Anthropic request.");
+      if (error.status === 429 || error.message?.includes('rate_limit') || error.message?.includes('Rate limit')) {
+        throw new Error("⚠️ Mistral rate limit exceeded. Please wait a few moments and try again. Free tier has strict limits.");
+      }
+      
+      throw new Error(error.message || "Failed to execute Mistral request.");
     }
   }
 
-  // Anthropic Streaming
-  private async *streamAnthropic(params: ExecutionParams): AsyncGenerator<string, void, unknown> {
-    if (!params.anthropicKey) {
-      throw new Error("Anthropic API Key is missing. Please set it in the settings.");
+  // Mistral Streaming
+  private async *streamMistral(params: ExecutionParams): AsyncGenerator<string, void, unknown> {
+    if (!params.mistralKey) {
+      throw new Error("Mistral API Key is missing. Please set it in the settings.");
     }
 
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': params.anthropicKey,
-          'anthropic-version': '2023-06-01'
+          'Authorization': `Bearer ${params.mistralKey}`
         },
         body: JSON.stringify({
           model: params.modelId,
-          max_tokens: params.maxTokens || 4096,
-          system: params.systemInstruction,
           messages: [
+            { role: "system", content: params.systemInstruction },
             { role: "user", content: params.prompt }
           ],
           temperature: params.temperature,
+          max_tokens: params.maxTokens || 4096,
           stream: true
         })
       });
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
-        throw new Error(err.error?.message || `Anthropic API Error ${response.status}`);
+        throw new Error(err.message || `Mistral API Error ${response.status}`);
       }
 
       const reader = response.body?.getReader();
-      if (!reader) throw new Error("No response body from Anthropic stream.");
+      if (!reader) throw new Error("No response body from Mistral stream.");
 
       const decoder = new TextDecoder();
       let buffer = '';
@@ -1778,27 +2499,33 @@ class ModelService {
 
         for (const line of lines) {
           const trimmed = line.trim();
-          if (!trimmed || trimmed.startsWith('event:')) continue;
+          if (!trimmed || trimmed === 'data: [DONE]') continue;
           if (trimmed.startsWith('data: ')) {
             try {
               const json = JSON.parse(trimmed.slice(6));
-              if (json.type === 'content_block_delta' && json.delta?.text) {
-                yield json.delta.text;
+              const content = json.choices?.[0]?.delta?.content;
+              if (content) {
+                yield content;
               }
             } catch (e) {
-              console.warn("Failed to parse Anthropic stream chunk", e);
+              console.warn("Failed to parse Mistral stream chunk", e);
             }
           }
         }
       }
     } catch (error: any) {
-      console.error("Anthropic Stream Error:", error);
+      console.error("Mistral Stream Error:", error);
       
-      if (error.status === 429 || error.message?.includes('rate_limit')) {
-        throw new Error("⚠️ Anthropic rate limit exceeded. Please wait and try again.");
+      // Check for CORS/network errors
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        throw new Error("⚠️ Cannot connect to Mistral API directly from browser due to CORS restrictions. Use OpenRouter for Mistral models or set up a proxy server.");
       }
       
-      throw new Error(error.message || "Failed to stream from Anthropic.");
+      if (error.status === 429 || error.message?.includes('rate_limit') || error.message?.includes('Rate limit')) {
+        throw new Error("⚠️ Mistral rate limit exceeded. Please wait a few moments and try again. Free tier has strict limits.");
+      }
+      
+      throw new Error(error.message || "Failed to stream from Mistral.");
     }
   }
 
@@ -1814,8 +2541,8 @@ class ModelService {
       return this.executeXai(params);
     } else if (definition.provider === 'openai') {
       return this.executeOpenAi(params);
-    } else if (definition.provider === 'anthropic') {
-      return this.executeAnthropic(params);
+    } else if (definition.provider === 'mistral') {
+      return this.executeMistral(params);
     } else {
       throw new Error(`Provider ${definition.provider} is not currently supported.`);
     }
@@ -1833,8 +2560,8 @@ class ModelService {
       yield* this.streamXai(params);
     } else if (definition.provider === 'openai') {
       yield* this.streamOpenAi(params);
-    } else if (definition.provider === 'anthropic') {
-      yield* this.streamAnthropic(params);
+    } else if (definition.provider === 'mistral') {
+      yield* this.streamMistral(params);
     } else {
       throw new Error(`Provider ${definition.provider} is not currently supported.`);
     }

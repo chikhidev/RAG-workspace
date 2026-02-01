@@ -257,7 +257,7 @@ export class GeminiRAGService {
     googleKey?: string,
     xaiKey?: string,
     openaiKey?: string,
-    anthropicKey?: string,
+    mistralKey?: string,
     taggedFileNames: string[] = [],
     thinkerResult?: { rewrittenPrompt: string; thoughts: string; customContext?: string },
     maxTokens: number = 2000
@@ -315,7 +315,7 @@ export class GeminiRAGService {
       googleKey,
       xaiKey,
       openaiKey,
-      anthropicKey,
+      mistralKey,
       maxTokens
     });
   }
@@ -335,13 +335,13 @@ export class GeminiRAGService {
     googleKey?: string,
     xaiKey?: string,
     openaiKey?: string,
-    anthropicKey?: string,
+    mistralKey?: string,
     taggedFileNames: string[] = [],
     maxTokens: number = 2000
   ): Promise<{ answer: string }> {
     let answer = "";
     for await (const chunk of this.generateAnswerStream(
-      userQuery, expandedQuery, contextChunks, temperature, useVault, modelId, contextScript, openRouterKey, googleKey, xaiKey, openaiKey, anthropicKey, taggedFileNames, undefined, maxTokens
+      userQuery, expandedQuery, contextChunks, temperature, useVault, modelId, contextScript, openRouterKey, googleKey, xaiKey, openaiKey, mistralKey, taggedFileNames, undefined, maxTokens
     )) {
       answer += chunk;
     }
@@ -363,7 +363,7 @@ export class GeminiRAGService {
     googleKey?: string,
     xaiKey?: string,
     openaiKey?: string,
-    anthropicKey?: string,
+    mistralKey?: string,
     customContext: string = ""
   ): Promise<ResearchPlan> {
     const contextAwareness = conversationHistory
@@ -407,7 +407,7 @@ Based on what we know so far, decide the SINGLE next action.
           googleKey,
           xaiKey,
           openaiKey,
-          anthropicKey
+          mistralKey
         });
 
         const parsed = this.cleanAndParseJSON(response);
@@ -465,9 +465,9 @@ Based on what we know so far, decide the SINGLE next action.
     googleKey?: string,
     xaiKey?: string,
     openaiKey?: string,
-    anthropicKey?: string
+    mistralKey?: string
   ): Promise<ResearchPlan> {
-    return this.decideNextAction(userQuery, availableFileNames, filePreviews, conversationHistory, "", taggedFileNames, modelId, openRouterKey, googleKey, xaiKey, openaiKey, anthropicKey);
+    return this.decideNextAction(userQuery, availableFileNames, filePreviews, conversationHistory, "", taggedFileNames, modelId, openRouterKey, googleKey, xaiKey, openaiKey, mistralKey);
   }
 
   /**
