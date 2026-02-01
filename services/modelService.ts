@@ -1001,6 +1001,18 @@ class ModelService {
       return result.choices[0]?.message?.content || "";
     } catch (error: any) {
       console.error("OpenRouter API Error:", error);
+      
+      // Check for quota/billing issues
+      const errorMsg = error.message || '';
+      
+      if (error.status === 402 || errorMsg.includes('requires more credits') || errorMsg.includes('402')) {
+        throw new Error("⚠️ Insufficient credits on OpenRouter. Please visit https://openrouter.ai/settings/credits to add credits or upgrade to a paid account.");
+      }
+      
+      if (errorMsg.includes('quota') || errorMsg.includes('rate limit')) {
+        throw new Error("⚠️ Rate limit exceeded on OpenRouter. Please wait a few moments and try again, or upgrade your plan.");
+      }
+      
       throw new Error(error.message || "Failed to generate response.");
     }
   }
@@ -1036,6 +1048,19 @@ class ModelService {
 
     } catch (error: any) {
       console.error("OpenRouter Stream Error:", error);
+      
+      // Check for quota/billing issues
+      const errorMsg = error.message || '';
+      const errorBody = error.body || '';
+      
+      if (error.status === 402 || errorMsg.includes('requires more credits') || errorMsg.includes('402')) {
+        throw new Error("⚠️ Insufficient credits on OpenRouter. Please visit https://openrouter.ai/settings/credits to add credits or upgrade to a paid account.");
+      }
+      
+      if (errorMsg.includes('quota') || errorMsg.includes('rate limit')) {
+        throw new Error("⚠️ Rate limit exceeded on OpenRouter. Please wait a few moments and try again, or upgrade your plan.");
+      }
+      
       throw new Error(error.message || "Failed to stream response.");
     }
   }
@@ -1077,6 +1102,21 @@ class ModelService {
       return response.text || "";
     } catch (error: any) {
       console.error("Google Gemini API Error:", error);
+      
+      // Check for quota/billing issues
+      const errorMsg = error.message || '';
+      const errorStr = JSON.stringify(error);
+      
+      if (error.code === 429 || errorMsg.includes('exceeded') || errorMsg.includes('RESOURCE_EXHAUSTED') || errorMsg.includes('quota')) {
+        const retryMatch = errorStr.match(/retry in ([\d.]+s)/i);
+        const retryTime = retryMatch ? retryMatch[1] : 'a few moments';
+        throw new Error(`⚠️ Google Gemini quota exceeded. You've hit the free tier limit. Please retry in ${retryTime}, or upgrade at https://ai.google.dev/pricing`);
+      }
+      
+      if (errorMsg.includes('rate limit') || errorMsg.includes('too many requests')) {
+        throw new Error("⚠️ Rate limit exceeded on Google Gemini. Please wait a few moments and try again.");
+      }
+      
       throw new Error(error.message || "Failed to generate response from Gemini.");
     }
   }
@@ -1131,6 +1171,22 @@ class ModelService {
       }
     } catch (error: any) {
       console.error("Google Gemini Stream Error:", error);
+      
+      // Check for quota/billing issues
+      const errorMsg = error.message || '';
+      const errorStr = JSON.stringify(error);
+      
+      if (error.code === 429 || errorMsg.includes('exceeded') || errorMsg.includes('RESOURCE_EXHAUSTED') || errorMsg.includes('quota')) {
+        // Extract retry time if available
+        const retryMatch = errorStr.match(/retry in ([\d.]+s)/i);
+        const retryTime = retryMatch ? retryMatch[1] : 'a few moments';
+        throw new Error(`⚠️ Google Gemini quota exceeded. You've hit the free tier limit. Please retry in ${retryTime}, or upgrade at https://ai.google.dev/pricing`);
+      }
+      
+      if (errorMsg.includes('rate limit') || errorMsg.includes('too many requests')) {
+        throw new Error("⚠️ Rate limit exceeded on Google Gemini. Please wait a few moments and try again.");
+      }
+      
       throw new Error(error.message || "Failed to stream from Gemini.");
     }
   }
@@ -1170,6 +1226,18 @@ class ModelService {
       return data.choices[0]?.message?.content || "";
     } catch (error: any) {
       console.error("xAI API Error:", error);
+      
+      // Check for quota/billing issues
+      const errorMsg = error.message || '';
+      
+      if (error.status === 429 || errorMsg.includes('quota') || errorMsg.includes('rate limit') || errorMsg.includes('exceeded')) {
+        throw new Error("⚠️ xAI rate limit exceeded. Please wait a few moments and try again, or check your plan at https://x.ai");
+      }
+      
+      if (error.status === 402 || errorMsg.includes('credits') || errorMsg.includes('billing')) {
+        throw new Error("⚠️ Insufficient credits on xAI. Please check your billing and add credits.");
+      }
+      
       throw new Error(error.message || "Failed to generate response from xAI.");
     }
   }
@@ -1238,6 +1306,18 @@ class ModelService {
 
     } catch (error: any) {
       console.error("xAI Stream Error:", error);
+      
+      // Check for quota/billing issues
+      const errorMsg = error.message || '';
+      
+      if (error.status === 429 || errorMsg.includes('quota') || errorMsg.includes('rate limit') || errorMsg.includes('exceeded')) {
+        throw new Error("⚠️ xAI rate limit exceeded. Please wait a few moments and try again, or check your plan at https://x.ai");
+      }
+      
+      if (error.status === 402 || errorMsg.includes('credits') || errorMsg.includes('billing')) {
+        throw new Error("⚠️ Insufficient credits on xAI. Please check your billing and add credits.");
+      }
+      
       throw new Error(error.message || "Failed to stream from xAI.");
     }
   }
@@ -1277,6 +1357,18 @@ class ModelService {
       return data.output_text || "";
     } catch (error: any) {
       console.error("OpenAI API Error:", error);
+      
+      // Check for quota/billing issues
+      const errorMsg = error.message || '';
+      
+      if (error.status === 429 || errorMsg.includes('quota') || errorMsg.includes('rate_limit') || errorMsg.includes('exceeded')) {
+        throw new Error("⚠️ OpenAI rate limit exceeded. Please wait a few moments and try again, or upgrade your plan at https://platform.openai.com/account/billing");
+      }
+      
+      if (error.status === 402 || error.code === 'insufficient_quota' || errorMsg.includes('insufficient_quota') || errorMsg.includes('quota exceeded')) {
+        throw new Error("⚠️ OpenAI quota exceeded. Please add credits at https://platform.openai.com/account/billing or upgrade your plan.");
+      }
+      
       throw new Error(error.message || "Failed to generate response from OpenAI.");
     }
   }
@@ -1340,6 +1432,18 @@ class ModelService {
       }
     } catch (error: any) {
       console.error("OpenAI Stream Error:", error);
+      
+      // Check for quota/billing issues
+      const errorMsg = error.message || '';
+      
+      if (error.status === 429 || errorMsg.includes('quota') || errorMsg.includes('rate_limit') || errorMsg.includes('exceeded')) {
+        throw new Error("⚠️ OpenAI rate limit exceeded. Please wait a few moments and try again, or upgrade your plan at https://platform.openai.com/account/billing");
+      }
+      
+      if (error.status === 402 || error.code === 'insufficient_quota' || errorMsg.includes('insufficient_quota') || errorMsg.includes('quota exceeded')) {
+        throw new Error("⚠️ OpenAI quota exceeded. Please add credits at https://platform.openai.com/account/billing or upgrade your plan.");
+      }
+      
       throw new Error(error.message || "Failed to stream from OpenAI.");
     }
   }

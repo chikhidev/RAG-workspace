@@ -4,6 +4,7 @@ import { vectorService } from './services/vectorService';
 import { geminiRAG } from './services/geminiService';
 import { fileService } from './services/fileService';
 import { modelService } from './services/modelService';
+import { commandService } from './services/commandService';
 import { X, Key, Shield, ExternalLink, PanelLeft, PanelLeftClose } from 'lucide-react';
 
 import LoadingScreen from './components/LoadingScreen';
@@ -577,6 +578,105 @@ const App: React.FC = () => {
                 sources.push(c);
               }
             });
+
+          } else if (action.type === 'grep' && action.grepParams) {
+            const grepParams = action.grepParams;
+            setState(prev => ({
+              ...prev,
+              messages: prev.messages.map(m => m.id === assistantId ? {
+                ...m,
+                status: 'searching',
+                activeSubQuery: `grep: ${grepParams.pattern}`,
+                agentContext: {
+                  ...(m.agentContext || {}),
+                  originalQuery: query,
+                  knowledgeBuffer: currentKnowledgeBuffer,
+                  iterations: iterations,
+                  sources: [...sources],
+                  turnTitles: {
+                    ...(m.agentContext?.turnTitles || {}),
+                    [iterations]: plan.turnTitle
+                  }
+                },
+                thoughtLogs: [
+                  ...(m.thoughtLogs || []),
+                  { timestamp: Date.now(), step: `Grep Search`, thought: action.thought, turn: iterations }
+                ],
+                subtasks: m.subtasks?.map(s =>
+                  s.label === 'Searching' ? { ...s, status: 'loading', detail: `Grep: ${grepParams.pattern}` } :
+                    s.label === 'Planning' ? { ...s, status: 'completed' } : s
+                )
+              } : m)
+            }));
+
+            const grepResult = await commandService.executeGrep(
+              grepParams.pattern,
+              grepParams.targetFiles,
+              activeDocs,
+              grepParams.caseSensitive || false,
+              grepParams.maxResults || 20
+            );
+
+            // Add grep results to knowledge buffer
+            if (grepResult.success && grepResult.results) {
+              const formattedResults = commandService.formatGrepResults(grepResult.results as any, 15);
+              currentKnowledgeBuffer += `\n--- Grep Result (Iter ${iterations}) ---\nPattern: "${grepParams.pattern}"\n${formattedResults}\n`;
+            } else {
+              currentKnowledgeBuffer += `\n--- Grep Result (Iter ${iterations}) ---\nPattern: "${grepParams.pattern}"\nError: ${grepResult.error || 'No matches found'}\n`;
+            }
+
+          } else if (action.type === 'read_lines' && action.readLinesParams) {
+            const readParams = action.readLinesParams;
+            setState(prev => ({
+              ...prev,
+              messages: prev.messages.map(m => m.id === assistantId ? {
+                ...m,
+                status: 'searching',
+                activeSubQuery: `Reading ${readParams.fileName} lines ${readParams.startLine}-${readParams.endLine}`,
+                agentContext: {
+                  ...(m.agentContext || {}),
+                  originalQuery: query,
+                  knowledgeBuffer: currentKnowledgeBuffer,
+                  iterations: iterations,
+                  sources: [...sources],
+                  turnTitles: {
+                    ...(m.agentContext?.turnTitles || {}),
+                    [iterations]: plan.turnTitle
+                  }
+                },
+                thoughtLogs: [
+                  ...(m.thoughtLogs || []),
+                  { timestamp: Date.now(), step: `Read Lines`, thought: action.thought, turn: iterations }
+                ],
+                subtasks: m.subtasks?.map(s =>
+                  s.label === 'Searching' ? { ...s, status: 'loading', detail: `Reading ${readParams.fileName}:${readParams.startLine}-${readParams.endLine}` } :
+                    s.label === 'Planning' ? { ...s, status: 'completed' } : s
+                )
+              } : m)
+            }));
+
+            const readResult = await commandService.readLines(
+              readParams.fileName,
+              readParams.startLine,
+              readParams.endLine,
+              activeDocs
+            );
+
+            // Add read lines results to knowledge buffer
+            if (readResult.success && readResult.results) {
+              const formattedResult = commandService.formatReadLinesResult(readResult.results as any);
+              currentKnowledgeBuffer += `\n--- Read Lines (Iter ${iterations}) ---\n${formattedResult}\n`;
+              
+              // Also add as a source chunk for context
+              const readLinesResult = readResult.results as any;
+              sources.push({
+                docId: readParams.fileName,
+                docName: readParams.fileName,
+                text: readLinesResult.content
+              });
+            } else {
+              currentKnowledgeBuffer += `\n--- Read Lines (Iter ${iterations}) ---\nFile: ${readParams.fileName}\nError: ${readResult.error || 'Failed to read'}\n`;
+            }
 
           } else if (action.type === 'clarify' && action.clarificationQuestion) {
             setState(prev => ({

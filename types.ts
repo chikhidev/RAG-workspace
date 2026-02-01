@@ -93,11 +93,26 @@ export interface AppState {
   customContext: string;
 }
 
+export interface GrepParams {
+  pattern: string;
+  targetFiles: string[] | null;
+  caseSensitive?: boolean;
+  maxResults?: number;
+}
+
+export interface ReadLinesParams {
+  fileName: string;
+  startLine: number;
+  endLine: number;
+}
+
 export interface AgentAction {
-  type: 'search' | 'clarify' | 'conclude';
+  type: 'search' | 'clarify' | 'conclude' | 'grep' | 'read_lines';
   thought: string;
   searchParams?: SubQuery;
   clarificationQuestion?: string;
+  grepParams?: GrepParams;
+  readLinesParams?: ReadLinesParams;
 }
 
 export interface ResearchPlan {

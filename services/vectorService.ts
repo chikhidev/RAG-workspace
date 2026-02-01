@@ -31,9 +31,38 @@ export class VectorService {
     return chunks;
   }
 
+  /**
+   * Cat: Retrieve ALL chunks from specific files (like Unix cat command)
+   * Used when user explicitly mentions files with @filename
+   */
+  public async catFiles(fileNames: string[]): Promise<Chunk[]> {
+    if (this.chunks.length === 0) return [];
+    
+    const results: Chunk[] = [];
+    for (const fileName of fileNames) {
+      const fileChunks = this.chunks.filter(
+        chunk => chunk.docName.toLowerCase() === fileName.toLowerCase()
+      );
+      results.push(...fileChunks);
+    }
+    
+    return results;
+  }
+
   public async search(expandedQuery: string, limit: number = 4, taggedFileNames: string[] = []): Promise<Chunk[]> {
     if (this.chunks.length === 0) return [];
 
+    // If files are explicitly tagged with @, retrieve ALL their content (cat behavior)
+    if (taggedFileNames.length > 0) {
+      const taggedChunks = await this.catFiles(taggedFileNames);
+      
+      // If we got tagged chunks, return them all (full file content)
+      if (taggedChunks.length > 0) {
+        return taggedChunks;
+      }
+    }
+
+    // Otherwise, do semantic search as normal
     const keywords = expandedQuery.toLowerCase().split(/[\s,.-]+/).filter(k => k.length > 2);
 
     const scored = this.chunks.map(chunk => {
@@ -48,18 +77,12 @@ export class VectorService {
         }
       });
 
-      // APPLY TAG BOOST: Additive score for files explicitly mentioned by the user
-      // so they appear even if they have 0 keyword matches.
-      if (taggedFileNames.some(tagged => chunk.docName.toLowerCase() === tagged.toLowerCase())) {
-        score += 100.0;
-      }
-
       return { chunk, score };
     });
 
     return scored
       .sort((a, b) => b.score - a.score)
-      .filter(s => s.score > 0 || taggedFileNames.length > 0) // Allow results if we have tags
+      .filter(s => s.score > 0)
       .slice(0, limit)
       .map(s => s.chunk);
   }

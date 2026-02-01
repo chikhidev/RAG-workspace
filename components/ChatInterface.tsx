@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Message, PipelineStatus, Document, Chunk } from '../types';
-import { Search, Plus, Loader2, CheckCircle2, ChevronDown, ChevronRight, FileText, Sparkles, Copy, Check, Zap, Cpu, RefreshCw, Trash2, Send, ArrowRight, X, Target, Brain, PenTool, Circle, SearchIcon } from 'lucide-react';
+import { Search, Plus, Loader2, CheckCircle2, ChevronDown, ChevronRight, FileText, Sparkles, Copy, Check, Zap, Cpu, RefreshCw, Trash2, Send, ArrowRight, X, Target, Brain, PenTool, Circle, SearchIcon, Terminal, Eye } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -23,6 +23,34 @@ interface Props {
   availableDocuments: Document[];
   onHistoryNav: (direction: 'up' | 'down') => void;
 }
+
+const CopyButton: React.FC<{ text: string; className?: string }> = ({ text, className = '' }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      className={`p-1.5 rounded-lg transition-all ${
+        copied
+          ? 'bg-emerald-500/30 text-emerald-400 border border-emerald-500/50'
+          : 'bg-white/5 text-gray-400 hover:text-gray-200 hover:bg-white/10 border border-white/10'
+      } ${className}`}
+      title={copied ? 'Copied!' : 'Copy message'}
+    >
+      {copied ? <Check size={13} /> : <Copy size={13} />}
+    </button>
+  );
+};
 
 const LiveTimer: React.FC<{ status: PipelineStatus; activeAt: PipelineStatus; finalDuration?: number }> = ({ status, activeAt, finalDuration }) => {
   const [elapsed, setElapsed] = useState(0);
@@ -148,22 +176,49 @@ const PipelineDetails: React.FC<{
   };
 
   return (
-    <div className="w-full space-y-3 mt-4 mb-2 pl-2">
-      <button
-        onClick={() => setIsMainExpanded(!isMainExpanded)}
-        className="flex items-center gap-2 group/trace active:scale-95 transition-transform"
-      >
-        <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500 group-hover/trace:text-gray-300 transition-colors">
-          Reasoning Trace
-        </span>
-        <ChevronDown size={14} className={`text-gray-600 transition-transform duration-300 ${isMainExpanded ? 'rotate-180' : ''}`} />
-      </button>
+    <div className="w-full space-y-2 mb-4">
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => setIsMainExpanded(!isMainExpanded)}
+          className="flex items-center gap-2 group/trace active:scale-95 transition-transform"
+        >
+          <span className="text-sm text-gray-500 group-hover/trace:text-gray-300 transition-colors">
+            Reasoning Trace
+          </span>
+          <ChevronDown size={14} className={`text-gray-600 transition-transform duration-300 ${isMainExpanded ? 'rotate-180' : ''}`} />
+        </button>
+
+        {(msg.status === 'reasoning' || msg.status === 'completed' || usedFiles.length > 0) && (
+          <div className="flex items-center justify-end gap-3 py-1 mt-3 animate-[fadeIn_0.5s_ease-out] flex-wrap">
+            {usedFiles.length > 0 && (
+              <div className="flex flex-wrap gap-2 mr-auto">
+                {usedFiles.map((name, i) => (
+                  <button
+                    key={i}
+                    onClick={() => msg.sources && onViewContexts(name, msg.sources, msg.id)}
+                    className="flex items-center gap-1.5 px-2 py-1 bg-brand-base rounded border border-brand-border text-[11px] text-gray-400 font-medium hover:border-brand-accent hover:text-brand-accent transition-all"
+                  >
+                    <FileText size={10} className="text-brand-accent" />
+                    {name}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {(msg.status === 'reasoning' || msg.status === 'completed') && (
+                <LiveTimer status={msg.status} activeAt="reasoning" finalDuration={msg.reasoningDuration} />
+            )}
+          </div>
+        )}
+      </div>
 
       {isMainExpanded && (
-        <div className="relative border-l border-white/5 ml-[7px] space-y-4 pb-1 mt-3 animate-in fade-in slide-in-from-top-2 duration-300">
+        <div className="relative border-l border-white/5 ml-[7px] space-y-3 pb-1 mt-2 animate-in fade-in slide-in-from-top-2 duration-300">
           {logs.map((log, i) => {
             const isSearching = log.step.toLowerCase().includes('searching');
-            const StepIcon = isSearching ? SearchIcon : null;
+            const isGrep = log.step.toLowerCase().includes('grep');
+            const isReadLines = log.step.toLowerCase().includes('read lines');
+            const StepIcon = isGrep ? Terminal : isReadLines ? Eye : isSearching ? SearchIcon : null;
             const isLast = i === logs.length - 1;
             const isCompleted = msg.status === 'completed';
 
@@ -174,7 +229,7 @@ const PipelineDetails: React.FC<{
               <div key={i} className="relative pl-6 group">
                 {/* Timeline Node */}
                 <div className={`absolute -left-[10px] p-0.5 rounded-full bg-brand-base transition-colors`}>
-                  {StepIcon && <StepIcon size={15} className="text-gray-500" fill={isSearching ? 'none' : 'currentColor'} />}
+                  {StepIcon && <StepIcon size={15} className="text-gray-500" fill={(isSearching || isGrep || isReadLines) ? 'none' : 'currentColor'} />}
                 </div>
 
                 {/* Content */}
@@ -219,30 +274,7 @@ const PipelineDetails: React.FC<{
 
 
 
-      {(msg.status === 'reasoning' || msg.status === 'completed' || usedFiles.length > 0) && (
-        <div className="flex items-center justify-end gap-3 py-1 mt-6 animate-[fadeIn_0.5s_ease-out] flex-wrap">
-          {usedFiles.length > 0 && (
-            <div className="flex flex-wrap gap-2 mr-auto">
-              {usedFiles.map((name, i) => (
-                <button
-                  key={i}
-                  onClick={() => msg.sources && onViewContexts(name, msg.sources, msg.id)}
-                  className="flex items-center gap-1.5 px-2 py-1 bg-brand-base rounded border border-brand-border text-[11px] text-gray-400 font-medium hover:border-brand-accent hover:text-brand-accent transition-all"
-                >
-                  <FileText size={10} className="text-brand-accent" />
-                  {name}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {(msg.status === 'reasoning' || msg.status === 'completed') && (
-            <div className="flex items-center gap-3">
-              <LiveTimer status={msg.status} activeAt="reasoning" finalDuration={msg.reasoningDuration} />
-            </div>
-          )}
-        </div>
-      )}
+      
     </div>
   );
 };
@@ -370,7 +402,7 @@ export const ChatInterface: React.FC<Props> = ({
   return (
     <div className="flex flex-col h-full bg-brand-base flex-1 transition-colors relative">
 
-      <div ref={scrollRef} className={`flex-1 overflow-y-auto px-6 py-8 space-y-12 relative z-10 pb-60`}>
+      <div ref={scrollRef} className={`flex-1 overflow-y-auto px-6 py-6 space-y-8 relative z-10 pb-44`}>
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center px-12 pb-20">
 
@@ -392,20 +424,20 @@ export const ChatInterface: React.FC<Props> = ({
                     />
                   )}
 
-                  <div className={` leading-relaxed text-[15px] ${msg.role === 'user'
+                  <div className={`relative leading-relaxed text-[15px] group ${msg.role === 'user'
                     ? 'bg-brand-darker text-gray-200 text-gray-300 max-w-xl p-3 rounded-xl'
                     : (msg.status === 'completed' ? '' : 'w-full')
                     }`}>
                     {(msg.status === 'completed' || msg.role === 'user' || (msg.role === 'assistant' && msg.content)) ? (
                       <div className="space-y-4">
-                        <div className={`${msg.role === 'assistant' ? 'animate-blur-text' : ''}`}>
-                          <MarkdownResponse
-                            content={msg.content}
-                            onSourceClick={(fileName) => msg.sources && handleViewContexts(fileName, msg.sources, msg.id)}
-                          />
-                        </div>
+                      <div className={`${msg.role === 'assistant' ? 'animate-blur-text' : ''}`}>
+                        <MarkdownResponse
+                          content={msg.content}
+                          onSourceClick={(fileName) => msg.sources && handleViewContexts(fileName, msg.sources, msg.id)}
+                        />
+                      </div>
 
-                        {msg.pendingClarification && (
+                      {msg.pendingClarification && (
                           <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
 
                             <div className="">
@@ -486,6 +518,13 @@ export const ChatInterface: React.FC<Props> = ({
                         </div>
                       </div>
                     )}
+                  
+                    {/* Copy Button - positioned absolutely, hidden until hover */}
+                    {((msg.status === 'completed' && msg.content) || msg.role === 'user') && (
+                      <div className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <CopyButton text={msg.content} />
+                      </div>
+                    )}
                   </div>
 
                 </div>
@@ -496,8 +535,8 @@ export const ChatInterface: React.FC<Props> = ({
       </div>
 
       <>
-        <div className="absolute bottom-0 left-0 w-full h-64 bg-gradient-to-t from-brand-base via-brand-base/95 to-transparent pointer-events-none z-40" />
-        <div className="absolute bottom-8 left-0 w-full flex justify-center px-8 z-50">
+        <div className="absolute bottom-0 left-0 w-full h-48 bg-gradient-to-t from-brand-base via-brand-base/95 to-transparent pointer-events-none z-40" />
+        <div className="absolute bottom-6 left-0 w-full flex justify-center px-8 z-50">
           <div className="w-full max-w-4xl">
 
             <div className="bg-brand-base rounded-3xl">
