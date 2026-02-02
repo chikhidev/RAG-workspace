@@ -31,7 +31,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
   if (inline) {
     return (
       <code
-        className="bg-orange-500/10 text-orange-400 px-1.5 py-0.5 rounded font-mono text-[0.9em] border border-orange-500/20"
+        className="bg-red-500/10 text-red-400 px-1.5 py-0.5 rounded font-mono text-[0.9em] border border-red-500/20"
         {...props}
       >
         {children}
@@ -48,11 +48,11 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
         </span>
         <button
           onClick={handleCopy}
-          className="p-1.5 hover:bg-gray-800 rounded-md transition-colors text-gray-400 hover:text-orange-400"
+          className="p-1.5 hover:bg-gray-800 rounded-md transition-colors text-gray-400 hover:text-red-400"
           aria-label="Copy code"
         >
           {copied ? (
-            <Check size={14} className="text-orange-400" />
+            <Check size={14} className="text-red-400" />
           ) : (
             <Copy size={14} />
           )}
@@ -112,10 +112,10 @@ const Blockquote = ({ children }: any) => {
       title: 'Note'
     },
     tip: {
-      bg: 'bg-orange-500/5',
-      border: 'border-orange-500/30',
+      bg: 'bg-red-500/5',
+      border: 'border-red-500/30',
       icon: Lightbulb,
-      iconColor: 'text-orange-400',
+      iconColor: 'text-red-400',
       title: 'Tip'
     },
     important: {
@@ -201,7 +201,7 @@ const TaskListItem = ({ checked, children }: any) => {
         type="checkbox"
         checked={checked}
         readOnly
-        className="mt-1 w-4 h-4 rounded border-gray-700 bg-gray-900 text-orange-500 focus:ring-orange-500 focus:ring-offset-0"
+        className="mt-1 w-4 h-4 rounded border-gray-700 bg-gray-900 text-red-500 focus:ring-red-500 focus:ring-offset-0"
       />
       <span className={`flex-1 ${checked ? 'line-through text-gray-500' : 'text-gray-300'}`}>
         {children}
@@ -284,7 +284,7 @@ export const MarkdownResponse: React.FC<MarkdownResponseProps> = ({ content, cla
               href={href}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-orange-400 hover:text-orange-300 underline decoration-orange-400/30 hover:decoration-orange-300 transition-colors"
+              className="text-red-400 hover:text-red-300 underline decoration-red-400/30 hover:decoration-red-300 transition-colors"
             >
               {children}
             </a>
@@ -292,12 +292,12 @@ export const MarkdownResponse: React.FC<MarkdownResponseProps> = ({ content, cla
 
           // Lists
           ul: ({ children }) => (
-            <ul className="space-y-2 mb-4 ml-6 text-gray-300 text-[14px] list-disc marker:text-orange-500">
+            <ul className="space-y-2 mb-4 ml-6 text-gray-300 text-[14px] list-disc marker:text-red-500">
               {children}
             </ul>
           ),
           ol: ({ children }) => (
-            <ol className="space-y-2 mb-4 ml-6 text-gray-300 text-[14px] list-decimal marker:text-orange-500 marker:font-bold">
+            <ol className="space-y-2 mb-4 ml-6 text-gray-300 text-[14px] list-decimal marker:text-red-500 marker:font-bold">
               {children}
             </ol>
           ),

@@ -511,6 +511,17 @@ export const ChatInterface: React.FC<Props> = ({
                           Retry Generation
                         </button>
                       </div>
+                    ) : msg.wasStopped ? (
+                      <div className="flex flex-col items-start gap-4">
+                        <p className="text-yellow-400 italic text-[13px]">Response stopped by user.</p>
+                        <button
+                          onClick={() => onRegenerate(msg.id)}
+                          className="flex items-center gap-2 px-4 py-2 bg-brand-accent/10 hover:bg-brand-accent/20 text-brand-accent border border-brand-accent/30 rounded-lg text-[12px] font-bold transition-all"
+                        >
+                          <RefreshCw size={14} />
+                          Regenerate Response
+                        </button>
+                      </div>
                     ) : (
                       <div className="flex items-center gap-4 py-2 px-1">
                         <div className="text-[10px] font-mono text-brand-muted tracking-[0.2em] flex items-center gap-2">

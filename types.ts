@@ -29,6 +29,7 @@ export interface Message {
   activeSubQuery?: string;
   pendingClarification?: string;
   clarificationAnswer?: string;
+  wasStopped?: boolean;
   agentContext?: {
     originalQuery: string;
     knowledgeBuffer: string;

@@ -895,6 +895,7 @@ const App: React.FC = () => {
         messages: prev.messages.map(m => m.id === assistantId ? {
           ...m,
           status: 'completed',
+          modelId: state.selectedModel,
           reasoningDuration,
           expansionDuration,
           planningDuration,
@@ -935,6 +936,18 @@ const App: React.FC = () => {
   const handleStop = useCallback(() => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
+      // Clear all loading animations and active file indicators
+      setActiveFileNames([]);
+      // Mark the last assistant message as stopped
+      setState(prev => ({
+        ...prev,
+        isProcessing: false,
+        messages: prev.messages.map((m, idx) => 
+          idx === prev.messages.length - 1 && m.role === 'assistant'
+            ? { ...m, status: 'completed', wasStopped: true, activeSubQuery: undefined }
+            : m
+        )
+      }));
     }
   }, []);
 
@@ -1028,68 +1041,42 @@ const App: React.FC = () => {
     const targetMsg = state.messages[msgIndex];
     if (userMsg.role !== 'user' || targetMsg.role !== 'assistant') return;
 
-    setState(prev => ({ ...prev, isProcessing: true }));
-    abortControllerRef.current = new AbortController();
+    // Reset the message to start fresh with the currently selected model
+    setState(prev => ({
+      ...prev,
+      messages: prev.messages.map(m => m.id === messageId ? {
+        id: m.id,
+        role: 'assistant',
+        content: '',
+        status: state.useVault ? 'searching' : 'reasoning',
+        modelId: state.selectedModel,
+        timestamp: m.timestamp,
+        wasStopped: false,
+        sources: undefined,
+        thoughtProcess: undefined,
+        thoughtLogs: undefined,
+        agentContext: undefined,
+        pendingClarification: undefined,
+        clarificationAnswer: undefined,
+        activeSubQuery: undefined,
+        expandedQuery: undefined,
+        expansionDuration: undefined,
+        planningDuration: undefined,
+        searchDuration: undefined,
+        thinkingDuration: undefined,
+        reasoningDuration: undefined,
+        subtasks: state.useVault ? [
+          { label: 'Planning', status: 'pending' },
+          { label: 'Searching', status: 'pending' },
+          { label: 'Drafting', status: 'pending' }
+        ] : []
+      } : m)
+    }));
 
-    try {
-      setState(prev => ({
-        ...prev,
-        messages: prev.messages.map(m => m.id === messageId ? {
-          ...m,
-          status: 'reasoning',
-          content: '',
-          subtasks: [
-            { label: 'Searched', status: 'completed', detail: `${m.sources?.length || 0} results` },
-            { label: 'Analyzed', status: 'completed' },
-            { label: 'Linked', status: 'completed' }
-          ]
-        } : m)
-      }));
+    // Start processing from scratch
+    await processQuery(userMsg.content, messageId);
 
-      const hist = state.useContextHistory ? state.contextScript : "";
-      const expandedQuery = targetMsg.expandedQuery || userMsg.content;
-      const sources = targetMsg.sources || [];
-      const taggedFileNames = state.documents
-        .filter(d => userMsg.content.includes(`@${d.name}`))
-        .map(d => d.name);
-
-      const t3 = performance.now();
-      const { answer } = await geminiRAG.generateAnswer(
-        userMsg.content, expandedQuery, sources,
-        0.7,
-        state.useVault, state.selectedModel, hist, state.openRouterKey,
-        state.googleKey,
-        state.xaiKey,
-        state.openaiKey,
-        state.mistralKey,
-        taggedFileNames
-      );
-      const reasoningDuration = (performance.now() - t3) / 1000;
-
-      if (abortControllerRef.current.signal.aborted) throw new Error("Aborted");
-
-      setState(prev => ({
-        ...prev,
-        messages: prev.messages.map(m => m.id === messageId ? {
-          ...m,
-          content: answer,
-          status: 'completed',
-          reasoningDuration
-        } : m)
-      }));
-
-    } catch (err: any) {
-      if (err.message === "Aborted") {
-        setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === messageId ? { ...m, status: 'error', content: 'Generation stopped by user.' } : m) }));
-      } else {
-        addToast(err.message || "Regeneration error.");
-        setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === messageId ? { ...m, status: 'error' } : m) }));
-      }
-    } finally {
-      setState(prev => ({ ...prev, isProcessing: false }));
-      abortControllerRef.current = null;
-    }
-  }, [state.messages, state.isProcessing, state.useVault, state.selectedModel, state.contextScript, state.useContextHistory, state.openRouterKey, state.documents]);
+  }, [state.messages, state.isProcessing, state.useVault, state.selectedModel, state.contextScript, state.useContextHistory, state.openRouterKey, state.documents, state.googleKey, state.xaiKey, state.openaiKey, state.mistralKey]);
 
   const handleClarificationAnswer = useCallback(async (messageId: string, answer: string) => {
     const msg = state.messages.find(m => m.id === messageId);

@@ -90,7 +90,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                 </div>
 
                 {/* Grid Content */}
-                <div className="bg-[#1a1a1a] border border-brand-border rounded-2xl p-6 max-w-6xl mx-auto">
+                <div className="bg-[#1a1a1a] border border-brand-border rounded-2xl p-6 max-w-6xl mx-auto mb-10">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {models.map(model => (
                             <button
