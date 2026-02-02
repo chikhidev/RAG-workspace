@@ -114,13 +114,25 @@ export interface ReadLinesParams {
   endLine: number;
 }
 
+export interface MindMapSearchParams {
+  query: string;
+  maxResults?: number;
+}
+
+export interface MindMapNavigateParams {
+  nodeId: string;
+  mindMapId: string;
+}
+
 export interface AgentAction {
-  type: 'search' | 'clarify' | 'conclude' | 'grep' | 'read_lines';
+  type: 'search' | 'clarify' | 'conclude' | 'grep' | 'read_lines' | 'mindmap_search' | 'mindmap_navigate';
   thought: string;
   searchParams?: SubQuery;
   clarificationQuestion?: string;
   grepParams?: GrepParams;
   readLinesParams?: ReadLinesParams;
+  mindMapSearchParams?: MindMapSearchParams;
+  mindMapNavigateParams?: MindMapNavigateParams;
 }
 
 export interface ResearchPlan {

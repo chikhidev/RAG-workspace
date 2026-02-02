@@ -797,6 +797,12 @@ const App: React.FC = () => {
               } : m)
             }));
 
+            // Highlight the mind maps being searched
+            const searchedMindMapNames = state.mindMaps
+              .filter(m => m.enabled)
+              .map(m => m.name);
+            setActiveFileNames(searchedMindMapNames);
+
             const mindMapResult = await commandService.searchMindMaps(
               mindMapParams.query,
               state.mindMaps,
@@ -804,6 +810,7 @@ const App: React.FC = () => {
             );
 
             await new Promise(resolve => setTimeout(resolve, 1000));
+            setActiveFileNames([]);
 
             // Add mind map results to knowledge buffer
             if (mindMapResult.success && mindMapResult.results) {
@@ -816,12 +823,74 @@ const App: React.FC = () => {
                   sources.push({
                     docId: mapResult.mindMapId,
                     docName: `${mapResult.mindMapName} (Mind Map)`,
-                    text: `${nodeResult.text}\nPath: ${nodeResult.path.join(' → ')}`
+                    text: `${nodeResult.nodeText}\nPath: ${nodeResult.path.join(' → ')}`
                   });
                 }
               }
             } else {
               currentKnowledgeBuffer += `\n--- Mind Map Search (Iter ${iterations}) ---\nQuery: "${mindMapParams.query}"\n${mindMapResult.summary}\n`;
+            }
+
+          } else if (action.type === 'mindmap_navigate' && action.mindMapNavigateParams) {
+            const navParams = action.mindMapNavigateParams;
+            setState(prev => ({
+              ...prev,
+              messages: prev.messages.map(m => m.id === assistantId ? {
+                ...m,
+                status: 'searching',
+                activeSubQuery: `Navigating to node in mind map...`,
+                agentContext: {
+                  ...(m.agentContext || {}),
+                  originalQuery: query,
+                  knowledgeBuffer: currentKnowledgeBuffer,
+                  iterations: iterations,
+                  sources: [...sources],
+                  turnTitles: {
+                    ...(m.agentContext?.turnTitles || {}),
+                    [iterations]: plan.turnTitle
+                  }
+                },
+                thoughtLogs: [
+                  ...(m.thoughtLogs || []),
+                  { timestamp: Date.now(), step: `Mind Map Navigate`, thought: action.thought, turn: iterations }
+                ],
+                subtasks: m.subtasks?.map(s =>
+                  s.label === 'Searching' ? { ...s, status: 'loading', detail: `Navigating mind map node` } :
+                    s.label === 'Planning' ? { ...s, status: 'completed' } : s
+                )
+              } : m)
+            }));
+
+            // Find the mind map and highlight it
+            const targetMindMap = state.mindMaps.find(m => m.id === navParams.mindMapId);
+            if (targetMindMap) {
+              setActiveFileNames([targetMindMap.name]);
+            }
+
+            const navResult = await commandService.navigateMindMapNode(
+              navParams.nodeId,
+              navParams.mindMapId,
+              state.mindMaps
+            );
+
+            await new Promise(resolve => setTimeout(resolve, 800));
+            setActiveFileNames([]);
+
+            // Add navigation results to knowledge buffer
+            if (navResult.success && navResult.results) {
+              currentKnowledgeBuffer += `\n--- Mind Map Navigate (Iter ${iterations}) ---\n${navResult.summary}\n`;
+              
+              // Add the navigated node as a source
+              const navData = navResult.results as any;
+              if (navData.currentNode) {
+                sources.push({
+                  docId: navParams.mindMapId,
+                  docName: `${navData.mindMapName} (Mind Map)`,
+                  text: `${navData.currentNode.nodeText}\nPath: ${navData.currentNode.path.join(' → ')}`
+                });
+              }
+            } else {
+              currentKnowledgeBuffer += `\n--- Mind Map Navigate (Iter ${iterations}) ---\nNode: ${navParams.nodeId}\nError: ${navResult.error || 'Navigation failed'}\n`;
             }
 
           } else if (action.type === 'clarify' && action.clarificationQuestion) {

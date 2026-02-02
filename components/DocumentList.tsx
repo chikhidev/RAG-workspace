@@ -129,10 +129,16 @@ export const DocumentList: React.FC<Props> = ({
           <div className="text-[9px] font-mono uppercase tracking-widest text-purple-400 mb-2">
             Mind Maps ({mindMaps.length})
           </div>
-          {mindMaps.map((map) => (
+          {mindMaps.map((map) => {
+            const isActive = activeFileNames.includes(map.name);
+            const isFading = fadingFileNames.includes(map.name);
+            const shouldGlow = isActive || isFading;
+            return (
             <div
               key={map.id}
-              className={`group flex items-center justify-between p-3 rounded-lg border transition-all ${
+              className={`group flex items-center justify-between p-3 rounded-lg border transition-all relative z-[1] ${
+                shouldGlow ? (isFading ? 'ai-glow-box ai-glow-box-fading' : 'ai-glow-box') : ''
+              } ${
                 map.enabled
                   ? 'bg-purple-500/10 border-purple-500/30'
                   : 'bg-transparent border-transparent opacity-60'
@@ -168,7 +174,8 @@ export const DocumentList: React.FC<Props> = ({
                 <FileText size={13} />
               </button>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

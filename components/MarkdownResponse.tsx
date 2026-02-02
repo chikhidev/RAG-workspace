@@ -6,7 +6,7 @@ import rehypeKatex from 'rehype-katex';
 import rehypeRaw from 'rehype-raw';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { Copy, Check, Info, AlertTriangle, CheckCircle2, XCircle, Lightbulb, FileText } from 'lucide-react';
+import { Copy, Check, Info, AlertTriangle, CheckCircle2, XCircle, Lightbulb } from 'lucide-react';
 import 'katex/dist/katex.min.css';
 
 interface MarkdownResponseProps {
@@ -216,7 +216,6 @@ const SourceTag = ({ name, onClick }: { name: string; onClick?: (name: string) =
       onClick={() => onClick?.(name)}
       className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-brand-base rounded border border-brand-border text-[11px] text-gray-400 font-medium hover:border-brand-accent hover:text-brand-accent transition-all mx-1 align-baseline translate-y-[1px]"
     >
-      <FileText size={10} className="text-brand-accent" />
       {name}
     </button>
   );

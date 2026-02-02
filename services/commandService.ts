@@ -4,7 +4,7 @@
  */
 
 import { MindMap } from '../types';
-import { mindMapSearchService } from './mindMapSearchService';
+import { mindMapSearchService, MindMapSearchResult, NodeNavigationResult } from './mindMapSearchService';
 
 export interface GrepResult {
   fileName: string;
@@ -21,10 +21,43 @@ export interface ReadLinesResult {
   totalLines: number;
 }
 
+export interface MindMapSearchResultForLLM {
+  mindMapId: string;
+  mindMapName: string;
+  rootNodeText: string;
+  nodeCount: number;
+  results: Array<{
+    nodeId: string;
+    nodeText: string;
+    path: string[];
+    depth: number;
+    relevanceScore: number;
+    nextNodes: Array<{
+      nodeId: string;
+      nodeText: string;
+      direction: string;
+    }>;
+  }>;
+}
+
+export interface MindMapNavigationResultForLLM {
+  success: boolean;
+  mindMapName: string;
+  currentNode: {
+    nodeId: string;
+    nodeText: string;
+    path: string[];
+    depth: number;
+  } | null;
+  parentNode: { nodeId: string; nodeText: string } | null;
+  childNodes: Array<{ nodeId: string; nodeText: string }>;
+  siblingNodes: Array<{ nodeId: string; nodeText: string }>;
+}
+
 export interface CommandResult {
   success: boolean;
-  type: 'grep' | 'read_lines' | 'mindmap_search';
-  results?: GrepResult[] | ReadLinesResult | any;
+  type: 'grep' | 'read_lines' | 'mindmap_search' | 'mindmap_navigate';
+  results?: GrepResult[] | ReadLinesResult | MindMapSearchResultForLLM[] | MindMapNavigationResultForLLM;
   error?: string;
   summary: string;
 }
@@ -222,8 +255,8 @@ export class CommandExecutionService {
   }
 
   /**
-   * Search through mind maps intelligently
-   * This allows the LLM to navigate the hierarchical structure of mind maps
+   * Semantic search through mind maps
+   * Returns nodes with IDs for navigation
    */
   public async searchMindMaps(
     query: string,
@@ -242,50 +275,59 @@ export class CommandExecutionService {
         };
       }
 
-      // Very generic queries like "mind map", "what is", etc. should search ALL mind maps
+      // Check if query is very generic
       const queryLower = query.toLowerCase();
-      const isGenericQuery: boolean = /^(what|mind ?map|available|show|list)/.test(queryLower);
+      const isGenericQuery = /^(what|mind ?map|available|show|list|all)/.test(queryLower) || 
+                             query.length < 10;
+
+      // Evaluate all mind maps for relevance
+      const relevanceResults = mindMapSearchService.evaluateAllMindMaps(enabledMaps, query);
       
-      // Filter enabled mind maps and check relevance (unless query is very generic)
+      // Filter to relevant maps (or all if generic query)
       const relevantMaps = isGenericQuery 
         ? enabledMaps
-        : enabledMaps.filter(map => mindMapSearchService.isRelevantMindMap(map, query));
+        : enabledMaps.filter((map, i) => relevanceResults[i].isRelevant);
 
       if (relevantMaps.length === 0) {
         // Show available mind maps when no relevant ones found
-        const availableTopics = enabledMaps
-          .map(m => {
-            const rootNode = m.rootNodeId && m.nodes[m.rootNodeId];
-            return `"${m.name}" - ${rootNode ? rootNode.text : 'No description'}`;
-          })
-          .join(', ');
+        const availableInfo = relevanceResults
+          .map(r => `"${r.mindMapName}" - ${r.entrypointText} (${r.nodeCount} nodes)`)
+          .join('\n  ');
         
         return {
           success: true,
           type: 'mindmap_search',
           results: [],
-          summary: `🗺️ Mind Map Search: No mind maps match query "${query}".\nAvailable mind maps: ${availableTopics}`
+          summary: `🗺️ Mind Map Search: No mind maps match query "${query}".\n\nAvailable mind maps:\n  ${availableInfo}`
         };
       }
 
-      // Search each relevant mind map
-      const allResults: any[] = [];
+      // Search each relevant mind map with semantic search
+      const allResults: MindMapSearchResultForLLM[] = [];
+      
       for (const map of relevantMaps) {
-        const results = mindMapSearchService.search(map, query, maxResults);
+        const searchResults = mindMapSearchService.semanticSearch(map, query, maxResults);
+        const rootNode = map.rootNodeId ? map.nodes[map.rootNodeId] : null;
         
-        // For generic queries, always include the map even if no specific nodes match
-        if (isGenericQuery || results.length > 0) {
-          const rootNode = map.rootNodeId && map.nodes[map.rootNodeId];
+        // Always include the map info even if no specific nodes match (for generic queries)
+        if (isGenericQuery || searchResults.length > 0) {
           allResults.push({
-            mindMapName: map.name,
             mindMapId: map.id,
-            rootNodeText: rootNode ? rootNode.text : 'No description',
-            results: results.map(r => ({
-              text: r.node.text,
+            mindMapName: map.name,
+            rootNodeText: rootNode?.text || 'No description',
+            nodeCount: Object.keys(map.nodes).length,
+            results: searchResults.map(r => ({
+              nodeId: r.nodeId,
+              nodeText: r.nodeText,
               path: r.path,
               depth: r.depth,
-              relevanceScore: r.relevanceScore
-            }))
+              relevanceScore: r.relevanceScore,
+              nextNodes: r.connectedNodes.map(c => ({
+                nodeId: c.nodeId,
+                nodeText: c.nodeText,
+                direction: c.direction,
+              })),
+            })),
           });
         }
       }
@@ -309,9 +351,87 @@ export class CommandExecutionService {
   }
 
   /**
-   * Format mind map search results for LLM consumption
+   * Navigate to a specific node by ID
+   * Returns the node context with parent, children, and siblings
    */
-  private formatMindMapSearchResults(results: any[], query: string, isGenericQuery: boolean = false): string {
+  public async navigateMindMapNode(
+    nodeId: string,
+    mindMapId: string,
+    availableMindMaps: MindMap[]
+  ): Promise<CommandResult> {
+    try {
+      const targetMap = availableMindMaps.find(m => m.id === mindMapId && m.enabled);
+      
+      if (!targetMap) {
+        return {
+          success: false,
+          type: 'mindmap_navigate',
+          error: `Mind map with ID "${mindMapId}" not found or disabled`,
+          summary: `❌ Mind map not found`
+        };
+      }
+
+      const navResult = mindMapSearchService.navigateToNode(targetMap, nodeId, 5);
+      
+      if (!navResult.success || !navResult.node) {
+        return {
+          success: false,
+          type: 'mindmap_navigate',
+          error: `Node with ID "${nodeId}" not found in mind map "${targetMap.name}"`,
+          summary: `❌ Node not found`
+        };
+      }
+
+      const result: MindMapNavigationResultForLLM = {
+        success: true,
+        mindMapName: targetMap.name,
+        currentNode: {
+          nodeId: navResult.node.id,
+          nodeText: navResult.node.text,
+          path: navResult.path,
+          depth: navResult.depth,
+        },
+        parentNode: navResult.parentNode ? {
+          nodeId: navResult.parentNode.nodeId,
+          nodeText: navResult.parentNode.nodeText,
+        } : null,
+        childNodes: navResult.childNodes.map(c => ({
+          nodeId: c.nodeId,
+          nodeText: c.nodeText,
+        })),
+        siblingNodes: navResult.siblingNodes.map(s => ({
+          nodeId: s.nodeId,
+          nodeText: s.nodeText,
+        })),
+      };
+
+      const formatted = mindMapSearchService.formatNavigationForLLM(navResult, targetMap.name);
+
+      return {
+        success: true,
+        type: 'mindmap_navigate',
+        results: result,
+        summary: formatted
+      };
+    } catch (error) {
+      return {
+        success: false,
+        type: 'mindmap_navigate',
+        error: error instanceof Error ? error.message : String(error),
+        summary: `❌ Navigation failed: ${error instanceof Error ? error.message : String(error)}`
+      };
+    }
+  }
+
+  /**
+   * Format mind map search results for LLM consumption
+   * Includes node IDs for navigation
+   */
+  private formatMindMapSearchResults(
+    results: MindMapSearchResultForLLM[], 
+    query: string, 
+    isGenericQuery: boolean = false
+  ): string {
     if (results.length === 0) {
       return `🗺️ Mind Map Search: No results found for "${query}"`;
     }
@@ -319,22 +439,34 @@ export class CommandExecutionService {
     let formatted = `🗺️ Mind Map Search Results for "${query}":\n\n`;
 
     for (const mapResult of results) {
-      formatted += `📍 Mind Map: ${mapResult.mindMapName}\n`;
-      formatted += `   Topic: ${mapResult.rootNodeText}\n`;
+      formatted += `📍 Mind Map: "${mapResult.mindMapName}" (ID: ${mapResult.mindMapId})\n`;
+      formatted += `   Entrypoint: "${mapResult.rootNodeText}"\n`;
+      formatted += `   Total nodes: ${mapResult.nodeCount}\n`;
       
       if (mapResult.results.length === 0) {
-        formatted += `   (Root node only - no matching child nodes)\n\n`;
+        formatted += `   (Use mindmap_search with specific query to explore)\n\n`;
       } else {
         formatted += `   Found ${mapResult.results.length} relevant node(s):\n\n`;
 
         for (let i = 0; i < mapResult.results.length; i++) {
-          const result = mapResult.results[i];
-          formatted += `   ${i + 1}. "${result.text}"\n`;
-          formatted += `      Path: ${result.path.join(' → ')}\n`;
-          formatted += `      Depth: ${result.depth} | Relevance: ${result.relevanceScore.toFixed(1)}\n\n`;
+          const node = mapResult.results[i];
+          formatted += `   [${i + 1}] "${node.nodeText}"\n`;
+          formatted += `       ID: ${node.nodeId}\n`;
+          formatted += `       Path: ${node.path.join(' → ')}\n`;
+          formatted += `       Depth: ${node.depth} | Score: ${node.relevanceScore}\n`;
+          
+          if (node.nextNodes.length > 0) {
+            formatted += `       Next nodes (use mindmap_navigate to explore):\n`;
+            for (const next of node.nextNodes) {
+              formatted += `         → [${next.direction}] "${next.nodeText}" (ID: ${next.nodeId})\n`;
+            }
+          }
+          formatted += '\n';
         }
       }
     }
+
+    formatted += `\n💡 Tip: Use mindmap_navigate with nodeId and mindMapId to explore deeper into the hierarchy.`;
 
     return formatted;
   }
