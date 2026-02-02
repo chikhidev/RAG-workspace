@@ -1,6 +1,6 @@
 import React from 'react';
 import { Document } from '../types';
-import { FileText, Trash2, Upload, Box } from 'lucide-react';
+import { FileText, Trash2, Upload, Box, FileCode, FileJson, File, Link as LinkIcon, FileUp, Type } from 'lucide-react';
 
 interface Props {
   documents: Document[];
@@ -15,9 +15,30 @@ interface Props {
 }
 
 export const DocumentList: React.FC<Props> = ({ documents, onUpload, onRemove, onToggle, isIndexing, onAddText, onAddLink, onCollapse, activeFileNames = [] }) => {
-  const isAtLimit = documents.length >= 10;
+  const isAtLimit = documents.length >= 20;
   const [fadingFileNames, setFadingFileNames] = React.useState<string[]>([]);
   const [allGlowingFiles, setAllGlowingFiles] = React.useState<string[]>([]);
+
+  // Determine icon based on file extension
+  const getFileIcon = (fileName: string) => {
+    const name = fileName.toLowerCase();
+    
+    if (name.endsWith('.pdf')) {
+      return <FileUp size={14} className="text-red-500 shrink-0" />;
+    } else if (name.endsWith('.docx') || name.endsWith('.doc')) {
+      return <FileText size={14} className="text-blue-500 shrink-0" />;
+    } else if (name.endsWith('.txt') || name.endsWith('.md')) {
+      return <Type size={14} className="text-gray-400 shrink-0" />;
+    } else if (name.endsWith('.json')) {
+      return <FileJson size={14} className="text-yellow-500 shrink-0" />;
+    } else if (name.endsWith('.html') || name.endsWith('.xml') || name.endsWith('.csv')) {
+      return <FileCode size={14} className="text-green-500 shrink-0" />;
+    } else if (name.startsWith('http://') || name.startsWith('https://')) {
+      return <LinkIcon size={14} className="text-cyan-500 shrink-0" />;
+    } else {
+      return <File size={14} className="text-gray-500 shrink-0" />;
+    }
+  };
 
   // Handle active files and fade-out animation
   React.useEffect(() => {
@@ -49,9 +70,6 @@ export const DocumentList: React.FC<Props> = ({ documents, onUpload, onRemove, o
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-panel-right-close"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M15 3v18" /><path d="m8 9 3 3-3 3" /></svg>
             </button>
           )}
-          <h2 className="text-[20px] font-serif italic text-gray-100 tracking-tight truncate">
-            Knowledge Vault
-          </h2>
           
         </div>
         <div className="flex items-center gap-2">
@@ -82,7 +100,7 @@ export const DocumentList: React.FC<Props> = ({ documents, onUpload, onRemove, o
 
       <div className="mb-8 flex justify-between items-center shrink-0">
         <span className={`text-[9px] font-mono uppercase tracking-widest ${isAtLimit ? 'text-brand-accent font-bold' : 'text-brand-muted'}`}>
-          {documents.length} / 10 Files
+          {documents.length} / 20 Files
         </span>
       </div>
 
@@ -117,7 +135,7 @@ export const DocumentList: React.FC<Props> = ({ documents, onUpload, onRemove, o
                 </button>
 
                 <div className="flex items-center gap-2 overflow-hidden">
-                  <FileText size={14} className="text-gray-500 shrink-0" />
+                  {getFileIcon(doc.name)}
                   <span className="text-[12px] font-medium truncate text-gray-300">
                     {doc.name}
                   </span>

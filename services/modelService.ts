@@ -580,6 +580,183 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
     },
     categories: ['Vision', 'Code']
   },
+  // --- STEPFUN MODELS ---
+  {
+    id: 'stepfun/step-3.5-flash:free',
+    name: 'Step 3.5 Flash',
+    provider: 'openrouter',
+    description: 'StepFun - Most capable open-source model with sparse MoE architecture. 11B active of 196B parameters.',
+    size: 'large',
+    logo: '/logos/stepfun.png',
+    isFree: true,
+    metadata: {
+      author: 'StepFun',
+      context: '256K',
+      inputPrice: '$0.00/M',
+      outputPrice: '$0.00/M',
+      latency: '0.8s',
+      throughput: '110tps'
+    },
+    categories: ['Reasoning', 'Code', 'Speed']
+  },
+  // --- BYTEDANCE SEED MODELS ---
+  {
+    id: 'bytedance-seed/seed-1.6-flash',
+    name: 'Seed 1.6 Flash',
+    provider: 'openrouter',
+    description: 'ByteDance Seed - Ultra-fast multimodal model with deep thinking. 256K context, up to 16K output tokens.',
+    size: 'large',
+    logo: '/logos/bytedance.png',
+    metadata: {
+      author: 'ByteDance',
+      context: '256K',
+      inputPrice: '$0.075/M',
+      outputPrice: '$0.30/M',
+      latency: '0.7s',
+      throughput: '120tps'
+    },
+    categories: ['Vision', 'Code', 'Speed']
+  },
+  {
+    id: 'bytedance-seed/seed-1.6',
+    name: 'Seed 1.6',
+    provider: 'openrouter',
+    description: 'ByteDance Seed - General-purpose multimodal model with adaptive deep thinking. 256K context.',
+    size: 'large',
+    logo: '/logos/bytedance.png',
+    metadata: {
+      author: 'ByteDance',
+      context: '256K',
+      inputPrice: '$0.25/M',
+      outputPrice: '$2.00/M',
+      latency: '1.0s',
+      throughput: '80tps'
+    },
+    categories: ['Vision', 'Code', 'Reasoning']
+  },
+  {
+    id: 'bytedance-seed/seedream-4.5',
+    name: 'Seedream 4.5',
+    provider: 'openrouter',
+    description: 'ByteDance - Latest image generation model. Excellent editing consistency, portrait refinement, and small-text rendering.',
+    size: 'large',
+    logo: '/logos/bytedance.png',
+    metadata: {
+      author: 'ByteDance',
+      context: '4K',
+      inputPrice: '$0.00/M',
+      outputPrice: '$9.581/M',
+      latency: '2.0s',
+      throughput: '30tps'
+    },
+    categories: ['Vision']
+  },
+  // --- XIAOMI MODELS ---
+  {
+    id: 'xiaomi/mimo-v2-flash',
+    name: 'MiMo-V2-Flash',
+    provider: 'openrouter',
+    description: 'Xiaomi - 309B total params, 15B active. Hybrid-thinking toggle, 256K context. #1 on SWE-bench Open-Source.',
+    size: 'large',
+    logo: '/logos/mimo.png',
+    metadata: {
+      author: 'Xiaomi',
+      context: '256K',
+      inputPrice: '$0.09/M',
+      outputPrice: '$0.29/M',
+      latency: '0.9s',
+      throughput: '100tps'
+    },
+    categories: ['Reasoning', 'Code', 'Speed']
+  },
+  // --- DEEPSEEK MODELS (OpenRouter) ---
+  {
+    id: 'deepseek/deepseek-v3.2-speciale',
+    name: 'DeepSeek V3.2 Speciale',
+    provider: 'openrouter',
+    description: 'DeepSeek - High-compute reasoning variant optimized for maximum reasoning and agentic performance. Ahead of GPT-5.',
+    size: 'large',
+    logo: '/logos/deepseek.png',
+    metadata: {
+      author: 'DeepSeek',
+      context: '163.84K',
+      inputPrice: '$0.27/M',
+      outputPrice: '$0.41/M',
+      latency: '1.2s',
+      throughput: '75tps'
+    },
+    categories: ['Reasoning', 'Code']
+  },
+  {
+    id: 'deepseek/deepseek-v3.2',
+    name: 'DeepSeek V3.2',
+    provider: 'openrouter',
+    description: 'DeepSeek - Balanced reasoning and agentic performance with Sparse Attention (DSA). Gold medals on 2025 IMO & IOI.',
+    size: 'large',
+    logo: '/logos/deepseek.png',
+    metadata: {
+      author: 'DeepSeek',
+      context: '163.84K',
+      inputPrice: '$0.25/M',
+      outputPrice: '$0.38/M',
+      latency: '1.0s',
+      throughput: '85tps'
+    },
+    categories: ['Reasoning', 'Code']
+  },
+  {
+    id: 'deepseek/deepseek-r1',
+    name: 'DeepSeek R1',
+    provider: 'openrouter',
+    description: 'DeepSeek - Performance on par with OpenAI o1, fully open-sourced with open reasoning tokens. 671B params, 37B active.',
+    size: 'large',
+    logo: '/logos/deepseek.png',
+    metadata: {
+      author: 'DeepSeek',
+      context: '64K',
+      inputPrice: '$0.70/M',
+      outputPrice: '$2.50/M',
+      latency: '1.5s',
+      throughput: '60tps'
+    },
+    categories: ['Reasoning', 'Code']
+  },
+  // --- NVIDIA PAID MODELS ---
+  {
+    id: 'nvidia/nemotron-3-nano-30b-a3b',
+    name: 'Nemotron 3 Nano 30B A3B (Paid)',
+    provider: 'openrouter',
+    description: 'NVIDIA - Small language MoE with highest compute efficiency. Open-weights for custom deployment.',
+    size: 'small',
+    logo: '/logos/nvidia.png',
+    metadata: {
+      author: 'NVIDIA',
+      context: '256K',
+      inputPrice: '$0.05/M',
+      outputPrice: '$0.20/M',
+      latency: '0.6s',
+      throughput: '140tps'
+    },
+    categories: ['Reasoning', 'Code', 'Speed', 'Budget']
+  },
+  // --- PERPLEXITY MODELS ---
+  {
+    id: 'perplexity/sonar-pro-search',
+    name: 'Sonar Pro Search',
+    provider: 'openrouter',
+    description: 'Perplexity - Most advanced agentic search system with multi-step reasoning. $18/K requests + tokens.',
+    size: 'large',
+    logo: '/logos/perplexity.png',
+    metadata: {
+      author: 'Perplexity',
+      context: '200K',
+      inputPrice: '$3.00/M',
+      outputPrice: '$15.00/M',
+      latency: '1.5s',
+      throughput: '60tps'
+    },
+    categories: ['Reasoning', 'Code']
+  },
   // --- PAID MODELS ---
   {
     id: 'anthropic/claude-3.7-sonnet',

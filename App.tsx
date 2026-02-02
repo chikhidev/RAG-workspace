@@ -431,8 +431,8 @@ const App: React.FC = () => {
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-    if (state.documents.length + files.length > 10) {
-      addToast("File limit reached (10 max).");
+    if (state.documents.length + files.length > 20) {
+      addToast("File limit reached (20 max).");
       return;
     }
     const newDocs: Document[] = [];
@@ -457,8 +457,8 @@ const App: React.FC = () => {
   }, [state.documents]);
 
   const handleManualDocAdd = useCallback((name: string, content: string) => {
-    if (state.documents.length >= 10) {
-      addToast("File limit reached (10 max).");
+    if (state.documents.length >= 20) {
+      addToast("File limit reached (20 max).");
       return;
     }
     const newDoc: Document = {
