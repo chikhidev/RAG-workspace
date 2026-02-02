@@ -74,6 +74,7 @@ export interface ModelDefinition {
   size: 'small' | 'large';
   logo: string;
   isFree?: boolean;
+  categories?: ('Code' | 'Reasoning' | 'Balanced' | 'Speed' | 'Vision' | 'Long Context' | 'Budget')[];
   metadata: ModelMetadata;
 }
 

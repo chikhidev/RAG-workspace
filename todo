@@ -1,5 +1,202 @@
-i want the (thinker) model to be doing like this (look at the given image)
-to do seperated tasks, search, analyse, link
-and at the end everything goes to the large model to give response
-/home/abdoo/Pictures/Screenshots/Screenshot from 2026-01-30 14-22-46.png
+StepFun: Step 3.5 Flash (free)
+stepfun/step-3.5-flash:free
 
+Chat
+Compare
+Created Jan 29, 2026
+256,000 context
+$0/M input tokens
+$0/M output tokens
+Step 3.5 Flash is StepFun's most capable open-source foundation model. Built on a sparse Mixture of Experts (MoE) architecture, it selectively activates only 11B of its 196B parameters per token. It is a reasoning model that is incredibly speed efficient even at long contexts.
+
+public/logos/stepfun.png
+
+--------------------------------------------------------------
+Arcee AI: Trinity Large Preview (free)
+arcee-ai/trinity-large-preview:free
+
+Chat
+Compare
+Created Jan 27, 2026
+131,000 context
+$0/M input tokens
+$0/M output tokens
+
+Programming (#10)
+Trinity-Large-Preview is a frontier-scale open-weight language model from Arcee, built as a 400B-parameter sparse Mixture-of-Experts with 13B active parameters per token using 4-of-256 expert routing.
+
+
+
+--------------------------------------------------------------
+
+ByteDance Seed: Seedream 4.5
+bytedance-seed/seedream-4.5
+
+Chat
+Compare
+Created Dec 23, 2025
+4,096 context
+$0/M input tokens
+$0/M output tokens
+$9.581/M tokens
+Seedream 4.5 is the latest in-house image generation model developed by ByteDance. Compared with Seedream 4.0, it delivers comprehensive improvements, especially in editing consistency, including better preservation of subject details, lighting, and color tone. It also enhances portrait refinement and small-text rendering. The model’s multi-image composition capabilities have been significantly strengthened, and both reasoning performance and visual aesthetics continue to advance, enabling more accurate and artistically expressive image generation.
+
+Pricing is $0.04 per output image, regardless of size.
+
+public/logos/bytedance.png
+
+
+--------------------------------------------------------------
+
+ByteDance Seed: Seed 1.6 Flash
+bytedance-seed/seed-1.6-flash
+
+Chat
+Compare
+Created Dec 23, 2025
+262,144 context
+Starting at $0.075/M input tokens
+Starting at $0.30/M output tokens
+Seed 1.6 Flash is an ultra-fast multimodal deep thinking model by ByteDance Seed, supporting both text and visual understanding. It features a 256k context window and can generate outputs of up to 16k tokens.
+
+
+--------------------------------------------------------------
+
+ByteDance Seed: Seed 1.6
+bytedance-seed/seed-1.6
+
+Chat
+Compare
+Created Dec 23, 2025
+262,144 context
+Starting at $0.25/M input tokens
+Starting at $2/M output tokens
+Seed 1.6 is a general-purpose model released by the ByteDance Seed team. It incorporates multimodal capabilities and adaptive deep thinking with a 256K context window.
+
+
+
+--------------------------------------------------------------
+
+Xiaomi: MiMo-V2-Flash
+xiaomi/mimo-v2-flash
+
+Chat
+Compare
+Created Dec 14, 2025
+262,144 context
+$0.09/M input tokens
+$0.29/M output tokens
+MiMo-V2-Flash is an open-source foundation language model developed by Xiaomi. It is a Mixture-of-Experts model with 309B total parameters and 15B active parameters, adopting hybrid attention architecture. MiMo-V2-Flash supports a hybrid-thinking toggle and a 256K context window, and excels at reasoning, coding, and agent scenarios. On SWE-bench Verified and SWE-bench Multilingual, MiMo-V2-Flash ranks as the top #1 open-source model globally, delivering performance comparable to Claude Sonnet 4.5 while costing only about 3.5% as much.
+
+Users can control the reasoning behaviour with the reasoning enabled boolean. Learn more in our docs.
+
+public/logos/mimo.png
+
+
+
+--------------------------------------------------------------
+
+NVIDIA: Nemotron 3 Nano 30B A3B (free)
+nvidia/nemotron-3-nano-30b-a3b:free
+
+Chat
+Compare
+Created Dec 14, 2025
+256,000 context
+$0/M input tokens
+$0/M output tokens
+NVIDIA Nemotron 3 Nano 30B A3B is a small language MoE model with highest compute efficiency and accuracy for developers to build specialized agentic AI systems.
+
+The model is fully open with open-weights, datasets and recipes so developers can easily
+customize, optimize, and deploy the model on their infrastructure for maximum privacy and
+security.
+
+Note: For the free endpoint, all prompts and output are logged to improve the provider's model and its product and services. Please do not upload any personal, confidential, or otherwise sensitive information. This is a trial use only. Do not use for production or business-critical systems.
+
+
+--------------------------------------------------------------
+
+NVIDIA: Nemotron 3 Nano 30B A3B
+nvidia/nemotron-3-nano-30b-a3b
+
+Chat
+Compare
+Created Dec 14, 2025
+262,144 context
+$0.05/M input tokens
+$0.20/M output tokens
+NVIDIA Nemotron 3 Nano 30B A3B is a small language MoE model with highest compute efficiency and accuracy for developers to build specialized agentic AI systems.
+
+The model is fully open with open-weights, datasets and recipes so developers can easily
+customize, optimize, and deploy the model on their infrastructure for maximum privacy and
+security.
+
+Note: For the free endpoint, all prompts and output are logged to improve the provider's model and its product and services. Please do not upload any personal, confidential, or otherwise sensitive information. This is a trial use only. Do not use for production or business-critical systems.
+
+
+--------------------------------------------------------------
+
+DeepSeek: DeepSeek V3.2 Speciale
+deepseek/deepseek-v3.2-speciale
+
+Chat
+Compare
+Created Dec 1, 2025
+163,840 context
+$0.27/M input tokens
+$0.41/M output tokens
+DeepSeek-V3.2-Speciale is a high-compute variant of DeepSeek-V3.2 optimized for maximum reasoning and agentic performance. It builds on DeepSeek Sparse Attention (DSA) for efficient long-context processing, then scales post-training reinforcement learning to push capability beyond the base model. Reported evaluations place Speciale ahead of GPT-5 on difficult reasoning workloads, with proficiency comparable to Gemini-3.0-Pro, while retaining strong coding and tool-use reliability. Like V3.2, it benefits from a large-scale agentic task synthesis pipeline that improves compliance and generalization in interactive environments.
+
+
+--------------------------------------------------------------
+DeepSeek: DeepSeek V3.2
+deepseek/deepseek-v3.2
+
+Chat
+Compare
+Created Dec 1, 2025
+163,840 context
+$0.25/M input tokens
+$0.38/M output tokens
+
+Roleplay (#1)
+
+Academia (#4)
+DeepSeek-V3.2 is a large language model designed to harmonize high computational efficiency with strong reasoning and agentic tool-use performance. It introduces DeepSeek Sparse Attention (DSA), a fine-grained sparse attention mechanism that reduces training and inference cost while preserving quality in long-context scenarios. A scalable reinforcement learning post-training framework further improves reasoning, with reported performance in the GPT-5 class, and the model has demonstrated gold-medal results on the 2025 IMO and IOI. V3.2 also uses a large-scale agentic task synthesis pipeline to better integrate reasoning into tool-use settings, boosting compliance and generalization in interactive environments.
+
+Users can control the reasoning behaviour with the reasoning enabled boolean. Learn more in our docs
+
+
+--------------------------------------------------------------
+DeepSeek: R1
+deepseek/deepseek-r1
+
+Chat
+Compare
+Created Jan 20, 2025
+64,000 context
+$0.70/M input tokens
+$2.50/M output tokens
+DeepSeek R1 is here: Performance on par with OpenAI o1, but open-sourced and with fully open reasoning tokens. It's 671B parameters in size, with 37B active in an inference pass.
+
+Fully open-source model & technical report.
+
+MIT licensed: Distill & commercialize freely!
+
+
+----------------------------------------------------------------
+Perplexity: Sonar Pro Search
+perplexity/sonar-pro-search
+
+Chat
+Compare
+Created Oct 30, 2025
+200,000 context
+Starting at $3/M input tokens
+Starting at $15/M output tokens
+$18/K reqs
+Exclusively available on the OpenRouter API, Sonar Pro's new Pro Search mode is Perplexity's most advanced agentic search system. It is designed for deeper reasoning and analysis. Pricing is based on tokens plus $18 per thousand requests. This model powers the Pro Search mode on the Perplexity platform.
+
+Sonar Pro Search adds autonomous, multi-step reasoning to Sonar Pro. So, instead of just one query + synthesis, it plans and executes entire research workflows using tools.
+
+public/logos/perplexity.png

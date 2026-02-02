@@ -19,7 +19,8 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       outputPrice: '$0.00/M',
       latency: '0.50s',
       throughput: '150tps'
-    }
+    },
+    categories: ['Reasoning', 'Code']
   },
   {
     id: 'allenai/molmo-2-8b:free',
@@ -36,7 +37,8 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       outputPrice: '$0.00/M',
       latency: '0.45s',
       throughput: '140tps'
-    }
+    },
+    categories: ['Balanced', 'Vision']
   },
   {
     id: 'meta-llama/llama-3.2-3b-instruct:free',
@@ -53,7 +55,8 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       outputPrice: '$0.00/M',
       latency: '0.30s',
       throughput: '250tps'
-    }
+    },
+    categories: ['Speed', 'Code']
   },
   {
     id: 'nvidia/nemotron-nano-9b-v2:free',
@@ -70,7 +73,8 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       outputPrice: '$0.00/M',
       latency: '0.80s',
       throughput: '120tps'
-    }
+    },
+    categories: ['Balanced', 'Code']
   },
   {
     id: 'qwen/qwen3-4b:free',
@@ -87,7 +91,8 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       outputPrice: '$0.00/M',
       latency: '0.40s',
       throughput: '180tps'
-    }
+    },
+    categories: ['Speed', 'Code']
   },
   {
     id: 'google/gemma-3-4b-it:free',
@@ -104,7 +109,8 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       outputPrice: '$0.00/M',
       latency: '0.60s',
       throughput: '150tps'
-    }
+    },
+    categories: ['Balanced', 'Code']
   },
   {
     id: 'arcee-ai/trinity-large-preview:free',
@@ -121,7 +127,8 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       outputPrice: '$0.00/M',
       latency: '1.00s',
       throughput: '100tps'
-    }
+    },
+    categories: ['Code', 'Reasoning']
   },
   {
     id: 'deepseek/deepseek-r1-0528:free',
@@ -138,7 +145,8 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       outputPrice: '$0.00/M',
       latency: '2.50s',
       throughput: '45tps'
-    }
+    },
+    categories: ['Reasoning', 'Code']
   },
   {
     id: 'nvidia/nemotron-3-nano-30b-a3b:free',
@@ -155,7 +163,8 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       outputPrice: '$0.00/M',
       latency: '1.40s',
       throughput: '85tps'
-    }
+    },
+    categories: ['Reasoning', 'Code']
   },
   {
     id: 'openai/gpt-oss-20b:free',
@@ -172,7 +181,8 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       outputPrice: '$0.00/M',
       latency: '0.90s',
       throughput: '110tps'
-    }
+    },
+    categories: ['Code', 'Reasoning']
   },
   // --- GOOGLE MODELS (GEMINI 3 & 2.5) ---
   // Gemini 3 Pro - Most Intelligent Model
@@ -193,7 +203,8 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       throughput: '60tps',
       updated: 'November 2025',
       cutoff: 'January 2025'
-    }
+    },
+    categories: ['Code', 'Reasoning', 'Long Context']
   },
   {
     id: 'gemini-3-pro-image-preview',
@@ -212,7 +223,8 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       throughput: '40tps',
       updated: 'November 2025',
       cutoff: 'January 2025'
-    }
+    },
+    categories: ['Vision', 'Code']
   },
   // Gemini 3 Flash - Most Balanced Model
   {
@@ -232,7 +244,8 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       throughput: '200tps',
       updated: 'December 2025',
       cutoff: 'January 2025'
-    }
+    },
+    categories: ['Balanced', 'Code']
   },
   // Gemini 2.5 Pro - Advanced Thinking Model
   {
@@ -252,25 +265,8 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       throughput: '60tps',
       updated: 'June 2025',
       cutoff: 'January 2025'
-    }
-  },
-  {
-    id: 'gemini-2.5-pro-preview-tts',
-    name: 'Gemini 2.5 Pro TTS',
-    provider: 'google',
-    description: 'Text-to-audio model with high-fidelity voice generation.',
-    size: 'large',
-    logo: '/logos/gemini.png',
-    isFree: true,
-    metadata: {
-      author: 'Google',
-      context: '8K',
-      inputPrice: '$0.00/M',
-      outputPrice: '$0.00/M',
-      latency: '0.8s',
-      throughput: '50tps',
-      updated: 'December 2025'
-    }
+    },
+    categories: ['Reasoning', 'Code']
   },
   // Gemini 2.5 Flash - Fast and Intelligent
   {
@@ -290,7 +286,8 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       throughput: '250tps',
       updated: 'June 2025',
       cutoff: 'January 2025'
-    }
+    },
+    categories: ['Speed', 'Code']
   },
   {
     id: 'gemini-2.5-flash-preview-09-2025',
@@ -309,7 +306,8 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       throughput: '250tps',
       updated: 'September 2025',
       cutoff: 'January 2025'
-    }
+    },
+    categories: ['Balanced', 'Code']
   },
   {
     id: 'gemini-2.5-flash-image',
@@ -328,44 +326,8 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       throughput: '120tps',
       updated: 'October 2025',
       cutoff: 'June 2025'
-    }
-  },
-  {
-    id: 'gemini-2.5-flash-native-audio-preview-12-2025',
-    name: 'Gemini 2.5 Flash Live',
-    provider: 'google',
-    description: 'Real-time audio and video interaction with audio generation support. Optimized for Live API.',
-    size: 'small',
-    logo: '/logos/gemini.png',
-    isFree: true,
-    metadata: {
-      author: 'Google',
-      context: '128K',
-      inputPrice: '$0.00/M',
-      outputPrice: '$0.00/M',
-      latency: '0.1s',
-      throughput: '500tps',
-      updated: 'September 2025',
-      cutoff: 'January 2025'
-    }
-  },
-  {
-    id: 'gemini-2.5-flash-preview-tts',
-    name: 'Gemini 2.5 Flash TTS',
-    provider: 'google',
-    description: 'Text-to-audio specialized model with audio generation.',
-    size: 'small',
-    logo: '/logos/gemini.png',
-    isFree: true,
-    metadata: {
-      author: 'Google',
-      context: '8K',
-      inputPrice: '$0.00/M',
-      outputPrice: '$0.00/M',
-      latency: '0.4s',
-      throughput: '150tps',
-      updated: 'December 2025'
-    }
+    },
+    categories: ['Vision', 'Code']
   },
   // Gemini 2.5 Flash-Lite - Ultra Fast
   {
@@ -385,7 +347,8 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       throughput: '450tps',
       updated: 'July 2025',
       cutoff: 'January 2025'
-    }
+    },
+    categories: ['Speed', 'Code']
   },
   {
     id: 'gemini-2.5-flash-lite-preview-09-2025',
@@ -404,14 +367,15 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       throughput: '450tps',
       updated: 'September 2025',
       cutoff: 'January 2025'
-    }
+    },
+    categories: ['Speed', 'Code']
   },
   // Gemini 2.0 - Deprecated (shut down March 31, 2026)
   {
     id: 'gemini-2.0-flash',
     name: 'Gemini 2.0 Flash (DEPRECATED)',
     provider: 'google',
-    description: '⚠️ DEPRECATED - Will be shut down on March 31, 2026. Use Gemini 2.5 Flash instead.',
+    description: 'DEPRECATED - Will be shut down on March 31, 2026. Use Gemini 2.5 Flash instead.',
     size: 'small',
     logo: '/logos/gemini.png',
     isFree: true,
@@ -425,13 +389,14 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       updated: 'February 2025',
       cutoff: 'August 2024',
       deprecated: 'March 31, 2026'
-    }
+    },
+    categories: ['Balanced', 'Code']
   },
   {
     id: 'gemini-2.0-flash-lite',
     name: 'Gemini 2.0 Flash-Lite (DEPRECATED)',
     provider: 'google',
-    description: '⚠️ DEPRECATED - Will be shut down on March 31, 2026. Use Gemini 2.5 Flash-Lite instead.',
+    description: 'DEPRECATED - Will be shut down on March 31, 2026. Use Gemini 2.5 Flash-Lite instead.',
     size: 'small',
     logo: '/logos/gemini.png',
     isFree: true,
@@ -445,7 +410,8 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       updated: 'February 2025',
       cutoff: 'August 2024',
       deprecated: 'March 31, 2026'
-    }
+    },
+    categories: ['Speed', 'Code']
   },
   {
     id: 'gemini-2.0-flash-thinking-exp',
@@ -463,7 +429,8 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       latency: '1.2s',
       throughput: '60tps',
       cutoff: 'August 2024'
-    }
+    },
+    categories: ['Reasoning', 'Code']
   },
   // --- X.AI MODELS ---
   {
@@ -480,7 +447,8 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       outputPrice: '$0.50/M',
       latency: 'Unknown',
       throughput: '4M tpm'
-    }
+    },
+    categories: ['Reasoning', 'Code']
   },
   {
     id: 'grok-4-1-fast-non-reasoning',
@@ -496,7 +464,8 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       outputPrice: '$0.50/M',
       latency: 'Unknown',
       throughput: '4M tpm'
-    }
+    },
+    categories: ['Balanced', 'Code']
   },
   {
     id: 'grok-code-fast-1',
@@ -608,7 +577,8 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       outputPrice: '$10.00/M',
       latency: 'Unknown',
       throughput: '600 rpm'
-    }
+    },
+    categories: ['Vision', 'Code']
   },
   // --- PAID MODELS ---
   {
@@ -625,7 +595,8 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       outputPrice: '$15.00/M',
       latency: '1.0s',
       throughput: '80tps'
-    }
+    },
+    categories: ['Code', 'Reasoning']
   },
   {
     id: 'anthropic/claude-sonnet-4.5',
@@ -641,7 +612,8 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       outputPrice: '$15.00/M',
       latency: '1.2s',
       throughput: '60tps'
-    }
+    },
+    categories: ['Code', 'Reasoning', 'Long Context']
   },
   {
     id: 'anthropic/claude-haiku-4.5',
@@ -657,7 +629,8 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       outputPrice: '$5.00/M',
       latency: '0.4s',
       throughput: '120tps'
-    }
+    },
+    categories: ['Code', 'Speed', 'Budget']
   },
   {
     id: 'anthropic/claude-3-haiku',
@@ -673,7 +646,8 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
       outputPrice: '$1.25/M',
       latency: '0.64s',
       throughput: '92tps'
-    }
+    },
+    categories: ['Code', 'Speed', 'Budget']
   },
   {
     id: 'moonshotai/kimi-k2.5',
@@ -725,7 +699,7 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   {
     id: 'openai/gpt-4.1',
-    name: 'GPT-4.1 (OpenRouter)',
+    name: 'GPT-4.1',
     provider: 'openrouter',
     description: 'OpenAI - Flagship model for advanced instruction following and long-context reasoning with 1M tokens.',
     size: 'large',
@@ -741,7 +715,7 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   {
     id: 'openai/gpt-4.1-mini',
-    name: 'GPT-4.1 Mini (OpenRouter)',
+    name: 'GPT-4.1 Mini',
     provider: 'openrouter',
     description: 'OpenAI - Mid-sized model competitive with GPT-4o at lower latency and cost.',
     size: 'small',
@@ -757,7 +731,7 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   {
     id: 'openai/gpt-4.1-nano',
-    name: 'GPT-4.1 Nano (OpenRouter)',
+    name: 'GPT-4.1 Nano',
     provider: 'openrouter',
     description: 'OpenAI - Fastest and cheapest in GPT-4.1 series with 1M context.',
     size: 'small',
@@ -773,7 +747,7 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   {
     id: 'minimax/minimax-01',
-    name: 'MiniMax-01 (OpenRouter)',
+    name: 'MiniMax-01',
     provider: 'openrouter',
     description: 'MiniMax - 456B parameter MoE combining text generation and image understanding with 4M context.',
     size: 'large',
@@ -789,7 +763,7 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   {
     id: 'amazon/nova-2-lite-v1',
-    name: 'Nova 2 Lite (OpenRouter)',
+    name: 'Nova 2 Lite',
     provider: 'openrouter',
     description: 'Amazon - Fast, cost-effective reasoning model for everyday multimodal workloads.',
     size: 'small',
@@ -805,7 +779,7 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   {
     id: 'amazon/nova-premier-v1',
-    name: 'Nova Premier 1.0 (OpenRouter)',
+    name: 'Nova Premier 1.0',
     provider: 'openrouter',
     description: 'Amazon - Most capable multimodal model for complex reasoning and custom model distillation.',
     size: 'large',
@@ -821,7 +795,7 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   {
     id: 'qwen/qwen-plus-2025-07-28',
-    name: 'Qwen Plus 0728 (OpenRouter)',
+    name: 'Qwen Plus 0728',
     provider: 'openrouter',
     description: 'Qwen - 1M context hybrid reasoning model with balanced performance, speed, and cost.',
     size: 'large',
@@ -837,7 +811,7 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   {
     id: 'qwen/qwen-plus-0728-thinking',
-    name: 'Qwen Plus 0728 Thinking (OpenRouter)',
+    name: 'Qwen Plus 0728 Thinking',
     provider: 'openrouter',
     description: 'Qwen - 1M context hybrid reasoning model with enhanced thinking capabilities.',
     size: 'large',
@@ -853,7 +827,7 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   {
     id: 'minimax/minimax-m1',
-    name: 'MiniMax M1 (OpenRouter)',
+    name: 'MiniMax M1',
     provider: 'openrouter',
     description: 'MiniMax - 456B parameter open-weight MoE with lightning attention for long-context reasoning.',
     size: 'large',
@@ -869,7 +843,7 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   {
     id: 'anthropic/claude-sonnet-4',
-    name: 'Claude Sonnet 4 (OpenRouter)',
+    name: 'Claude Sonnet 4',
     provider: 'openrouter',
     description: 'Anthropic - Enhanced coding and reasoning with 72.7% SWE-bench performance.',
     size: 'large',
@@ -885,7 +859,7 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   {
     id: 'qwen/qwen-turbo',
-    name: 'Qwen-Turbo (OpenRouter)',
+    name: 'Qwen-Turbo',
     provider: 'openrouter',
     description: 'Qwen - Fast speed and low cost 1M context model for simple tasks.',
     size: 'small',
@@ -901,7 +875,7 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   {
     id: 'openai/gpt-5.2-pro',
-    name: 'GPT-5.2 Pro (OpenRouter)',
+    name: 'GPT-5.2 Pro',
     provider: 'openrouter',
     description: 'OpenAI - Most advanced model with major improvements in agentic coding and long context.',
     size: 'large',
@@ -917,7 +891,7 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   {
     id: 'openai/gpt-5.2',
-    name: 'GPT-5.2 (OpenRouter)',
+    name: 'GPT-5.2',
     provider: 'openrouter',
     description: 'OpenAI - Latest frontier-grade with adaptive reasoning and stronger agentic performance.',
     size: 'large',
@@ -933,7 +907,7 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   {
     id: 'openai/gpt-5',
-    name: 'GPT-5 (OpenRouter)',
+    name: 'GPT-5',
     provider: 'openrouter',
     description: 'OpenAI - Most advanced model with major improvements in reasoning, code quality, and user experience.',
     size: 'large',
@@ -949,7 +923,7 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   {
     id: 'openai/gpt-5-image-mini',
-    name: 'GPT-5 Image Mini (OpenRouter)',
+    name: 'GPT-5 Image Mini',
     provider: 'openrouter',
     description: 'OpenAI - Combines GPT-5 Mini with image generation for efficient visual creation.',
     size: 'small',
@@ -965,7 +939,7 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   {
     id: 'openai/gpt-5-image',
-    name: 'GPT-5 Image (OpenRouter)',
+    name: 'GPT-5 Image',
     provider: 'openrouter',
     description: 'OpenAI - Combines GPT-5 with state-of-the-art image generation capabilities.',
     size: 'large',
@@ -981,7 +955,7 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   {
     id: 'openai/gpt-5-pro',
-    name: 'GPT-5 Pro (OpenRouter)',
+    name: 'GPT-5 Pro',
     provider: 'openrouter',
     description: 'OpenAI - Most advanced model optimized for complex reasoning and high-stakes tasks.',
     size: 'large',
@@ -997,7 +971,7 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   {
     id: 'openai/gpt-5-codex',
-    name: 'GPT-5 Codex (OpenRouter)',
+    name: 'GPT-5 Codex',
     provider: 'openrouter',
     description: 'OpenAI - Specialized for software engineering with superior code quality and project building.',
     size: 'large',
@@ -1013,7 +987,7 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   {
     id: 'openai/gpt-5-mini',
-    name: 'GPT-5 Mini (OpenRouter)',
+    name: 'GPT-5 Mini',
     provider: 'openrouter',
     description: 'OpenAI - Compact version with reduced latency and cost for lighter reasoning tasks.',
     size: 'small',
@@ -1029,7 +1003,7 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   {
     id: 'openai/gpt-5-nano',
-    name: 'GPT-5 Nano (OpenRouter)',
+    name: 'GPT-5 Nano',
     provider: 'openrouter',
     description: 'OpenAI - Smallest and fastest variant optimized for ultra-low latency.',
     size: 'small',
@@ -1045,7 +1019,7 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   {
     id: 'amazon/nova-lite-v1',
-    name: 'Nova Lite 1.0 (OpenRouter)',
+    name: 'Nova Lite 1.0',
     provider: 'openrouter',
     description: 'Amazon - Very low-cost multimodal model for fast image, video, and text processing.',
     size: 'small',
@@ -1061,7 +1035,7 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   {
     id: 'amazon/nova-pro-v1',
-    name: 'Nova Pro 1.0 (OpenRouter)',
+    name: 'Nova Pro 1.0',
     provider: 'openrouter',
     description: 'Amazon - Capable multimodal model with state-of-the-art visual understanding.',
     size: 'large',
@@ -1140,24 +1114,8 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
     }
   },
   {
-    id: 'openai/gpt-oss-safeguard-20b',
-    name: 'GPT OSS Safeguard 20B',
-    provider: 'openrouter',
-    description: 'OpenAI - High-fidelity reasoning with safeguards.',
-    size: 'large',
-    logo: '/logos/chatgpt.png',
-    metadata: {
-      author: 'OpenAI',
-      context: '131K',
-      inputPrice: '$0.075/M',
-      outputPrice: '$0.30/M',
-      latency: '0.11s',
-      throughput: '945.8tps'
-    }
-  },
-  {
     id: 'x-ai/grok-4.1-fast',
-    name: 'Grok 4.1 Fast (OpenRouter)',
+    name: 'Grok 4.1 Fast',
     provider: 'openrouter',
     description: 'xAI - Best agentic tool calling model for customer support and research with 2M context.',
     size: 'large',
@@ -1173,7 +1131,7 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   {
     id: 'x-ai/grok-4-fast',
-    name: 'Grok 4 Fast (OpenRouter)',
+    name: 'Grok 4 Fast',
     provider: 'openrouter',
     description: 'xAI - Latest multimodal model with SOTA cost-efficiency and 2M context.',
     size: 'large',
@@ -1189,7 +1147,7 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   {
     id: 'google/gemini-3-flash-preview',
-    name: 'Gemini 3 Flash Preview (OpenRouter)',
+    name: 'Gemini 3 Flash Preview',
     provider: 'openrouter',
     description: 'Google - High speed thinking model for agentic workflows with 1M context.',
     size: 'large',
@@ -1205,7 +1163,7 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   {
     id: 'google/gemini-3-pro-preview',
-    name: 'Gemini 3 Pro Preview (OpenRouter)',
+    name: 'Gemini 3 Pro Preview',
     provider: 'openrouter',
     description: 'Google - Flagship frontier model for high-precision multimodal reasoning with 1M context.',
     size: 'large',
@@ -1221,7 +1179,7 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   {
     id: 'google/gemini-2.5-flash-preview-09-2025',
-    name: 'Gemini 2.5 Flash Preview 09-2025 (OpenRouter)',
+    name: 'Gemini 2.5 Flash Preview 09-2025',
     provider: 'openrouter',
     description: 'Google - State-of-the-art workhorse with built-in thinking. Going away February 17, 2026.',
     size: 'small',
@@ -1238,7 +1196,7 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   {
     id: 'google/gemini-2.5-flash-lite-preview-09-2025',
-    name: 'Gemini 2.5 Flash-Lite Preview 09-2025 (OpenRouter)',
+    name: 'Gemini 2.5 Flash-Lite Preview 09-2025',
     provider: 'openrouter',
     description: 'Google - Lightweight reasoning model optimized for ultra-low latency and cost efficiency.',
     size: 'small',
@@ -1254,7 +1212,7 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   {
     id: 'google/gemini-2.5-flash-lite',
-    name: 'Gemini 2.5 Flash-Lite (OpenRouter)',
+    name: 'Gemini 2.5 Flash-Lite',
     provider: 'openrouter',
     description: 'Google - Lightweight reasoning model with improved throughput and faster token generation.',
     size: 'small',
@@ -1270,7 +1228,7 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   {
     id: 'google/gemini-2.5-flash',
-    name: 'Gemini 2.5 Flash (OpenRouter)',
+    name: 'Gemini 2.5 Flash',
     provider: 'openrouter',
     description: 'Google - State-of-the-art workhorse model with built-in thinking capabilities.',
     size: 'small',
@@ -1286,7 +1244,7 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   {
     id: 'google/gemini-2.5-pro',
-    name: 'Gemini 2.5 Pro (OpenRouter)',
+    name: 'Gemini 2.5 Pro',
     provider: 'openrouter',
     description: 'Google - State-of-the-art AI with advanced reasoning and thinking capabilities.',
     size: 'large',
@@ -1302,7 +1260,7 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   {
     id: 'google/gemini-2.5-pro-preview',
-    name: 'Gemini 2.5 Pro Preview 06-05 (OpenRouter)',
+    name: 'Gemini 2.5 Pro Preview 06-05',
     provider: 'openrouter',
     description: 'Google - State-of-the-art AI model achieving top-tier benchmark performance.',
     size: 'large',
@@ -1318,7 +1276,7 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   {
     id: 'google/gemini-2.5-pro-preview-05-06',
-    name: 'Gemini 2.5 Pro Preview 05-06 (OpenRouter)',
+    name: 'Gemini 2.5 Pro Preview 05-06',
     provider: 'openrouter',
     description: 'Google - State-of-the-art AI model with enhanced accuracy and context handling.',
     size: 'large',
@@ -1334,7 +1292,7 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
   },
   {
     id: 'meta-llama/llama-4-maverick',
-    name: 'Llama 4 Maverick (OpenRouter)',
+    name: 'Llama 4 Maverick',
     provider: 'openrouter',
     description: 'Meta - High-capacity multimodal MoE with 128 experts and 17B active parameters. Vision-language optimized.',
     size: 'large',
@@ -1788,22 +1746,6 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
     }
   },
   {
-    "id": "gpt-oss-120b",
-    "name": "gpt-oss-120b",
-    "provider": "openai",
-    "description": "OpenAI - Open-weight MoE model (117B params). Rivals o4-mini.",
-    "size": "large",
-    "logo": "/logos/chatgpt.png",
-    "metadata": {
-      "author": "OpenAI",
-      "context": "128K",
-      "inputPrice": "Free (Self-Hosted)",
-      "outputPrice": "Free (Self-Hosted)",
-      "latency": "Variable",
-      "throughput": "Variable"
-    }
-  },
-  {
     "id": "gpt-oss-20b",
     "name": "gpt-oss-20b",
     "provider": "openai",
@@ -1964,11 +1906,11 @@ class ModelService {
       const errorMsg = error.message || '';
       
       if (error.status === 402 || errorMsg.includes('requires more credits') || errorMsg.includes('402')) {
-        throw new Error("⚠️ Insufficient credits on OpenRouter. Please visit https://openrouter.ai/settings/credits to add credits or upgrade to a paid account.");
+        throw new Error("Insufficient credits on OpenRouter. Please visit https://openrouter.ai/settings/credits to add credits or upgrade to a paid account.");
       }
       
       if (errorMsg.includes('quota') || errorMsg.includes('rate limit')) {
-        throw new Error("⚠️ Rate limit exceeded on OpenRouter. Please wait a few moments and try again, or upgrade your plan.");
+        throw new Error("Rate limit exceeded on OpenRouter. Please wait a few moments and try again, or upgrade your plan.");
       }
       
       throw new Error(error.message || "Failed to generate response.");
@@ -2012,11 +1954,11 @@ class ModelService {
       const errorBody = error.body || '';
       
       if (error.status === 402 || errorMsg.includes('requires more credits') || errorMsg.includes('402')) {
-        throw new Error("⚠️ Insufficient credits on OpenRouter. Please visit https://openrouter.ai/settings/credits to add credits or upgrade to a paid account.");
+        throw new Error("Insufficient credits on OpenRouter. Please visit https://openrouter.ai/settings/credits to add credits or upgrade to a paid account.");
       }
       
       if (errorMsg.includes('quota') || errorMsg.includes('rate limit')) {
-        throw new Error("⚠️ Rate limit exceeded on OpenRouter. Please wait a few moments and try again, or upgrade your plan.");
+        throw new Error("Rate limit exceeded on OpenRouter. Please wait a few moments and try again, or upgrade your plan.");
       }
       
       throw new Error(error.message || "Failed to stream response.");
@@ -2068,11 +2010,11 @@ class ModelService {
       if (error.code === 429 || errorMsg.includes('exceeded') || errorMsg.includes('RESOURCE_EXHAUSTED') || errorMsg.includes('quota')) {
         const retryMatch = errorStr.match(/retry in ([\d.]+s)/i);
         const retryTime = retryMatch ? retryMatch[1] : 'a few moments';
-        throw new Error(`⚠️ Google Gemini quota exceeded. You've hit the free tier limit. Please retry in ${retryTime}, or upgrade at https://ai.google.dev/pricing`);
+        throw new Error(`Google Gemini quota exceeded. You've hit the free tier limit. Please retry in ${retryTime}, or upgrade at https://ai.google.dev/pricing`);
       }
       
       if (errorMsg.includes('rate limit') || errorMsg.includes('too many requests')) {
-        throw new Error("⚠️ Rate limit exceeded on Google Gemini. Please wait a few moments and try again.");
+        throw new Error("Rate limit exceeded on Google Gemini. Please wait a few moments and try again.");
       }
       
       throw new Error(error.message || "Failed to generate response from Gemini.");
@@ -2138,11 +2080,11 @@ class ModelService {
         // Extract retry time if available
         const retryMatch = errorStr.match(/retry in ([\d.]+s)/i);
         const retryTime = retryMatch ? retryMatch[1] : 'a few moments';
-        throw new Error(`⚠️ Google Gemini quota exceeded. You've hit the free tier limit. Please retry in ${retryTime}, or upgrade at https://ai.google.dev/pricing`);
+        throw new Error(`Google Gemini quota exceeded. You've hit the free tier limit. Please retry in ${retryTime}, or upgrade at https://ai.google.dev/pricing`);
       }
       
       if (errorMsg.includes('rate limit') || errorMsg.includes('too many requests')) {
-        throw new Error("⚠️ Rate limit exceeded on Google Gemini. Please wait a few moments and try again.");
+        throw new Error("Rate limit exceeded on Google Gemini. Please wait a few moments and try again.");
       }
       
       throw new Error(error.message || "Failed to stream from Gemini.");
@@ -2189,11 +2131,11 @@ class ModelService {
       const errorMsg = error.message || '';
       
       if (error.status === 429 || errorMsg.includes('quota') || errorMsg.includes('rate limit') || errorMsg.includes('exceeded')) {
-        throw new Error("⚠️ xAI rate limit exceeded. Please wait a few moments and try again, or check your plan at https://x.ai");
+        throw new Error("xAI rate limit exceeded. Please wait a few moments and try again, or check your plan at https://x.ai");
       }
       
       if (error.status === 402 || errorMsg.includes('credits') || errorMsg.includes('billing')) {
-        throw new Error("⚠️ Insufficient credits on xAI. Please check your billing and add credits.");
+        throw new Error("Insufficient credits on xAI. Please check your billing and add credits.");
       }
       
       throw new Error(error.message || "Failed to generate response from xAI.");
@@ -2269,11 +2211,11 @@ class ModelService {
       const errorMsg = error.message || '';
       
       if (error.status === 429 || errorMsg.includes('quota') || errorMsg.includes('rate limit') || errorMsg.includes('exceeded')) {
-        throw new Error("⚠️ xAI rate limit exceeded. Please wait a few moments and try again, or check your plan at https://x.ai");
+        throw new Error("xAI rate limit exceeded. Please wait a few moments and try again, or check your plan at https://x.ai");
       }
       
       if (error.status === 402 || errorMsg.includes('credits') || errorMsg.includes('billing')) {
-        throw new Error("⚠️ Insufficient credits on xAI. Please check your billing and add credits.");
+        throw new Error("Insufficient credits on xAI. Please check your billing and add credits.");
       }
       
       throw new Error(error.message || "Failed to stream from xAI.");
@@ -2320,11 +2262,11 @@ class ModelService {
       const errorMsg = error.message || '';
       
       if (error.status === 429 || errorMsg.includes('quota') || errorMsg.includes('rate_limit') || errorMsg.includes('exceeded')) {
-        throw new Error("⚠️ OpenAI rate limit exceeded. Please wait a few moments and try again, or upgrade your plan at https://platform.openai.com/account/billing");
+        throw new Error("OpenAI rate limit exceeded. Please wait a few moments and try again, or upgrade your plan at https://platform.openai.com/account/billing");
       }
       
       if (error.status === 402 || error.code === 'insufficient_quota' || errorMsg.includes('insufficient_quota') || errorMsg.includes('quota exceeded')) {
-        throw new Error("⚠️ OpenAI quota exceeded. Please add credits at https://platform.openai.com/account/billing or upgrade your plan.");
+        throw new Error("OpenAI quota exceeded. Please add credits at https://platform.openai.com/account/billing or upgrade your plan.");
       }
       
       throw new Error(error.message || "Failed to generate response from OpenAI.");
@@ -2395,11 +2337,11 @@ class ModelService {
       const errorMsg = error.message || '';
       
       if (error.status === 429 || errorMsg.includes('quota') || errorMsg.includes('rate_limit') || errorMsg.includes('exceeded')) {
-        throw new Error("⚠️ OpenAI rate limit exceeded. Please wait a few moments and try again, or upgrade your plan at https://platform.openai.com/account/billing");
+        throw new Error("OpenAI rate limit exceeded. Please wait a few moments and try again, or upgrade your plan at https://platform.openai.com/account/billing");
       }
       
       if (error.status === 402 || error.code === 'insufficient_quota' || errorMsg.includes('insufficient_quota') || errorMsg.includes('quota exceeded')) {
-        throw new Error("⚠️ OpenAI quota exceeded. Please add credits at https://platform.openai.com/account/billing or upgrade your plan.");
+        throw new Error("OpenAI quota exceeded. Please add credits at https://platform.openai.com/account/billing or upgrade your plan.");
       }
       
       throw new Error(error.message || "Failed to stream from OpenAI.");
@@ -2442,11 +2384,11 @@ class ModelService {
       
       // Check for CORS/network errors
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
-        throw new Error("⚠️ Cannot connect to Mistral API directly from browser due to CORS restrictions. Use OpenRouter for Mistral models or set up a proxy server.");
+        throw new Error("Cannot connect to Mistral API directly from browser due to CORS restrictions. Use OpenRouter for Mistral models or set up a proxy server.");
       }
       
       if (error.status === 429 || error.message?.includes('rate_limit') || error.message?.includes('Rate limit')) {
-        throw new Error("⚠️ Mistral rate limit exceeded. Please wait a few moments and try again. Free tier has strict limits.");
+        throw new Error("Mistral rate limit exceeded. Please wait a few moments and try again. Free tier has strict limits.");
       }
       
       throw new Error(error.message || "Failed to execute Mistral request.");
@@ -2518,11 +2460,11 @@ class ModelService {
       
       // Check for CORS/network errors
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
-        throw new Error("⚠️ Cannot connect to Mistral API directly from browser due to CORS restrictions. Use OpenRouter for Mistral models or set up a proxy server.");
+        throw new Error("Cannot connect to Mistral API directly from browser due to CORS restrictions. Use OpenRouter for Mistral models or set up a proxy server.");
       }
       
       if (error.status === 429 || error.message?.includes('rate_limit') || error.message?.includes('Rate limit')) {
-        throw new Error("⚠️ Mistral rate limit exceeded. Please wait a few moments and try again. Free tier has strict limits.");
+        throw new Error("Mistral rate limit exceeded. Please wait a few moments and try again. Free tier has strict limits.");
       }
       
       throw new Error(error.message || "Failed to stream from Mistral.");
