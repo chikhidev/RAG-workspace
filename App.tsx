@@ -1056,11 +1056,15 @@ const App: React.FC = () => {
 
       if (abortControllerRef.current.signal.aborted) throw new Error("Aborted");
 
+      // Add a note about trying other models if needed
+      const modelNote = `\n\n<span class="text-xs text-gray-500">If unsatisfied with this response, try a different model: Claude for reasoning, GPT-4 for analysis, Gemini Flash for speed, or Claude for long context. Switch models to re-submit.</span>`;
+
       setState(prev => ({
         ...prev,
         messages: prev.messages.map(m => m.id === assistantId ? {
           ...m,
           status: 'completed',
+          content: fullAnswer + modelNote,
           modelId: state.selectedModel,
           reasoningDuration,
           expansionDuration,

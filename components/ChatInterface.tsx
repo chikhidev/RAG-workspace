@@ -260,9 +260,16 @@ const PipelineDetails: React.FC<{
           {msg.status !== 'completed' && msg.status !== 'error' && (
             <div className="relative pl-6 pt-2">
               <div className="flex items-center gap-3">
-                <div className="loader" />
+                <div className={
+                  msg.status === 'reasoning' && msg.content?.length ? 'loader-generating' :
+                  msg.status === 'reasoning' ? 'loader-thinking' :
+                  msg.status === 'searching' && msg.activeSubQuery?.includes('Navigating') ? 'loader-mindmap-nav' :
+                  'loader'
+                } />
                 <span className="text-[13px] font-bold text-brand-accent animate-pulse">
-                  {msg.status === 'searching' ? 'Searching...' :
+                  {msg.status === 'reasoning' && msg.content?.length ? 'Generating answer...' :
+                    msg.status === 'searching' && msg.activeSubQuery?.includes('Navigating') ? 'Navigating Mind Map...' :
+                    msg.status === 'searching' ? 'Searching...' :
                     msg.status === 'planning' ? 'Planning...' :
                       'Thinking...'}
                 </span>
