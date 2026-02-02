@@ -1,6 +1,6 @@
 import React from 'react';
-import { Document } from '../types';
-import { FileText, Trash2, Upload, Box, FileCode, FileJson, File, Link as LinkIcon, FileUp, Type } from 'lucide-react';
+import { Document, MindMap } from '../types';
+import { FileText, Trash2, Upload, Box, FileCode, FileJson, File, Link as LinkIcon, FileUp, Type, Network } from 'lucide-react';
 
 interface Props {
   documents: Document[];
@@ -12,9 +12,25 @@ interface Props {
   onAddLink: () => void;
   onCollapse?: () => void;
   activeFileNames?: string[];
+  onOpenMindMap?: () => void;
+  mindMaps?: MindMap[];
+  onToggleMindMap?: (id: string) => void;
 }
 
-export const DocumentList: React.FC<Props> = ({ documents, onUpload, onRemove, onToggle, isIndexing, onAddText, onAddLink, onCollapse, activeFileNames = [] }) => {
+export const DocumentList: React.FC<Props> = ({ 
+  documents, 
+  onUpload, 
+  onRemove, 
+  onToggle, 
+  isIndexing, 
+  onAddText, 
+  onAddLink, 
+  onCollapse, 
+  activeFileNames = [], 
+  onOpenMindMap,
+  mindMaps = [],
+  onToggleMindMap
+}) => {
   const isAtLimit = documents.length >= 20;
   const [fadingFileNames, setFadingFileNames] = React.useState<string[]>([]);
   const [allGlowingFiles, setAllGlowingFiles] = React.useState<string[]>([]);
@@ -73,6 +89,15 @@ export const DocumentList: React.FC<Props> = ({ documents, onUpload, onRemove, o
           
         </div>
         <div className="flex items-center gap-2">
+          {onOpenMindMap && (
+            <button
+              onClick={onOpenMindMap}
+              className="p-1.5 rounded-lg text-gray-400 hover:text-purple-400 hover:bg-brand-border transition-colors group"
+              title="Mind Map Editor"
+            >
+              <Network size={16} />
+            </button>
+          )}
           <button
             onClick={onAddText}
             className="p-1.5 rounded-lg text-gray-400 hover:text-brand-accent hover:bg-brand-border transition-colors group"
@@ -98,11 +123,61 @@ export const DocumentList: React.FC<Props> = ({ documents, onUpload, onRemove, o
         </div>
       </div>
 
-      <div className="mb-8 flex justify-between items-center shrink-0">
+      {/* Mind Maps Section */}
+      {mindMaps.length > 0 && (
+        <div className="my-4 space-y-2">
+          <div className="text-[9px] font-mono uppercase tracking-widest text-purple-400 mb-2">
+            Mind Maps ({mindMaps.length})
+          </div>
+          {mindMaps.map((map) => (
+            <div
+              key={map.id}
+              className={`group flex items-center justify-between p-3 rounded-lg border transition-all ${
+                map.enabled
+                  ? 'bg-purple-500/10 border-purple-500/30'
+                  : 'bg-transparent border-transparent opacity-60'
+              }`}
+            >
+              <div className="flex items-center gap-3 overflow-hidden flex-1">
+                <button
+                  onClick={() => onToggleMindMap?.(map.id)}
+                  className={`shrink-0 w-7 h-4 rounded-full relative transition-colors ${
+                    map.enabled ? 'bg-purple-500' : 'bg-brand-border'
+                  }`}
+                >
+                  <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${
+                    map.enabled ? 'left-3.5' : 'left-0.5'
+                  }`} />
+                </button>
+
+                <div className="flex items-center gap-2 overflow-hidden">
+                  <Network size={14} className="text-purple-400 shrink-0" />
+                  <span className="text-[12px] font-medium truncate text-gray-300">
+                    {map.name}
+                  </span>
+                  <span className="text-[10px] text-gray-500">
+                    ({Object.keys(map.nodes).length} nodes)
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => onOpenMindMap?.()}
+                className="text-gray-600 hover:text-purple-400 p-1 opacity-0 group-hover:opacity-100 transition-opacity ml-2 shrink-0"
+                title="Edit Mind Map"
+              >
+                <FileText size={13} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="mb-4 flex justify-between items-center shrink-0">
         <span className={`text-[9px] font-mono uppercase tracking-widest ${isAtLimit ? 'text-brand-accent font-bold' : 'text-brand-muted'}`}>
           {documents.length} / 20 Files
         </span>
       </div>
+
 
       <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
         {documents.length === 0 ? (

@@ -98,6 +98,7 @@ export interface AppState {
   maxTokens: number;
   maxAgentIterations: number;
   customContext: string;
+  mindMaps: MindMap[];
 }
 
 export interface GrepParams {
@@ -140,4 +141,44 @@ export interface SubQuery {
   priority: 'high' | 'medium' | 'low';
   targetFiles: string[] | null;
   expectedChunks: number;
+}
+
+// Mind Node types
+export interface MindNodePort {
+  id: string;
+  side: 'left' | 'right';
+  connectedTo: string | null; // ID of another node
+}
+
+export interface MindNode {
+  id: string;
+  text: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  ports: {
+    left: MindNodePort;
+    right: MindNodePort;
+  };
+  parentId: string | null;
+  childIds: string[];
+  color?: string;
+}
+
+export interface MindNodeConnection {
+  id: string;
+  fromNodeId: string;
+  fromPort: 'left' | 'right';
+  toNodeId: string;
+  toPort: 'left' | 'right';
+}
+
+export interface MindMap {
+  id: string;
+  name: string;
+  nodes: Record<string, MindNode>;
+  connections: MindNodeConnection[];
+  rootNodeId: string | null;
+  enabled: boolean;
 }

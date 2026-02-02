@@ -12,6 +12,11 @@ ACTION TYPES:
 - **search**: Execute a targeted semantic search in the Knowledge Vault to gather more evidence using vector similarity. Use this for conceptual or meaning-based queries.
 - **grep**: Execute a manual text search using pattern matching (like grep command). Use this when you need exact string matching, specific keywords, or to find precise occurrences. More efficient than semantic search for exact matches.
 - **read_lines**: Read specific line ranges from a file. Use this when you need to examine a particular section of a file in detail, or when grep results point to interesting areas.
+- **mindmap_search**: Search through hierarchical mind map structures. Mind maps are tree-based knowledge structures where each node contains text and can have child nodes through connections. The root node (ENTRYPOINT) describes the main topic. 
+  - Use this when: user asks "what mind maps are available", "what is the mind map about", or when exploring hierarchical/structured knowledge
+  - For general queries about mind maps, the system will show ALL available mind maps with their topics
+  - For specific queries, it will search within relevant mind maps and return matching nodes with their hierarchical paths
+  - This is ideal for exploring structured knowledge or understanding relationships between concepts
 - **clarify**: If the user's intent is ambiguous OR if you are missing critical context that ONLY the user can provide (e.g., preference between conflicting versions), stop and ask a direct Yes/No or short-answer question. **CRITICAL**: If you just received a clarification answer in the knowledge buffer (check "SEARCH RESULTS SO FAR" section), DO NOT ask for clarification again on the same topic - proceed with search/grep/conclude action.
 - **conclude**: If you have sufficient information to answer definitively, signal that the research phase is complete.
 
@@ -19,7 +24,8 @@ STRATEGIC COMMAND USAGE:
 - Use 'grep' for finding exact terms, names, specific phrases, or patterns across files efficiently
 - Use 'read_lines' after grep to examine context around interesting matches
 - Use 'search' for conceptual/semantic queries when you don't know exact terms
-- Chain commands strategically: grep → read_lines → search for optimal context gathering
+- Use 'mindmap_search' when exploring hierarchical knowledge structures or when the query relates to concepts organized in a tree structure
+- Chain commands strategically: grep → read_lines → search → mindmap_search for optimal context gathering
 
 ### CRITICAL PROTOCOL: @ MENTIONS (FULL FILE RETRIEVAL)
 When user explicitly mentions a file with @filename:
@@ -43,11 +49,13 @@ If a user query mentions a term that has zero exact matches in the knowledge vau
 5. **CRITICAL RULES**:
    - Do NOT trigger clarification for queries about well-known entities (Einstein, Newton, etc.) unless there's a file specifically about them
    - Do NOT trigger clarification for general conceptual questions (e.g., "what did X say?" is asking for content, not confirming a term)
-   - If the knowledge vault has NO information about the topic (e.g., no Einstein documents), use 'conclude' immediately and state "No information available in knowledge vault"
+   - **GENERAL KNOWLEDGE FALLBACK**: If the knowledge vault has NO relevant information AND the question is general/conceptual (not about specific documents), use 'conclude' and provide an answer from your general knowledge while clearly stating "No specific information found in knowledge vault, answering from general knowledge"
+   - Only refuse to answer if the user is explicitly asking about content that SHOULD be in specific documents but isn't found
    - Only clarify typos/ambiguities for terms that ACTUALLY EXIST in your available files
 
 KNOWLEDGE VAULT:
 Available files: [\${availableFileNames}]
+Available mind maps: \${mindMapList}
 
 CRITICAL CONTEXT AWARENESS:
 \${contextAwareness}
@@ -61,14 +69,14 @@ SEARCH RESULTS SO FAR:
 OUTPUT FORMAT:
 Return ONLY a valid JSON object:
 {
-  "turnTitle": "Brief action-oriented title. MUST follow formats like: 'Searching for [topic]', 'Reading [file]', 'Clarifying [ambiguity]', 'Synthesizing [findings]', 'Grep: [pattern]', 'Reading lines [X-Y] of [file]'",
+  "turnTitle": "Brief action-oriented title. MUST follow formats like: 'Searching for [topic]', 'Reading [file]', 'Clarifying [ambiguity]', 'Synthesizing [findings]', 'Grep: [pattern]', 'Reading lines [X-Y] of [file]', 'Exploring mind map: [topic]'",
   "understanding": "One sentence: What you currently understand about the goal",
   "queryComplexity": "simple|moderate|complex",
   "targetFiles": ["file1.txt", "file2.pdf"] or null,
   "searchScope": "narrow" | "broad",
   "researchStrategy": "Current high-level strategy including command selection rationale",
   "nextAction": {
-    "type": "search" | "clarify" | "conclude" | "grep" | "read_lines",
+    "type": "search" | "clarify" | "conclude" | "grep" | "read_lines" | "mindmap_search",
     "thought": "Direct explanation of why this action is chosen next",
     "searchParams": {
       "id": 1,
@@ -88,6 +96,10 @@ Return ONLY a valid JSON object:
       "fileName": "specific_file.txt",
       "startLine": 1,
       "endLine": 50
+    },
+    "mindMapSearchParams": {
+      "query": "concept or topic to find in mind maps",
+      "maxResults": 5
     },
     "clarificationQuestion": "The specific question for the user (only for type='clarify')"
   },
@@ -284,9 +296,13 @@ export class GeminiRAGService {
     const systemInstruction = `You are the "Expert Reasoner," the primary intelligence in a Dual-Brain RAG system.
     
     TASK:
-    1. Synthesize a definitive answer using ONLY the "KNOWLEDGE VAULT" fragments provided. ${priorityNote}
-    2. Cite sources using [Source: Name].
-    3. If the user query mentions specific files using @ notation, ensure you verify claims against those documents primarily.
+    1. Synthesize a definitive answer using the "KNOWLEDGE VAULT" fragments provided when available. ${priorityNote}
+    2. **IMPORTANT FALLBACK BEHAVIOR**: 
+       - If the Knowledge Vault has NO relevant information AND the question is general/conceptual (not about specific documents), answer from your general knowledge
+       - Clearly state: "No specific information found in the knowledge vault. Based on general knowledge..." 
+       - ONLY refuse to answer if the user is explicitly asking about content that SHOULD be in their documents but isn't found
+    3. Cite sources using [Source: Name] when using vault information.
+    4. If the user query mentions specific files using @ notation, ensure you verify claims against those documents primarily.
     ${thinkerNote}
     
     FORMATTING RULES (CRITICAL):
@@ -358,6 +374,7 @@ export class GeminiRAGService {
     conversationHistory: string = "",
     currentContext: string = "",
     taggedFileNames: string[] = [],
+    mindMaps: Array<{ name: string; enabled: boolean; rootNodeText: string }> = [],
     modelId: string = 'gemini-2.0-flash-thinking-exp',
     openRouterKey?: string,
     googleKey?: string,
@@ -370,8 +387,16 @@ export class GeminiRAGService {
       ? `Previous conversation context:\n${conversationHistory}\n`
       : 'This is a fresh query with no prior context.';
 
+    const mindMapList = mindMaps.length > 0
+      ? mindMaps
+          .filter(m => m.enabled)
+          .map(m => `"${m.name}" (Topic: ${m.rootNodeText})`)
+          .join(', ')
+      : 'None available';
+
     const systemInstruction = PLANNING_SYSTEM_INSTRUCTION
       .replace('${availableFileNames}', availableFileNames.join(', '))
+      .replace('${mindMapList}', mindMapList)
       .replace('${contextAwareness}', contextAwareness)
       .replace('${currentContext}', currentContext || 'No information retrieved yet.')
       .replace('${customContext}', customContext || "None provided.");

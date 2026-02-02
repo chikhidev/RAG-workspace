@@ -1,10 +1,11 @@
 import React, { useState, useCallback, useEffect, useRef, Suspense, lazy } from 'react';
-import { AppState, Message, Document, Chunk, Toast } from './types';
+import { AppState, Message, Document, Chunk, Toast, MindMap } from './types';
 import { vectorService } from './services/vectorService';
 import { geminiRAG } from './services/geminiService';
 import { fileService } from './services/fileService';
 import { modelService } from './services/modelService';
 import { commandService } from './services/commandService';
+import { mindNodeService } from './services/mindNodeService';
 import { X, Key, Shield, ExternalLink, PanelLeft, PanelLeftClose } from 'lucide-react';
 
 import LoadingScreen from './components/LoadingScreen';
@@ -13,6 +14,7 @@ const ChatInterface = lazy(() => import('./components/ChatInterface').then(m => 
 const RightSidebar = lazy(() => import('./components/RightSidebar').then(m => ({ default: m.RightSidebar })));
 const InputModal = lazy(() => import('./components/InputModal').then(m => ({ default: m.InputModal })));
 const ModelSelectorModal = lazy(() => import('./components/ModelSelectorModal').then(m => ({ default: m.ModelSelectorModal })));
+const MindMapEditor = lazy(() => import('./components/MindMapEditor').then(m => ({ default: m.MindMapEditor })));
 
 const STORAGE_KEYS = {
   DOCUMENTS: 'gemini_rag_docs',
@@ -25,7 +27,8 @@ const STORAGE_KEYS = {
   XAI_KEY: 'gemini_rag_xai_key',
   OPENAI_KEY: 'gemini_rag_openai_key',
   MISTRAL_KEY: 'gemini_rag_mistral_key',
-  CUSTOM_CONTEXT: 'gemini_rag_custom_context'
+  CUSTOM_CONTEXT: 'gemini_rag_custom_context',
+  MIND_MAPS: 'gemini_rag_mind_maps'
 };
 
 const ApiKeyModal: React.FC<{
@@ -243,6 +246,11 @@ const App: React.FC = () => {
     return stored ? JSON.parse(stored) : [];
   };
 
+  const loadInitialMindMaps = (): MindMap[] => {
+    const stored = localStorage.getItem(STORAGE_KEYS.MIND_MAPS);
+    return stored ? JSON.parse(stored) : [];
+  };
+
   const loadInitialSettings = () => {
     const stored = localStorage.getItem(STORAGE_KEYS.SETTINGS);
     const defaults = {
@@ -278,9 +286,11 @@ const App: React.FC = () => {
     maxTokens: initialSettings.maxTokens,
     maxAgentIterations: initialSettings.maxAgentIterations,
     customContext: localStorage.getItem(STORAGE_KEYS.CUSTOM_CONTEXT) || '',
+    mindMaps: loadInitialMindMaps(),
   });
 
   const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false);
+  const [isMindMapEditorOpen, setIsMindMapEditorOpen] = useState(false);
 
   const [inputValue, setInputValue] = useState('');
   const [isVaultOpen, setIsVaultOpen] = useState(true);
@@ -358,6 +368,10 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.CONTEXT_SCRIPT, state.contextScript);
   }, [state.contextScript]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.MIND_MAPS, JSON.stringify(state.mindMaps));
+  }, [state.mindMaps]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.CUSTOM_CONTEXT, state.customContext);
@@ -474,12 +488,28 @@ const App: React.FC = () => {
     const runIndexing = async () => {
       setState(prev => ({ ...prev, isIndexing: true }));
       try {
-        await vectorService.indexDocuments(state.documents.filter(d => d.enabled));
+        // Convert enabled mind maps to documents
+        const mindMapDocs: Document[] = state.mindMaps
+          .filter(map => map.enabled)
+          .map(map => ({
+            id: map.id,
+            name: map.name,
+            content: mindNodeService.mindMapToDocument(map),
+            enabled: true,
+          }));
+
+        // Combine regular documents and mind map documents
+        const allDocs = [
+          ...state.documents.filter(d => d.enabled),
+          ...mindMapDocs
+        ];
+
+        await vectorService.indexDocuments(allDocs);
       } catch (err) { addToast("Indexing failure."); }
       finally { setState(prev => ({ ...prev, isIndexing: false })); }
     };
     runIndexing();
-  }, [state.documents]);
+  }, [state.documents, state.mindMaps]);
 
   const processQuery = async (query: string, assistantId: string) => {
     setState(prev => ({ ...prev, isProcessing: true }));
@@ -548,6 +578,15 @@ const App: React.FC = () => {
           const availableFileNames = activeDocs.map(d => d.name);
           const filePreviews = activeDocs.map(d => `${d.name}: ${d.content.slice(0, 500)}...`);
 
+          // Prepare mind map metadata for LLM context
+          const mindMapMetadata = state.mindMaps.map(m => ({
+            name: m.name,
+            enabled: m.enabled,
+            rootNodeText: m.rootNodeId && m.nodes[m.rootNodeId] 
+              ? m.nodes[m.rootNodeId].text 
+              : 'Untitled'
+          }));
+
           const plan = await geminiRAG.decideNextAction(
             query,
             availableFileNames,
@@ -555,6 +594,7 @@ const App: React.FC = () => {
             hist,
             currentKnowledgeBuffer,
             taggedFileNames,
+            mindMapMetadata,
             state.selectedModel,
             state.openRouterKey,
             state.googleKey,
@@ -725,6 +765,63 @@ const App: React.FC = () => {
               });
             } else {
               currentKnowledgeBuffer += `\n--- Read Lines (Iter ${iterations}) ---\nFile: ${readParams.fileName}\nError: ${readResult.error || 'Failed to read'}\n`;
+            }
+
+          } else if (action.type === 'mindmap_search' && action.mindMapSearchParams) {
+            const mindMapParams = action.mindMapSearchParams;
+            setState(prev => ({
+              ...prev,
+              messages: prev.messages.map(m => m.id === assistantId ? {
+                ...m,
+                status: 'searching',
+                activeSubQuery: `Exploring mind maps for: ${mindMapParams.query}`,
+                agentContext: {
+                  ...(m.agentContext || {}),
+                  originalQuery: query,
+                  knowledgeBuffer: currentKnowledgeBuffer,
+                  iterations: iterations,
+                  sources: [...sources],
+                  turnTitles: {
+                    ...(m.agentContext?.turnTitles || {}),
+                    [iterations]: plan.turnTitle
+                  }
+                },
+                thoughtLogs: [
+                  ...(m.thoughtLogs || []),
+                  { timestamp: Date.now(), step: `Mind Map Search`, thought: action.thought, turn: iterations }
+                ],
+                subtasks: m.subtasks?.map(s =>
+                  s.label === 'Searching' ? { ...s, status: 'loading', detail: `Mind Map: ${mindMapParams.query}` } :
+                    s.label === 'Planning' ? { ...s, status: 'completed' } : s
+                )
+              } : m)
+            }));
+
+            const mindMapResult = await commandService.searchMindMaps(
+              mindMapParams.query,
+              state.mindMaps,
+              mindMapParams.maxResults || 5
+            );
+
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Add mind map results to knowledge buffer
+            if (mindMapResult.success && mindMapResult.results) {
+              currentKnowledgeBuffer += `\n--- Mind Map Search (Iter ${iterations}) ---\n${mindMapResult.summary}\n`;
+              
+              // Add relevant nodes as source chunks
+              const mapResults = mindMapResult.results as any[];
+              for (const mapResult of mapResults) {
+                for (const nodeResult of mapResult.results) {
+                  sources.push({
+                    docId: mapResult.mindMapId,
+                    docName: `${mapResult.mindMapName} (Mind Map)`,
+                    text: `${nodeResult.text}\nPath: ${nodeResult.path.join(' → ')}`
+                  });
+                }
+              }
+            } else {
+              currentKnowledgeBuffer += `\n--- Mind Map Search (Iter ${iterations}) ---\nQuery: "${mindMapParams.query}"\n${mindMapResult.summary}\n`;
             }
 
           } else if (action.type === 'clarify' && action.clarificationQuestion) {
@@ -1227,6 +1324,12 @@ const App: React.FC = () => {
               onAddLink={() => setState(prev => ({ ...prev, isInputModalOpen: true, inputModalType: 'url' }))}
               onCollapse={() => setIsVaultOpen(false)}
               activeFileNames={activeFileNames}
+              onOpenMindMap={() => setIsMindMapEditorOpen(true)}
+              mindMaps={state.mindMaps}
+              onToggleMindMap={(id) => setState(prev => ({ 
+                ...prev, 
+                mindMaps: prev.mindMaps.map(m => m.id === id ? { ...m, enabled: !m.enabled } : m) 
+              }))}
             />
 
             {/* INTERNAL COLLAPSE BUTTON REMOVED (NOW INSIDE DocumentList) */}
@@ -1263,6 +1366,13 @@ const App: React.FC = () => {
           onClose={() => setState(prev => ({ ...prev, isInputModalOpen: false }))}
           onConfirm={handleManualDocAdd}
           type={state.inputModalType || 'text'} // Pass the type to the modal
+        />
+
+        <MindMapEditor
+          isOpen={isMindMapEditorOpen}
+          onClose={() => setIsMindMapEditorOpen(false)}
+          mindMaps={state.mindMaps}
+          onSaveMindMaps={(maps) => setState(prev => ({ ...prev, mindMaps: maps }))}
         />
 
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex flex-col gap-3 z-50 pointer-events-none w-full max-sm px-4 shadow-2xl">

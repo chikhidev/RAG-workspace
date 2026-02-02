@@ -73,7 +73,7 @@ const LiveTimer: React.FC<{ status: PipelineStatus; activeAt: PipelineStatus; fi
   if (elapsed === 0 && status !== activeAt && finalDuration === undefined) return null;
 
   return (
-    <div className="font-mono text-[10px] text-brand-accent font-bold tabular-nums">
+    <div className="font-mono text-[10px] text-gray-400 font-bold tabular-nums">
       {elapsed.toFixed(1)}s
     </div>
   );
