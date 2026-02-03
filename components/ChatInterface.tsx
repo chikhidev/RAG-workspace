@@ -412,15 +412,11 @@ export const ChatInterface: React.FC<Props> = ({
   };
 
   return (
-<div className="flex flex-col h-full dark:bg-brand-base light:bg-light-base flex-1 transition-colors relative">
+<div className={`flex flex-col h-full dark:bg-brand-base light:bg-light-base flex-1 transition-colors relative ${messages.length === 0 ? 'items-center justify-center' : ''}`}>
 
-      <div ref={scrollRef} className={`flex-1 overflow-y-auto px-6 py-6 space-y-8 relative z-10 pb-44`}>
-        {messages.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center px-12 pb-20">
-
-          </div>
-        ) : (
-          messages.map((msg) => (
+      {messages.length > 0 && (
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 py-6 space-y-8 relative z-10 pb-44">
+          {messages.map((msg) => (
             <div key={msg.id} className="max-w-5xl mx-auto w-full fade-in">
               <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start gap-4'}`}>
 
@@ -600,13 +596,15 @@ export const ChatInterface: React.FC<Props> = ({
                 </div>
               </div>
             </div>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
 
       <>
-        <div className="absolute bottom-0 left-0 w-full h-48 bg-gradient-to-t from-brand-base via-brand-base/95 to-transparent pointer-events-none z-40" />
-        <div className="absolute bottom-6 left-0 w-full flex justify-center px-8 z-50">
+        {messages.length > 0 && (
+          <div className="absolute bottom-0 left-0 w-full h-48 bg-gradient-to-t from-brand-base via-brand-base/95 to-transparent pointer-events-none z-40" />
+        )}
+        <div className={`${messages.length === 0 ? 'relative w-full flex justify-center px-8' : 'absolute bottom-6 left-0 w-full flex justify-center px-8'} z-50`}>
           <div className="w-full max-w-4xl">
 
             <div className="bg-brand-base rounded-3xl">

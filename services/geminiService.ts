@@ -135,8 +135,31 @@ nextAction:
     nodeId: id
     mindMapId: mapId
   clarificationQuestion: question text
+thoughts[]: 
+  - step: Planning
+    thought: Plan description
+  - step: Executing
+    thought: Execution details
+
+TOON FORMAT EXAMPLE:
+turnTitle: Define Star
+understanding: User wants definition of star
+queryComplexity: simple
+targetFiles[]: Stars.pdf
+searchScope: narrow
+researchStrategy: Direct definition lookup best.
+nextAction:
+  type: grep
+  thought: Grepping for star definition
+  grepParams:
+    pattern: "star definition"
+    caseSensitive: false
+    maxResults: 1
 thoughts[]:
-  step, thought (max 3 steps)
+  - step: Planning
+    thought: Identify best file and strategy
+  - step: Executing
+    thought: Perform grep action
 
 Thought steps: Planning|Executing|Concluding
 KEEP THOUGHTS MINIMAL - prefer 1-2 steps maximum
@@ -584,8 +607,11 @@ Decide ONE action: search|grep|read_lines|mindmap_search|mindmap_navigate|clarif
         throw new Error(`Model returned non-string response without valid plan structure. Type: ${typeof text}, isArray: ${Array.isArray(text)}`);
       }
 
-      // Remove markdown code blocks if present
-      let cleaned = text.replace(/```toon\n?/gi, '').replace(/```\n?$/g, '').trim();
+      // Remove markdown code blocks if present (handles ```toon, ```json, ```text, or just ```)
+      // Robust regex to strip any code block start and end
+      let cleaned = text.replace(/^```[a-z0-9]*\s*$/gim, '').replace(/^```\s*$/gim, '').trim();
+      // Also handle cases where the block end might be detached or have trailing spaces
+      cleaned = cleaned.replace(/```\s*$/g, '').trim();
       
       // Try to decode as TOON first
       try {
@@ -600,8 +626,9 @@ Decide ONE action: search|grep|read_lines|mindmap_search|mindmap_navigate|clarif
             return JSON.parse(jsonStr);
           }
         } catch (jsonError) {
-          console.warn('Both TOON and JSON parsing failed:', { toonError, jsonError });
+          console.warn('Both TOON and JSON parsing failed for input:', text.substring(0, 100) + '...');
         }
+        // If both failed, throw original TOON error to indicate preferred format failure
         throw toonError;
       }
     } catch (error) {
