@@ -511,7 +511,7 @@ const App: React.FC = () => {
     runIndexing();
   }, [state.documents, state.mindMaps]);
 
-  const processQuery = async (query: string, assistantId: string) => {
+  const processQuery = async (query: string, assistantId: string, skipResearch: boolean = false, resetIterations: boolean = false) => {
     setState(prev => ({ ...prev, isProcessing: true }));
     abortControllerRef.current = new AbortController();
 
@@ -536,12 +536,12 @@ const App: React.FC = () => {
 
       if (abortControllerRef.current.signal.aborted) throw new Error("Aborted");
 
-      if (state.useVault && activeDocs.length > 0) {
+      if (state.useVault && activeDocs.length > 0 && !skipResearch) {
         // --- AGENTIC RESEARCH LOOP ---
         const tResearchStart = performance.now();
         const currentMsg = state.messages.find(m => m.id === assistantId);
         let currentKnowledgeBuffer = currentMsg?.agentContext?.knowledgeBuffer || "";
-        let iterations = currentMsg?.agentContext?.iterations || 0;
+        let iterations = resetIterations ? 0 : (currentMsg?.agentContext?.iterations || 0);
         const maxAgentIterations = state.maxAgentIterations;
         let isResearchFinalized = false;
         if (currentMsg?.agentContext?.sources) {
@@ -940,6 +940,30 @@ const App: React.FC = () => {
           }
         }
 
+        // Check if we hit max iterations without concluding
+        if (iterations >= maxAgentIterations && !isResearchFinalized) {
+          setState(prev => ({
+            ...prev,
+            messages: prev.messages.map(m => m.id === assistantId ? {
+              ...m,
+              status: 'completed',
+              pendingMaxIterations: true,
+              agentContext: {
+                originalQuery: query,
+                knowledgeBuffer: currentKnowledgeBuffer,
+                iterations: iterations,
+                sources: [...sources],
+                turnTitles: m.agentContext?.turnTitles || {}
+              },
+              thoughtLogs: [
+                ...(m.thoughtLogs || []),
+                { timestamp: Date.now(), step: 'Max Iterations', thought: `Reached ${maxAgentIterations} iterations. Asking user whether to continue or stop.`, turn: iterations }
+              ]
+            } : m)
+          }));
+          return; // EXIT and wait for user decision
+        }
+
         searchDuration = (performance.now() - tResearchStart) / 1000;
         // --- END RESEARCH LOOP ---
 
@@ -1272,6 +1296,49 @@ const App: React.FC = () => {
     await processQuery(msg.agentContext?.originalQuery || "", messageId);
   }, [state.messages, processQuery]);
 
+  const handleMaxIterationsDecision = useCallback(async (messageId: string, shouldContinue: boolean) => {
+    const msg = state.messages.find(m => m.id === messageId);
+    if (!msg) return;
+
+    if (!shouldContinue) {
+      // User chose to stop - proceed to thinker/answer generation
+      setState(prev => ({
+        ...prev,
+        messages: prev.messages.map(m => m.id === messageId ? {
+          ...m,
+          pendingMaxIterations: false,
+          thoughtLogs: [
+            ...(m.thoughtLogs || []),
+            { timestamp: Date.now(), step: 'User Decision', thought: 'User chose to stop research and generate answer.', turn: m.agentContext?.iterations }
+          ]
+        } : m)
+      }));
+
+      // Skip research and go straight to thinker/answer generation
+      await processQuery(msg.agentContext?.originalQuery || "", messageId, true, false);
+    } else {
+      // User chose to continue - RESET iteration counter to allow more iterations
+      setState(prev => ({
+        ...prev,
+        messages: prev.messages.map(m => m.id === messageId ? {
+          ...m,
+          pendingMaxIterations: false,
+          thoughtLogs: [
+            ...(m.thoughtLogs || []),
+            { timestamp: Date.now(), step: 'User Decision', thought: `User chose to continue research for ${state.maxAgentIterations} more iterations.`, turn: m.agentContext?.iterations }
+          ],
+          agentContext: {
+            ...m.agentContext!,
+            knowledgeBuffer: m.agentContext!.knowledgeBuffer + `\n--- User Decision ---\nContinuing research for ${state.maxAgentIterations} more iterations.\n`
+          }
+        } : m)
+      }));
+
+      // Continue research loop with resetIterations flag
+      await processQuery(msg.agentContext?.originalQuery || "", messageId, false, true);
+    }
+  }, [state.messages, state.maxAgentIterations, processQuery]);
+
   const onClearChat = useCallback(() => {
     setConfirmationState({
       isOpen: true,
@@ -1371,6 +1438,8 @@ const App: React.FC = () => {
             onSend={handleSend}
             onStop={handleStop}
             onClarifyAnswer={handleClarificationAnswer}
+            onMaxIterationsDecision={handleMaxIterationsDecision}
+            maxAgentIterations={state.maxAgentIterations}
             isProcessing={state.isProcessing}
             availableDocuments={state.documents.filter(d => d.enabled)}
             onHistoryNav={handleHistoryNav}

@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Message, PipelineStatus, Document, Chunk } from '../types';
-import { Search, Plus, Loader2, CheckCircle2, ChevronDown, ChevronRight, FileText, Sparkles, Copy, Check, Zap, Cpu, RefreshCw, Trash2, Send, ArrowRight, X, Target, Brain, PenTool, Circle, SearchIcon, Terminal, Eye } from 'lucide-react';
+import { Search, Plus, Loader2, CheckCircle2, ChevronDown, ChevronRight, FileText, Sparkles, Copy, Check, Zap, Cpu, RefreshCw, Trash2, Send, ArrowRight, X, Target, Brain, PenTool, Circle, SearchIcon, Terminal, Eye, ArrowUp } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -20,6 +20,8 @@ interface Props {
   onStop: () => void;
   isProcessing: boolean;
   onClarifyAnswer: (id: string, answer: string) => void;
+  onMaxIterationsDecision: (id: string, shouldContinue: boolean) => void;
+  maxAgentIterations: number;
   availableDocuments: Document[];
   onHistoryNav: (direction: 'up' | 'down') => void;
 }
@@ -288,7 +290,7 @@ const PipelineDetails: React.FC<{
 
 export const ChatInterface: React.FC<Props> = ({
   messages, selectedModelId, onRetry, onRegenerate, onUpdateSources, onClearChat,
-  inputValue, setInputValue, onSend, onStop, isProcessing, onClarifyAnswer, availableDocuments, onHistoryNav
+  inputValue, setInputValue, onSend, onStop, isProcessing, onClarifyAnswer, onMaxIterationsDecision, maxAgentIterations, availableDocuments, onHistoryNav
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -506,6 +508,39 @@ export const ChatInterface: React.FC<Props> = ({
                             </div>
                           </div>
                         )}
+
+                      {msg.pendingMaxIterations && (
+                          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                            <div className="bg-brand-darker rounded-xl p-4">
+                              <div className="flex items-start gap-3 mb-4">
+                                <div>
+                                  <p className="text-sm text-gray-100 font-medium mb-1">
+                                    Research hit {maxAgentIterations} iterations without concluding
+                                  </p>
+                                  <p className="text-xs text-brand-muted">
+                                    Continue research for {maxAgentIterations} more iterations, or generate answer with current data?
+                                  </p>
+                                </div>
+                              </div>
+                              
+                              <div className="flex gap-3">
+                                <button
+                                  onClick={() => onMaxIterationsDecision(msg.id, true)}
+                                  className="flex-1 px-6 py-3 bg-brand-base hover:bg-brand-border hover:text-white border border-brand-border rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2"
+                                >
+                                  <ArrowUp size={12} />
+                                  <span>Continue Research</span>
+                                </button>
+                                <button
+                                  onClick={() => onMaxIterationsDecision(msg.id, false)}
+                                  className="flex-1 px-6 py-3 bg-brand-darker hover:bg-brand-border text-gray-300 hover:text-white rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2"
+                                >
+                                  <span>Generate Answer</span>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ) : msg.status === 'error' ? (
                       <div className="flex flex-col items-start gap-4">
@@ -538,7 +573,7 @@ export const ChatInterface: React.FC<Props> = ({
                     )}
                   
                     {/* Model Badge - shown at bottom left for completed assistant messages */}
-                    {msg.role === 'assistant' && msg.status === 'completed' && msg.modelId && (() => {
+                    {msg.role === 'assistant' && msg.status === 'completed' && !msg.pendingMaxIterations && msg.modelId && (() => {
                       const model = SUPPORTED_MODELS.find(m => m.id === msg.modelId);
                       if (!model) return null;
                       return (
