@@ -128,7 +128,7 @@ export const DocumentList: React.FC<Props> = ({
       {mindMaps.length > 0 && (
         <div className="my-4 space-y-2">
           <div className="flex items-center gap-2 text-[9px] font-mono uppercase tracking-widest text-purple-400 mb-2">
-            Mind Maps ({mindMaps.length})
+            Mind Map
             <span className="px-1.5 py-0.5 bg-purple-500/20 text-purple-300 rounded text-[7px] font-bold">BETA</span>
           </div>
           {mindMaps.map((map) => {

@@ -41,14 +41,9 @@ const LoadingScreen: React.FC<Props> = ({ isOnboarding, onComplete }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-[9999] flex flex-col dark:bg-black light:bg-white overflow-hidden font-sans">
-            {/* Background Image with Gradient Overlay */}
-            <div
-                className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-[10000ms] scale-110 animate-[ken-burns_20s_infinite_alternate]"
-                style={{ backgroundImage: 'url("/background.png")' }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-transparent to-transparent" />
+        <div className="fixed inset-0 z-[9999] flex flex-col bg-brand-base overflow-hidden font-sans">
+            {/* Background Color - brand-base */}
+            <div className="absolute inset-0 bg-brand-base" />
 
             {/* Center Content: Onboarding UI */}
             {isOnboarding && (
@@ -165,7 +160,7 @@ const LoadingScreen: React.FC<Props> = ({ isOnboarding, onComplete }) => {
                                     <div className="space-y-3">
                                         <h3 className="text-2xl font-bold text-white">All Systems Ready</h3>
                                         <p className="text-gray-400 text-sm max-w-sm font-medium">
-                                            Your RAG-Workspace environment is configured with <span className="text-white">{selectedModel}</span>. You can now start indexing documents and chatting.
+                                            Your copper environment is configured with <span className="text-white">{selectedModel}</span>. You can now start indexing documents and chatting.
                                         </p>
                                     </div>
                                 </div>
@@ -190,23 +185,26 @@ const LoadingScreen: React.FC<Props> = ({ isOnboarding, onComplete }) => {
                 </div>
             )}
 
-            {/* Bottom Left Branding */}
-            <div className="absolute bottom-12 left-12 z-10">
-                <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-3">
-                        <h1 className="text-4xl font-bold text-white tracking-tighter filter drop-shadow-2xl">
-                            RAG <span className="text-brand-accent italic">workspace</span>
-                        </h1>
+
+            {/* Non-Onboarding Loading Screen */}
+            {!isOnboarding && (
+                <div className="flex-1 flex flex-col items-center justify-center relative z-20 gap-12">
+                    {/* Copper Logo */}
+                    <img src="/COPPER_RAG_LOGO.png" alt="Copper" className="h-24 w-auto" />
+                    
+                    {/* Loading Spinner */}
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="relative w-12 h-12">
+                            <div className="absolute inset-0 rounded-full border-4 border-brand-border"></div>
+                            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-brand-accent animate-spin"></div>
+                        </div>
+                        <p className="text-gray-400 text-sm font-medium">Loading Copper...</p>
                     </div>
                 </div>
-            </div>
+            )}
 
             <style dangerouslySetInnerHTML={{
                 __html: `
-        @keyframes ken-burns {
-          from { transform: scale(1); }
-          to { transform: scale(1.15) translate(1%, 1%); }
-        }
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(10px); }
           to { opacity: 1; transform: translateY(0); }

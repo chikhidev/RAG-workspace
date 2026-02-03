@@ -222,19 +222,19 @@ const ConfirmationModal: React.FC<{
           </p>
           <div className="flex gap-3 pt-2">
             <button
-              onClick={onClose}
-              className="flex-1 py-2.5 bg-brand-base hover:bg-brand-border text-gray-300 rounded-xl text-[12px] font-bold transition-all border border-brand-border"
-            >
-              Cancel
-            </button>
-            <button
               onClick={() => {
                 onConfirm();
                 onClose();
               }}
-              className="flex-1 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl text-[12px] font-bold transition-all"
+              className="flex-1 py-2.5 hover:bg-red-500/20 text-red-400 rounded-xl text-[12px] font-bold transition-all"
             >
               Confirm
+            </button>
+            <button
+              onClick={onClose}
+              className="flex-1 py-2.5 bg-brand-base hover:bg-brand-border text-gray-300 rounded-xl text-[12px] font-bold transition-all border border-brand-border"
+            >
+              Cancel
             </button>
           </div>
         </div>
@@ -1053,9 +1053,11 @@ const App: React.FC = () => {
 
         if (abortControllerRef.current.signal.aborted) throw new Error("Aborted");
 
-        const synthesisThoughts = Array.isArray(thinkerResult.thoughts)
-          ? thinkerResult.thoughts.map(t => ({ timestamp: Date.now(), step: t.step, thought: t.thought }))
-          : [{ timestamp: Date.now(), step: 'Synthesis', thought: thinkerResult.thoughts }];
+        const synthesisThoughts = thinkerResult && thinkerResult.thoughts
+          ? (Array.isArray(thinkerResult.thoughts)
+            ? thinkerResult.thoughts.map(t => ({ timestamp: Date.now(), step: t.step, thought: t.thought }))
+            : [{ timestamp: Date.now(), step: 'Synthesis', thought: thinkerResult.thoughts }])
+          : [];
 
         setState(prev => ({
           ...prev,
@@ -1405,44 +1407,64 @@ const App: React.FC = () => {
   // Keyboard shortcuts - declared after all required callbacks
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl/Cmd + K: Show shortcuts
-      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      // Don't trigger shortcuts when typing in an input field
+      const target = e.target as HTMLElement;
+      const isInInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
+      
+      // Ctrl/Cmd + K: Show shortcuts (works anywhere)
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setIsShortcutsOpen(true);
+        return;
       }
       
+      // Don't process shortcuts when in input fields (except for specific ones)
+      if (isInInput) return;
+
       // Ctrl/Cmd + Shift + L: Clear chat
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'l') {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'l') {
         e.preventDefault();
         onClearChat();
       }
 
       // Ctrl/Cmd + Shift + V: Toggle vault
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'v') {
+      else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'v') {
         e.preventDefault();
         setIsVaultOpen(prev => !prev);
       }
 
       // Ctrl/Cmd + Shift + H: Toggle context history
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'h') {
+      else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'h') {
         e.preventDefault();
         setState(prev => ({ ...prev, useContextHistory: !prev.useContextHistory }));
       }
 
       // Ctrl/Cmd + ,: Open API settings
-      if ((e.ctrlKey || e.metaKey) && e.key === ',') {
+      else if ((e.ctrlKey || e.metaKey) && e.key === ',') {
         e.preventDefault();
         setState(prev => ({ ...prev, isApiKeyModalOpen: true }));
       }
 
       // Ctrl/Cmd + Z: Undo document deletion
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+      else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
         e.preventDefault();
         handleUndoDelete();
       }
 
+      // Alt + ArrowUp: Previous message in history
+      else if (e.altKey && e.key === 'ArrowUp') {
+        e.preventDefault();
+        handleHistoryNav('up');
+      }
+
+      // Alt + ArrowDown: Next message in history
+      else if (e.altKey && e.key === 'ArrowDown') {
+        e.preventDefault();
+        handleHistoryNav('down');
+      }
+
       // Escape: Stop processing
-      if (e.key === 'Escape' && state.isProcessing) {
+      else if (e.key === 'Escape' && state.isProcessing) {
         e.preventDefault();
         handleStop();
       }
@@ -1450,7 +1472,7 @@ const App: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [state.isProcessing, handleUndoDelete, handleStop, onClearChat]);
+  }, [state.isProcessing, handleUndoDelete, handleStop, onClearChat, handleHistoryNav]);
 
   // Global drag and drop file upload
   useEffect(() => {
@@ -1519,9 +1541,11 @@ const App: React.FC = () => {
         
         {/* TOP HEADER */}
         <Header 
-          title="RAG Workspace" 
+          title="Copper" 
           onHelpClick={() => setIsShortcutsOpen(true)}
           onSettingsClick={() => setState(prev => ({ ...prev, isApiKeyModalOpen: true }))}
+          onToggleVault={() => setIsVaultOpen(prev => !prev)}
+          isVaultOpen={isVaultOpen}
         />
 
         {/* MAIN CONTENT AREA */}
@@ -1564,17 +1588,7 @@ const App: React.FC = () => {
         </div>
 
         {/* FLOAT OPEN BUTTONS */}
-        {/* Controls Open Button Removed */}
-
-        {!isVaultOpen && (
-          <button
-            onClick={() => setIsVaultOpen(true)}
-            className="fixed top-4 right-4 z-[100] p-2 rounded-lg bg-brand-darker border border-brand-border text-gray-400 hover:text-orange-400 transition-all shadow-2xl animate-in fade-in slide-in-from-right-2"
-            title="Open Vault"
-          >
-            <PanelLeft size={18} className="rotate-180" />
-          </button>
-        )}
+        {/* Vault Open Button Now in Navbar */}
 
         <main className="flex-1 flex flex-col min-w-0 bg-brand-base relative transition-all">
           <ChatInterface

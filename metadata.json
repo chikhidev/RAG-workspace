@@ -1,5 +1,5 @@
 {
-  "name": "RAG-Workspace",
+  "name": "copper",
   "description": "High-fidelity RAG interface using Gemini 3 Flash for expansion and Gemini 3 Pro for reasoning.",
   "requestFramePermissions": []
 }

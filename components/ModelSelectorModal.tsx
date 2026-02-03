@@ -274,12 +274,12 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                                     {/* Tags: Free & Category Badges - Bottom */}
                                     <div className="flex gap-2 mb-3 flex-wrap">
                                         {model.isFree && (
-                                            <span className="px-2 py-1 bg-emerald-500/10 text-emerald-400 text-[9px] font-bold uppercase rounded border border-emerald-500/20">
+                                            <span className="px-2 py-1 bg-brand-base text-[9px] font-bold uppercase rounded border border-brand-border">
                                                 Free
                                             </span>
                                         )}
                                         {model.categories && model.categories.map(cat => (
-                                            <span key={cat} className="px-2 py-1 bg-blue-500/10 text-blue-400 text-[9px] font-bold uppercase rounded border border-blue-500/20">
+                                            <span key={cat} className="px-2 py-1 bg-brand-base text-[9px] font-bold uppercase rounded border border-brand-border">
                                                 {cat}
                                             </span>
                                         ))}

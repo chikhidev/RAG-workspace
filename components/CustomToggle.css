@@ -1,9 +1,9 @@
 .toggle-container {
-  --active-color: #c1603ca2;
-  --inactive-color: #d3d3d6;
+  --active-color: #c1603c77;
+  --inactive-color: #474747;
   position: relative;
   aspect-ratio: 292 / 142;
-  height: 1.3em;
+  height: 1.1em;
   display: inline-block;
 }
 
@@ -68,24 +68,4 @@
 
 .toggle-input:checked + .toggle .toggle-circle.right {
   transform: scale(1);
-}
-
-.toggle-icon {
-  transition: fill 0.4s;
-}
-
-.toggle-icon.on {
-  fill: var(--inactive-color);
-}
-
-.toggle-input:checked + .toggle .toggle-icon.on {
-  fill: #fff;
-}
-
-.toggle-icon.off {
-  fill: #eaeaec;
-}
-
-.toggle-input:checked + .toggle .toggle-icon.off {
-  fill: var(--active-color);
 }

@@ -85,7 +85,7 @@ export const RightSidebar: React.FC<Props> = ({
             <div className="space-y-2">
               <label className="flex items-center gap-2 text-[10px] font-mono text-brand-muted uppercase tracking-widest">
                 {selectedModelDef?.isFree && (
-                  <span className="ml-1 px-1 py-0.5 bg-emerald-500/10 text-emerald-500 rounded text-[8px] font-bold">FREE</span>
+                  <span className="ml-1 px-1 py-0.5 bg-brand-base border border-brand-border rounded text-[8px] font-bold">FREE</span>
                 )}
               </label>
 

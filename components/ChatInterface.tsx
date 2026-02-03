@@ -437,7 +437,7 @@ export const ChatInterface: React.FC<Props> = ({
                   )}
 
                   <div className={`relative leading-relaxed text-[15px] group ${msg.role === 'user'
-                    ? 'bg-brand-darker text-gray-200 text-gray-300 max-w-xl p-3 rounded-xl'
+                    ? 'bg-brand-darker text-gray-200 text-gray-300 max-w-xl px-6 py-3 rounded-xl'
                     : (msg.status === 'completed' ? '' : 'w-full')
                     }`}>
                     {(msg.status === 'completed' || msg.role === 'user' || (msg.role === 'assistant' && msg.content)) ? (

@@ -565,6 +565,8 @@ export const MindMapEditor: React.FC<Props> = ({
             onBlur={saveCurrentMap}
             className="px-3 py-1.5 bg-brand-darker border border-brand-border rounded-lg text-sm text-gray-200 outline-none focus:border-brand-accent/50"
           />
+          <span className="px-2 py-1 bg-purple-500/20 text-purple-300 rounded text-xs font-bold">BETA</span>
+
         </div>
 
         <div className="flex items-center gap-2">

@@ -647,7 +647,7 @@ Decide ONE action: search|grep|read_lines|mindmap_search|mindmap_navigate|clarif
 
     return modelService.run({
       modelId,
-      systemInstruction: `You are the "State Tracker" for a RAG-Workspace system. Create a single-line summary script to maintain context for the next turn. 
+      systemInstruction: `You are the "State Tracker" for a copper system. Create a single-line summary script to maintain context for the next turn. 
       FORMAT: [Context: ${filesString}] Summary: [1 concise sentence describing the user's intent and the core of the AI's conclusion].`,
       prompt: `Input: ${userPrompt}\n\nResponse: ${aiResponse}`,
       temperature: 0.1,
