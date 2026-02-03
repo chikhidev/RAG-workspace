@@ -70,21 +70,19 @@ export const RightSidebar: React.FC<Props> = ({
   maxTokens, setMaxTokens, maxAgentIterations, setMaxAgentIterations,
   customContext, setCustomContext
 }) => {
-  const toggleBtnClass = "w-full flex items-center justify-between p-4 rounded-xl border border-brand-border bg-[#252525] transition-all hover:bg-brand-border/50";
+  const toggleBtnClass = "w-full flex items-center justify-between p-4 rounded-xl dark:border-brand-border light:border-light-border dark:bg-[#252525] light:bg-light-darker transition-all dark:hover:bg-brand-border/50 light:hover:bg-light-border/30";
   const selectedModelDef = SUPPORTED_MODELS.find(m => m.id === selectedModel);
 
   const [showCustomContext, setShowCustomContext] = useState(false);
 
   return (
-    <div className="flex flex-col h-full bg-brand-darker border-l border-transparent p-6 w-full transition-colors overflow-y-auto relative">
+    <div className="flex flex-col h-full dark:bg-brand-darker light:bg-light-base dark:border-l dark:border-transparent light:border-l light:border-light-border p-6 w-full transition-colors overflow-y-auto relative">
 
       <div className="space-y-10">
         <div>
-          <h2 className="text-md text-white mb-6 tracking-tight">Intelligence</h2>
           <div className="space-y-8">
             <div className="space-y-2">
               <label className="flex items-center gap-2 text-[10px] font-mono text-brand-muted uppercase tracking-widest">
-                Primary Model
                 {selectedModelDef?.isFree && (
                   <span className="ml-1 px-1 py-0.5 bg-emerald-500/10 text-emerald-500 rounded text-[8px] font-bold">FREE</span>
                 )}
@@ -92,7 +90,7 @@ export const RightSidebar: React.FC<Props> = ({
 
               <div
                 onClick={onOpenModelSelector}
-                className="w-full bg-[#252525] border border-brand-border rounded-xl p-3 flex items-center justify-between cursor-pointer hover:border-brand-accent/50 group transition-all"
+                className="w-full dark:bg-[#252525] light:bg-light-darker dark:border-brand-border light:border-light-border rounded-xl p-3 flex items-center justify-between cursor-pointer dark:hover:border-brand-accent/50 light:hover:border-brand-accent/30 group transition-all"
               >
                 <div className="flex items-center gap-3">
                   {selectedModelDef && (
@@ -134,7 +132,7 @@ export const RightSidebar: React.FC<Props> = ({
                 value={customContext}
                 onChange={(e) => setCustomContext(e.target.value)}
                 placeholder="Record developer preferences, specific answer styles, or permanent context here..."
-                className="w-full bg-[#1a1a1a] border border-brand-border rounded-xl p-4 focus:border-brand-accent/50 transition-all text-[12px] font-mono h-40 resize-none text-gray-300 outline-none leading-relaxed placeholder:text-gray-600 shadow-inner"
+                className="w-full dark:bg-[#1a1a1a] light:bg-light-darker dark:border-brand-border light:border-light-border rounded-xl p-4 dark:focus:border-brand-accent/50 light:focus:border-brand-accent/30 transition-all text-[12px] font-mono h-40 resize-none dark:text-gray-300 light:text-gray-700 outline-none leading-relaxed dark:placeholder:text-gray-600 light:placeholder:text-gray-400 shadow-inner"
               />
               <div className="flex items-start gap-2 px-1">
                 <p className="text-[9px] text-brand-muted italic leading-relaxed">
@@ -226,21 +224,6 @@ export const RightSidebar: React.FC<Props> = ({
               <p className="text-[10px] text-brand-muted">Limits how many steps the agent can take per session.</p>
             </div>
 
-          </div>
-        </div>
-
-        <div>
-          <h2 className="text-md text-white mb-6 tracking-tight">API Management</h2>
-          <div className="space-y-3">
-            <button
-              onClick={onOpenApiManagement}
-              className="w-full flex items-center justify-between p-4 bg-brand-base border border-brand-border hover:border-brand-accent/50 rounded-xl transition-all group"
-            >
-              <div className="flex flex-col items-start gap-0.5">
-                <span className="text-[12px] font-bold text-gray-200 group-hover:text-brand-accent transition-colors">Configure Access</span>
-                <span className="text-[9px] font-mono text-brand-muted uppercase tracking-tighter">OpenRouter & Credentials</span>
-              </div>
-            </button>
           </div>
         </div>
       </div>

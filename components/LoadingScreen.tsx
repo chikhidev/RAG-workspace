@@ -41,7 +41,7 @@ const LoadingScreen: React.FC<Props> = ({ isOnboarding, onComplete }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-[9999] flex flex-col bg-black overflow-hidden font-sans">
+        <div className="fixed inset-0 z-[9999] flex flex-col dark:bg-black light:bg-white overflow-hidden font-sans">
             {/* Background Image with Gradient Overlay */}
             <div
                 className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-[10000ms] scale-110 animate-[ken-burns_20s_infinite_alternate]"
@@ -53,10 +53,10 @@ const LoadingScreen: React.FC<Props> = ({ isOnboarding, onComplete }) => {
             {/* Center Content: Onboarding UI */}
             {isOnboarding && (
                 <div className="flex-1 flex items-center justify-center relative z-20 px-6">
-                    <div className="w-full max-w-2xl bg-brand-base border border-white/10 rounded-3xl overflow-hidden animate-[fadeIn_0.5s_ease-out]">
+                    <div className="w-full max-w-2xl dark:bg-brand-base light:bg-light-base dark:border-white/10 light:border-light-border rounded-3xl overflow-hidden animate-[fadeIn_0.5s_ease-out]">
 
                         {/* Header */}
-                        <div className="px-10 pt-10 pb-6 border-b border-white/5 bg-white/[0.02]">
+                        <div className="px-10 pt-10 pb-6 dark:border-b dark:border-white/5 light:border-b light:border-light-border dark:bg-white/[0.02] light:bg-white/[0.1]">
                             <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-2">
                                     <div className="flex gap-1">

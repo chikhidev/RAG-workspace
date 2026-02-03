@@ -61,20 +61,20 @@ export const InputModal: React.FC<Props> = ({ isOpen, onClose, onConfirm, type =
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-brand-darker w-full max-w-lg rounded-2xl border border-brand-border shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 dark:bg-black/60 light:bg-white/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="dark:bg-brand-darker light:bg-light-base w-full max-w-lg rounded-2xl dark:border dark:border-brand-border light:border light:border-light-border shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
                 {/* Header */}
-                <div className="px-6 py-4 border-b border-brand-border flex items-center justify-between bg-brand-base/50 shrink-0">
+                <div className="px-6 py-4 dark:border-b dark:border-brand-border light:border-b light:border-light-border flex items-center justify-between dark:bg-brand-base/50 light:bg-light-darker/50 shrink-0">
                     <div className="flex items-center gap-2">
-                        <h3 className="text-lg font-bold text-gray-100">Add Knowledge Source</h3>
+                        <h3 className="text-lg font-bold dark:text-gray-100 light:text-gray-900">Add Knowledge Source</h3>
                     </div>
-                    <button onClick={handleClose} className="p-1 hover:bg-brand-base rounded-lg transition-colors text-gray-400">
+                    <button onClick={handleClose} className="p-1 dark:hover:bg-brand-base light:hover:bg-light-darker rounded-lg transition-colors dark:text-gray-400 light:text-gray-600">
                         <X size={18} />
                     </button>
                 </div>
 
                 {/* Tabs */}
-                <div className="flex border-b border-brand-border">
+                <div className="flex dark:border-b dark:border-brand-border light:border-b light:border-light-border">
                     <button
                         onClick={() => setActiveTab('text')}
                         className={`flex-1 py-3 text-[13px] font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 ${activeTab === 'text'

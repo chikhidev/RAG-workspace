@@ -42,15 +42,15 @@ export const DocumentList: React.FC<Props> = ({
     if (name.endsWith('.pdf')) {
       return <FileUp size={14} className="text-red-500 shrink-0" />;
     } else if (name.endsWith('.docx') || name.endsWith('.doc')) {
-      return <FileText size={14} className="text-blue-500 shrink-0" />;
+      return <FileText size={14} className="text-gray-400 shrink-0" />;
     } else if (name.endsWith('.txt') || name.endsWith('.md')) {
       return <Type size={14} className="text-gray-400 shrink-0" />;
     } else if (name.endsWith('.json')) {
       return <FileJson size={14} className="text-yellow-500 shrink-0" />;
     } else if (name.endsWith('.html') || name.endsWith('.xml') || name.endsWith('.csv')) {
-      return <FileCode size={14} className="text-green-500 shrink-0" />;
+      return <FileCode size={14} className="text-green-400 shrink-0" />;
     } else if (name.startsWith('http://') || name.startsWith('https://')) {
-      return <LinkIcon size={14} className="text-cyan-500 shrink-0" />;
+      return <LinkIcon size={14} className="text-gray-400 shrink-0" />;
     } else {
       return <File size={14} className="text-gray-500 shrink-0" />;
     }
@@ -74,13 +74,13 @@ export const DocumentList: React.FC<Props> = ({
   }, [activeFileNames]);
 
   return (
-    <div className="flex flex-col h-full bg-brand-darker p-6 w-full transition-colors overflow-hidden">
+    <div className="flex flex-col h-full dark:bg-brand-darker light:bg-light-base p-6 w-full transition-colors overflow-hidden">
       <div className="flex items-center justify-between mb-2 overflow-hidden shrink-0">
         <div className="flex items-center gap-3 min-w-0">
           {onCollapse && (
             <button
               onClick={onCollapse}
-              className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+              className="p-1.5 rounded-lg dark:text-gray-400 light:text-gray-600 dark:hover:text-white light:hover:text-gray-900 dark:hover:bg-white/5 light:hover:bg-gray-200/10 transition-colors"
               title="Collapse Vault"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-panel-right-close"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M15 3v18" /><path d="m8 9 3 3-3 3" /></svg>
@@ -188,7 +188,7 @@ export const DocumentList: React.FC<Props> = ({
 
       <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
         {documents.length === 0 ? (
-          <div className="text-brand-muted text-center py-20 italic text-[11px] px-6 leading-relaxed border border-dashed border-brand-border rounded-xl">
+          <div className="dark:text-brand-muted light:text-light-muted text-center py-20 italic text-[11px] px-6 leading-relaxed border border-dashed dark:border-brand-border light:border-light-border rounded-xl">
             Drop context files to begin indexing.
           </div>
         ) : (

@@ -31,7 +31,7 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
   if (inline) {
     return (
       <code
-        className="bg-red-500/10 text-red-400 px-1.5 py-0.5 rounded font-mono text-[0.9em] border border-red-500/20"
+        className="dark:bg-red-500/10 light:bg-red-500/5 text-red-400 px-1.5 py-0.5 rounded font-mono text-[0.9em] dark:border dark:border-red-500/20 light:border light:border-red-500/15"
         {...props}
       >
         {children}
@@ -41,14 +41,14 @@ const CodeBlock = ({ inline, className, children, ...props }: any) => {
 
   // Block code
   return (
-    <div className="relative group my-4 rounded-xl overflow-hidden border border-gray-800 shadow-lg">
-      <div className="flex items-center justify-between px-4 py-2 bg-[#1a1a1a] border-b border-gray-800">
-        <span className="text-[10px] font-mono text-gray-500 uppercase tracking-wider font-bold">
+    <div className="relative group my-4 rounded-xl overflow-hidden dark:border light:border dark:border-gray-800 light:border-gray-300 shadow-lg">
+      <div className="flex items-center justify-between px-4 py-2 dark:bg-[#1a1a1a] light:bg-light-darker dark:border-b dark:border-gray-800 light:border-b light:border-gray-300">
+        <span className="text-[10px] font-mono dark:text-gray-500 light:text-gray-400 uppercase tracking-wider font-bold">
           {lang || 'code'}
         </span>
         <button
           onClick={handleCopy}
-          className="p-1.5 hover:bg-gray-800 rounded-md transition-colors text-gray-400 hover:text-red-400"
+          className="p-1.5 dark:hover:bg-gray-800 light:hover:bg-gray-300 rounded-md transition-colors dark:text-gray-400 light:text-gray-600 dark:hover:text-red-400 light:hover:text-red-400"
           aria-label="Copy code"
         >
           {copied ? (

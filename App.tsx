@@ -9,6 +9,7 @@ import { mindNodeService } from './services/mindNodeService';
 import { X, Key, Shield, ExternalLink, PanelLeft, PanelLeftClose } from 'lucide-react';
 
 import LoadingScreen from './components/LoadingScreen';
+import { Header } from './components/Header';
 const DocumentList = lazy(() => import('./components/DocumentList').then(m => ({ default: m.DocumentList })));
 const ChatInterface = lazy(() => import('./components/ChatInterface').then(m => ({ default: m.ChatInterface })));
 const RightSidebar = lazy(() => import('./components/RightSidebar').then(m => ({ default: m.RightSidebar })));
@@ -300,7 +301,7 @@ const App: React.FC = () => {
     return stored ? JSON.parse(stored) : [];
   });
   const [historyIndex, setHistoryIndex] = useState(-1);
-  const [controlsWidth, setControlsWidth] = useState(450);
+  const [controlsWidth, setControlsWidth] = useState(350);
   const [vaultWidth, setVaultWidth] = useState(350);
   const isResizingControls = useRef(false);
   const isResizingVault = useRef(false);
@@ -992,7 +993,6 @@ const App: React.FC = () => {
           state.googleKey,
           state.xaiKey,
           state.openaiKey,
-          state.mistralKey,
           state.customContext
         )) {
           if (typeof chunk === 'string') {
@@ -1382,9 +1382,16 @@ const App: React.FC = () => {
 
   return (
     <Suspense fallback={<LoadingScreen />}>
-      <div className="flex h-screen bg-brand-base text-gray-100 transition-colors overflow-hidden dark">
+      <div className="flex flex-col h-screen bg-brand-base text-gray-100 transition-colors overflow-hidden dark">
+        {/* TOP HEADER */}
+        <Header 
+          title="RAG Workspace" 
+          onSettingsClick={() => setState(prev => ({ ...prev, isApiKeyModalOpen: true }))}
+        />
 
-        {/* LEFT SIDEBAR: Controls */}
+        {/* MAIN CONTENT AREA */}
+        <div className="flex flex-1 min-h-0">
+          {/* LEFT SIDEBAR: Controls */}
         <div
           className="shrink-0 flex relative z-30"
           style={{ width: `${controlsWidth}px` }}
@@ -1556,6 +1563,7 @@ const App: React.FC = () => {
           onSelect={(m) => setState(prev => ({ ...prev, selectedModel: m }))}
           title="Select Primary Intelligence"
         />
+        </div>
       </div>
     </Suspense>
   );

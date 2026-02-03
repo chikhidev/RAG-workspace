@@ -45,8 +45,8 @@ const CopyButton: React.FC<{ text: string; className?: string }> = ({ text, clas
       onClick={handleCopy}
       className={`p-1.5 rounded-lg transition-all ${
         copied
-          ? 'bg-emerald-500/30 text-emerald-400 border border-emerald-500/50'
-          : 'bg-white/5 text-gray-400 hover:text-gray-200 hover:bg-white/10 border border-white/10'
+          ? 'dark:bg-emerald-500/30 light:bg-emerald-500/20 text-emerald-400 dark:border border-emerald-500/50 light:border-emerald-500/40'
+          : 'dark:bg-white/5 light:bg-gray-200/10 dark:text-gray-400 light:text-gray-600 dark:hover:text-gray-200 light:hover:text-gray-900 dark:hover:bg-white/10 light:hover:bg-gray-200/20 dark:border dark:border-white/10 light:border light:border-gray-200/20'
       } ${className}`}
       title={copied ? 'Copied!' : 'Copy message'}
     >
@@ -95,9 +95,9 @@ const ContextModal: React.FC<{
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-brand-darker w-[90vw] max-w-[1400px] h-[85vh] rounded-2xl border border-brand-border shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col">
-        <div className="px-6 py-4 border-b border-brand-border flex items-center justify-between bg-brand-base/50 shrink-0">
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 dark:bg-black/80 light:bg-white/80 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="dark:bg-brand-darker light:bg-light-base w-[90vw] max-w-[1400px] h-[85vh] rounded-2xl dark:border dark:border-brand-border light:border light:border-light-border shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col">
+        <div className="px-6 py-4 dark:border-b dark:border-brand-border light:border-b light:border-light-border flex items-center justify-between dark:bg-brand-base/50 light:bg-light-darker/50 shrink-0">
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-bold text-gray-100">Contexts from {fileName}</h3>
           </div>
@@ -412,7 +412,7 @@ export const ChatInterface: React.FC<Props> = ({
   };
 
   return (
-    <div className="flex flex-col h-full bg-brand-base flex-1 transition-colors relative">
+<div className="flex flex-col h-full dark:bg-brand-base light:bg-light-base flex-1 transition-colors relative">
 
       <div ref={scrollRef} className={`flex-1 overflow-y-auto px-6 py-6 space-y-8 relative z-10 pb-44`}>
         {messages.length === 0 ? (
