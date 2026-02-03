@@ -10,6 +10,7 @@ import { X, Key, Shield, ExternalLink, PanelLeft, PanelLeftClose } from 'lucide-
 
 import LoadingScreen from './components/LoadingScreen';
 import { Header } from './components/Header';
+import { ShortcutsModal } from './components/ShortcutsModal';
 const DocumentList = lazy(() => import('./components/DocumentList').then(m => ({ default: m.DocumentList })));
 const ChatInterface = lazy(() => import('./components/ChatInterface').then(m => ({ default: m.ChatInterface })));
 const RightSidebar = lazy(() => import('./components/RightSidebar').then(m => ({ default: m.RightSidebar })));
@@ -29,7 +30,8 @@ const STORAGE_KEYS = {
   OPENAI_KEY: 'gemini_rag_openai_key',
   MISTRAL_KEY: 'gemini_rag_mistral_key',
   CUSTOM_CONTEXT: 'gemini_rag_custom_context',
-  MIND_MAPS: 'gemini_rag_mind_maps'
+  MIND_MAPS: 'gemini_rag_mind_maps',
+  DELETED_DOCUMENTS: 'gemini_rag_deleted_docs'
 };
 
 const ApiKeyModal: React.FC<{
@@ -292,6 +294,11 @@ const App: React.FC = () => {
 
   const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false);
   const [isMindMapEditorOpen, setIsMindMapEditorOpen] = useState(false);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const [deletedDocuments, setDeletedDocuments] = useState<Document[]>(() => {
+    const stored = localStorage.getItem(STORAGE_KEYS.DELETED_DOCUMENTS);
+    return stored ? JSON.parse(stored) : [];
+  });
 
   const [inputValue, setInputValue] = useState('');
   const [isVaultOpen, setIsVaultOpen] = useState(true);
@@ -307,6 +314,7 @@ const App: React.FC = () => {
   const isResizingVault = useRef(false);
 
   const [isOnboarding, setIsOnboarding] = useState(() => !localStorage.getItem('gemini_rag_onboarded'));
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
 
   const handleOnboardingComplete = (settings: { provider: string; model: string; apiKey: string }) => {
     localStorage.setItem(STORAGE_KEYS.SELECTED_MODEL, settings.model);
@@ -385,6 +393,10 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEYS.PROMPT_HISTORY, JSON.stringify(promptHistory));
   }, [promptHistory]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.DELETED_DOCUMENTS, JSON.stringify(deletedDocuments));
+  }, [deletedDocuments]);
 
   const addToast = (message: string, type: Toast['type'] = 'error') => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -484,6 +496,20 @@ const App: React.FC = () => {
     };
     setState(prev => ({ ...prev, documents: [...prev.documents, newDoc] }));
   }, [state.documents]);
+
+  const handleUndoDelete = useCallback(() => {
+    if (deletedDocuments.length === 0) {
+      addToast("No deleted documents to recover.");
+      return;
+    }
+    const lastDeleted = deletedDocuments[deletedDocuments.length - 1];
+    setState(prev => ({
+      ...prev,
+      documents: [...prev.documents, lastDeleted]
+    }));
+    setDeletedDocuments(prev => prev.slice(0, -1));
+    addToast(`Recovered: ${lastDeleted.name}`, 'error');
+  }, [deletedDocuments]);
 
   useEffect(() => {
     const runIndexing = async () => {
@@ -1376,16 +1402,125 @@ const App: React.FC = () => {
     }
   }, [promptHistory, historyIndex]);
 
+  // Keyboard shortcuts - declared after all required callbacks
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + K: Show shortcuts
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsShortcutsOpen(true);
+      }
+      
+      // Ctrl/Cmd + Shift + L: Clear chat
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'l') {
+        e.preventDefault();
+        onClearChat();
+      }
+
+      // Ctrl/Cmd + Shift + V: Toggle vault
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'v') {
+        e.preventDefault();
+        setIsVaultOpen(prev => !prev);
+      }
+
+      // Ctrl/Cmd + Shift + H: Toggle context history
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'h') {
+        e.preventDefault();
+        setState(prev => ({ ...prev, useContextHistory: !prev.useContextHistory }));
+      }
+
+      // Ctrl/Cmd + ,: Open API settings
+      if ((e.ctrlKey || e.metaKey) && e.key === ',') {
+        e.preventDefault();
+        setState(prev => ({ ...prev, isApiKeyModalOpen: true }));
+      }
+
+      // Ctrl/Cmd + Z: Undo document deletion
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        handleUndoDelete();
+      }
+
+      // Escape: Stop processing
+      if (e.key === 'Escape' && state.isProcessing) {
+        e.preventDefault();
+        handleStop();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [state.isProcessing, handleUndoDelete, handleStop, onClearChat]);
+
+  // Global drag and drop file upload
+  useEffect(() => {
+    const handleDragOver = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.dataTransfer?.types?.includes('Files')) {
+        setIsDraggingOver(true);
+      }
+    };
+
+    const handleDragLeave = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.target === document) {
+        setIsDraggingOver(false);
+      }
+    };
+
+    const handleDrop = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDraggingOver(false);
+
+      const files = e.dataTransfer?.files;
+      if (files && files.length > 0) {
+        // Create a synthetic event to pass to handleFileUpload
+        const fileArray = Array.from(files);
+        const event = {
+          target: {
+            files: files
+          }
+        } as React.ChangeEvent<HTMLInputElement>;
+        handleFileUpload(event);
+      }
+    };
+
+    document.addEventListener('dragover', handleDragOver);
+    document.addEventListener('dragleave', handleDragLeave);
+    document.addEventListener('drop', handleDrop);
+
+    return () => {
+      document.removeEventListener('dragover', handleDragOver);
+      document.removeEventListener('dragleave', handleDragLeave);
+      document.removeEventListener('drop', handleDrop);
+    };
+  }, [handleFileUpload]);
+
   if (isOnboarding) {
     return <LoadingScreen isOnboarding onComplete={handleOnboardingComplete} />;
   }
 
   return (
     <Suspense fallback={<LoadingScreen />}>
-      <div className="flex flex-col h-screen bg-brand-base text-gray-100 transition-colors overflow-hidden dark">
+      <div className="flex flex-col h-screen bg-brand-base text-gray-100 transition-colors overflow-hidden dark relative">
+        {/* Drag overlay */}
+        {isDraggingOver && (
+          <div className="fixed inset-0 bg-brand-accent/20 border-4 border-dashed border-brand-accent rounded-lg pointer-events-none z-[200] flex items-center justify-center backdrop-blur-sm">
+            <div className="text-center">
+              <div className="text-4xl font-bold text-brand-accent mb-2">📁</div>
+              <p className="text-xl font-semibold text-gray-100">Drop files to upload</p>
+              <p className="text-sm text-gray-400 mt-1">Supported: PDF, DOCX, TXT</p>
+            </div>
+          </div>
+        )}
+        
         {/* TOP HEADER */}
         <Header 
           title="RAG Workspace" 
+          onHelpClick={() => setIsShortcutsOpen(true)}
           onSettingsClick={() => setState(prev => ({ ...prev, isApiKeyModalOpen: true }))}
         />
 
@@ -1475,7 +1610,14 @@ const App: React.FC = () => {
           <div className="flex-1 min-w-0 h-full overflow-hidden border-l border-brand-border/50 relative">
             <DocumentList
               documents={state.documents} onUpload={handleFileUpload}
-              onRemove={(id) => setState(prev => ({ ...prev, documents: prev.documents.filter(d => d.id !== id) }))}
+              onRemove={(id) => {
+                const doc = state.documents.find(d => d.id === id);
+                if (doc) {
+                  setDeletedDocuments(prev => [...prev, doc]);
+                  setState(prev => ({ ...prev, documents: prev.documents.filter(d => d.id !== id) }));
+                  addToast(`Deleted: ${doc.name}. Press Ctrl+Z to undo.`, 'error');
+                }
+              }}
               onToggle={(id) => setState(prev => ({ ...prev, documents: prev.documents.map(d => d.id === id ? { ...d, enabled: !d.enabled } : d) }))}
               isIndexing={state.isIndexing}
               onAddText={() => setState(prev => ({ ...prev, isInputModalOpen: true, inputModalType: 'text' }))}
@@ -1562,6 +1704,11 @@ const App: React.FC = () => {
           currentModelId={state.selectedModel}
           onSelect={(m) => setState(prev => ({ ...prev, selectedModel: m }))}
           title="Select Primary Intelligence"
+        />
+
+        <ShortcutsModal
+          isOpen={isShortcutsOpen}
+          onClose={() => setIsShortcutsOpen(false)}
         />
         </div>
       </div>

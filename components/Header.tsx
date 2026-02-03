@@ -1,16 +1,18 @@
 import React from 'react';
-import { Menu, Settings } from 'lucide-react';
+import { Menu, Settings, HelpCircle } from 'lucide-react';
 
 interface HeaderProps {
   title?: string;
   onMenuClick?: () => void;
   onSettingsClick?: () => void;
+  onHelpClick?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
   title = 'RAG Workspace',
   onMenuClick,
-  onSettingsClick
+  onSettingsClick,
+  onHelpClick
 }) => {
   return (
     <header className="sticky top-0 z-40 w-full bg-brand-darker border-b border-brand-border/50 backdrop-blur-sm bg-opacity-95">
@@ -31,11 +33,20 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
         
         <div className="flex items-center gap-2">
+          {onHelpClick && (
+            <button
+              onClick={onHelpClick}
+              className="p-2 rounded-lg hover:bg-brand-border/20 transition-colors text-gray-400 hover:text-gray-200"
+              title="Keyboard shortcuts (Ctrl+K)"
+            >
+              <HelpCircle size={20} />
+            </button>
+          )}
           {onSettingsClick && (
             <button
               onClick={onSettingsClick}
               className="p-2 rounded-lg hover:bg-brand-border/20 transition-colors text-gray-400 hover:text-gray-200"
-              title="API Management"
+              title="API Management (Ctrl+,)"
             >
               <Settings size={20} />
             </button>
