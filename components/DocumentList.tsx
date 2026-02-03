@@ -1,6 +1,7 @@
 import React from 'react';
 import { Document, MindMap } from '../types';
 import { FileText, Trash2, Upload, Box, FileCode, FileJson, File, Link as LinkIcon, FileUp, Type, Network } from 'lucide-react';
+import { CustomToggle } from './CustomToggle';
 
 interface Props {
   documents: Document[];
@@ -126,8 +127,9 @@ export const DocumentList: React.FC<Props> = ({
       {/* Mind Maps Section */}
       {mindMaps.length > 0 && (
         <div className="my-4 space-y-2">
-          <div className="text-[9px] font-mono uppercase tracking-widest text-purple-400 mb-2">
+          <div className="flex items-center gap-2 text-[9px] font-mono uppercase tracking-widest text-purple-400 mb-2">
             Mind Maps ({mindMaps.length})
+            <span className="px-1.5 py-0.5 bg-purple-500/20 text-purple-300 rounded text-[7px] font-bold">BETA</span>
           </div>
           {mindMaps.map((map) => {
             const isActive = activeFileNames.includes(map.name);
@@ -145,16 +147,12 @@ export const DocumentList: React.FC<Props> = ({
               }`}
             >
               <div className="flex items-center gap-3 overflow-hidden flex-1">
-                <button
-                  onClick={() => onToggleMindMap?.(map.id)}
-                  className={`shrink-0 w-7 h-4 rounded-full relative transition-colors ${
-                    map.enabled ? 'bg-purple-500' : 'bg-brand-border'
-                  }`}
-                >
-                  <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${
-                    map.enabled ? 'left-3.5' : 'left-0.5'
-                  }`} />
-                </button>
+                <CustomToggle
+                  checked={map.enabled}
+                  onChange={() => onToggleMindMap?.(map.id)}
+                  activeColor="#a855f7"
+                  inactiveColor="#d3d3d6"
+                />
 
                 <div className="flex items-center gap-2 overflow-hidden">
                   <Network size={14} className="text-purple-400 shrink-0" />
@@ -207,14 +205,10 @@ export const DocumentList: React.FC<Props> = ({
                 }`}
             >
               <div className="flex items-center gap-3 overflow-hidden flex-1">
-                <button
-                  onClick={() => onToggle(doc.id)}
-                  className={`shrink-0 w-7 h-4 rounded-full relative transition-colors  ${doc.enabled ? 'bg-brand-accent' : 'bg-brand-border'
-                    }`}
-                >
-                  <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-all ${doc.enabled ? 'left-3.5' : 'left-0.5'
-                    }`} />
-                </button>
+                <CustomToggle
+                  checked={doc.enabled}
+                  onChange={() => onToggle(doc.id)}
+                />
 
                 <div className="flex items-center gap-2 overflow-hidden">
                   {getFileIcon(doc.name)}

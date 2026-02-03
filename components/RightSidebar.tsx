@@ -5,6 +5,7 @@ import { SUPPORTED_MODELS } from '../services/modelService';
 
 import { ModelDefinition, Document } from '../types';
 import { ModelSelectorModal } from './ModelSelectorModal';
+import { CustomToggle } from './CustomToggle';
 
 interface Props {
   inputValue: string;
@@ -169,7 +170,10 @@ export const RightSidebar: React.FC<Props> = ({
                     <span className="text-[13px] font-bold text-gray-200">Context Continuity</span>
                     <span className="text-[10px] font-mono text-brand-muted uppercase tracking-tighter">{useContextHistory ? 'Learning Logs' : 'Isolated Turns'}</span>
                   </div>
-                  <div className={`w-10 h-5 rounded-full relative transition-colors ${useContextHistory ? 'bg-brand-accent' : 'bg-brand-border'}`}><div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${useContextHistory ? 'left-6' : 'left-1'}`} /></div>
+                  <CustomToggle
+                    checked={useContextHistory}
+                    onChange={setUseContextHistory}
+                  />
                 </button>
                 {useContextHistory && (
                   <div className="px-3 flex items-start gap-2 animate-[fadeIn_0.3s_ease-out]">
@@ -187,7 +191,10 @@ export const RightSidebar: React.FC<Props> = ({
                   <span className="text-[13px] font-bold text-gray-200">Knowledge Vault</span>
                   <span className="text-[10px] font-mono text-brand-muted uppercase tracking-tighter">{useVault ? 'Active Indexing' : 'Isolated Mode'}</span>
                 </div>
-                <div className={`w-10 h-5 rounded-full relative transition-colors ${useVault ? 'bg-brand-accent' : 'bg-brand-border'}`}><div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${useVault ? 'left-6' : 'left-1'}`} /></div>
+                <CustomToggle
+                  checked={useVault}
+                  onChange={setUseVault}
+                />
               </button>
             </div>
             <div className="space-y-3">
