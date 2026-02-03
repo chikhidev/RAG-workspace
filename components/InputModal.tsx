@@ -142,7 +142,7 @@ export const InputModal: React.FC<Props> = ({ isOpen, onClose, onConfirm, type =
 
                     {error && (
                         <div className="text-red-400 text-[12px] bg-red-500/10 border border-red-500/20 p-3 rounded-lg flex items-center gap-2">
-                            <span className="font-bold">Error:</span> {error}
+                            {error}
                         </div>
                     )}
                 </div>

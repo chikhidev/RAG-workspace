@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gemini Dual-Brain RAG</title>
+  <title>RAG-Workspace</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link
     href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap"
@@ -21,7 +21,7 @@
           },
           colors: {
             brand: {
-              accent: '#ff3b3b',
+              accent: '#C15F3C',
               base: '#191919', // Dark Slate Gray
               darker: '#111111',
               border: '#2A2A2A',
@@ -154,7 +154,7 @@
 
     .prose th {
       background-color: #252525;
-      color: #ff3b3b;
+      color: #C15F3C;
       padding: 0.75rem 1rem;
       text-align: left;
       border: 1px solid #2A2A2A;
@@ -184,7 +184,7 @@
 
     /* Custom Loader - Search & Mind Map Search (Current) */
     .loader {
-      width: 14px;
+      width: 18px;
       aspect-ratio: .5;
       display: grid;
     }
@@ -195,7 +195,7 @@
       aspect-ratio: 1;
       border-radius: 50%;
       margin: auto auto 0;
-      background: #ff3b3b;
+      background: #C15F3C;
       animation: l9-0 .5s cubic-bezier(0, 800, 1, 800) infinite;
     }
 
@@ -231,26 +231,55 @@
       }
     }
 
-    /* Loader - Mind Map Navigation (Conic Gradient) */
+    /* Loader - Mind Map Navigation (Tree Visualization) */
     .loader-mindmap-nav {
-      width: 14px;
-      aspect-ratio: 1;
-      background:
-        radial-gradient(farthest-side, #ff3b3b 90%, #0000) 50%/2.8px 2.8px no-repeat,
-        conic-gradient(from -90deg at 4.2px 4.2px, #0000 90deg, #ffffff 0) 0 0/7px 7px;
-      animation: l7-mindmap 1s infinite;
+      width: 15px;
+      height: 15px;
+      /* transform: scale(0.29); */
+      transform-origin: center;
     }
 
-    @keyframes l7-mindmap {
-      0% {
-        background-position: 50%, 0 0;
-      }
-      50% {
-        background-position: 50%, 7px 0;
-      }
-      100% {
-        background-position: 50%, 7px 7px;
-      }
+    /* Tree Nodes */
+    .loader-mindmap-nav .node {
+      fill: #2a2f3f;
+    }
+
+    /* Root */
+    .loader-mindmap-nav .n0 { animation: mindmap-pulse 2.4s ease-in-out infinite; animation-delay: 0s; }
+    /* Level 1 */
+    .loader-mindmap-nav .n1 { animation: mindmap-pulse 2.4s ease-in-out infinite; animation-delay: 0.28s; }
+    .loader-mindmap-nav .n2 { animation: mindmap-pulse 2.4s ease-in-out infinite; animation-delay: 1.2s; }
+    /* Level 2 */
+    .loader-mindmap-nav .n3 { animation: mindmap-pulse 2.4s ease-in-out infinite; animation-delay: 0.56s; }
+    .loader-mindmap-nav .n4 { animation: mindmap-pulse 2.4s ease-in-out infinite; animation-delay: 0.84s; }
+    .loader-mindmap-nav .n5 { animation: mindmap-pulse 2.4s ease-in-out infinite; animation-delay: 1.48s; }
+    .loader-mindmap-nav .n6 { animation: mindmap-pulse 2.4s ease-in-out infinite; animation-delay: 1.76s; }
+
+    @keyframes mindmap-pulse {
+      0%, 100% { fill: #2a2f3f; }
+      15%      { fill: #C15F3C; filter: drop-shadow(0 0 3px #C15F3C); }
+      30%      { fill: #2a2f3f; }
+    }
+
+    /* Tree Edges */
+    .loader-mindmap-nav .edge {
+      stroke: #2a2f3f;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      fill: none;
+    }
+
+    .loader-mindmap-nav .e0 { animation: mindmap-edge-flash 2.4s ease-in-out infinite; animation-delay: 0.14s; }
+    .loader-mindmap-nav .e1 { animation: mindmap-edge-flash 2.4s ease-in-out infinite; animation-delay: 1.06s; }
+    .loader-mindmap-nav .e2 { animation: mindmap-edge-flash 2.4s ease-in-out infinite; animation-delay: 0.42s; }
+    .loader-mindmap-nav .e3 { animation: mindmap-edge-flash 2.4s ease-in-out infinite; animation-delay: 0.70s; }
+    .loader-mindmap-nav .e4 { animation: mindmap-edge-flash 2.4s ease-in-out infinite; animation-delay: 1.34s; }
+    .loader-mindmap-nav .e5 { animation: mindmap-edge-flash 2.4s ease-in-out infinite; animation-delay: 1.62s; }
+
+    @keyframes mindmap-edge-flash {
+      0%, 100% { stroke: #2a2f3f; }
+      15%      { stroke: #C15F3C; }
+      30%      { stroke: #2a2f3f; }
     }
 
     /* Loader - Thinking (Rotating Hexagon) */
@@ -271,7 +300,7 @@
       inset: auto 50% 0;
       aspect-ratio: 1;
       border-radius: 50%;
-      background: #ff3b3b;
+      background: #C15F3C;
       transform: translateX(-50%);
       animation: l11-bounce .5s cubic-bezier(0, 500, 1, 500) infinite;
     }
@@ -313,11 +342,191 @@
       }
     }
 
+    /* Neural Network Loader - Thinking/Planning Phase */
+    .nn-loader {
+      width: 15px;
+      height: 15px;
+      transform-origin: center;
+    }
+
+    /* Resting nodes */
+    .nn-loader .node {
+      fill: #2a2f3f;
+    }
+
+    /* Node glow when signal arrives */
+    .nn-loader .n-in0 { animation: node-hit 2.2s ease-in-out infinite; animation-delay: 0s; }
+    .nn-loader .n-in1 { animation: node-hit 2.2s ease-in-out infinite; animation-delay: 0.22s; }
+    .nn-loader .n-in2 { animation: node-hit 2.2s ease-in-out infinite; animation-delay: 0.44s; }
+
+    .nn-loader .n-h0 { animation: node-hit 2.2s ease-in-out infinite; animation-delay: 0.55s; }
+    .nn-loader .n-h1 { animation: node-hit 2.2s ease-in-out infinite; animation-delay: 0.77s; }
+    .nn-loader .n-h2 { animation: node-hit 2.2s ease-in-out infinite; animation-delay: 0.99s; }
+    .nn-loader .n-h3 { animation: node-hit 2.2s ease-in-out infinite; animation-delay: 1.21s; }
+
+    .nn-loader .n-o0 { animation: node-hit 2.2s ease-in-out infinite; animation-delay: 1.43s; }
+    .nn-loader .n-o1 { animation: node-hit 2.2s ease-in-out infinite; animation-delay: 1.65s; }
+
+    @keyframes node-hit {
+      0%, 100% { fill: #2a2f3f; }
+      18%      { fill: #C15F3C; filter: drop-shadow(0 0 3px rgba(193,95,60,0.8)); }
+      36%      { fill: #2a2f3f; }
+    }
+
+    /* Edges resting */
+    .nn-loader .edge {
+      fill: none;
+      stroke: #222838;
+      stroke-width: 1;
+      stroke-linecap: round;
+    }
+
+    /* Signal traveling dots — each edge gets its own timing */
+    .nn-loader .sig {
+      fill: none;
+      stroke: #C15F3C;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-dasharray: 3 100;
+      stroke-dashoffset: 100;
+      opacity: 0;
+    }
+
+    /* Input → Hidden layer edges */
+    .nn-loader .sig-ih0 { animation: sig-travel 2.2s ease-in-out infinite; animation-delay: 0.08s; }
+    .nn-loader .sig-ih1 { animation: sig-travel 2.2s ease-in-out infinite; animation-delay: 0.15s; }
+    .nn-loader .sig-ih2 { animation: sig-travel 2.2s ease-in-out infinite; animation-delay: 0.25s; }
+    .nn-loader .sig-ih3 { animation: sig-travel 2.2s ease-in-out infinite; animation-delay: 0.30s; }
+    .nn-loader .sig-ih4 { animation: sig-travel 2.2s ease-in-out infinite; animation-delay: 0.38s; }
+    .nn-loader .sig-ih5 { animation: sig-travel 2.2s ease-in-out infinite; animation-delay: 0.42s; }
+    .nn-loader .sig-ih6 { animation: sig-travel 2.2s ease-in-out infinite; animation-delay: 0.18s; }
+    .nn-loader .sig-ih7 { animation: sig-travel 2.2s ease-in-out infinite; animation-delay: 0.34s; }
+    .nn-loader .sig-ih8 { animation: sig-travel 2.2s ease-in-out infinite; animation-delay: 0.46s; }
+
+    /* Hidden → Output layer edges */
+    .nn-loader .sig-ho0 { animation: sig-travel 2.2s ease-in-out infinite; animation-delay: 0.62s; }
+    .nn-loader .sig-ho1 { animation: sig-travel 2.2s ease-in-out infinite; animation-delay: 0.70s; }
+    .nn-loader .sig-ho2 { animation: sig-travel 2.2s ease-in-out infinite; animation-delay: 0.78s; }
+    .nn-loader .sig-ho3 { animation: sig-travel 2.2s ease-in-out infinite; animation-delay: 0.85s; }
+    .nn-loader .sig-ho4 { animation: sig-travel 2.2s ease-in-out infinite; animation-delay: 0.95s; }
+    .nn-loader .sig-ho5 { animation: sig-travel 2.2s ease-in-out infinite; animation-delay: 1.02s; }
+    .nn-loader .sig-ho6 { animation: sig-travel 2.2s ease-in-out infinite; animation-delay: 1.12s; }
+    .nn-loader .sig-ho7 { animation: sig-travel 2.2s ease-in-out infinite; animation-delay: 1.20s; }
+
+    @keyframes sig-travel {
+      0%   { stroke-dashoffset: 100; opacity: 0; }
+      5%   { opacity: 1; }
+      50%  { stroke-dashoffset: 0; opacity: 1; }
+      55%  { opacity: 0; }
+      100% { stroke-dashoffset: 0; opacity: 0; }
+    }
+
+    /* File Search Loader - Searching Phase */
+    .file-loader {
+      width: 18px;
+      height: 18px;
+      transform-origin: center;
+    }
+
+    /* Stacked files */
+    .file-loader .file {
+      fill: none;
+      stroke: #2a2f3f;
+      stroke-width: 1.5;
+    }
+
+    /* Text lines that flash when scanned */
+    .file-loader .line-flash {
+      stroke: #2a2f3f;
+      stroke-width: 1.2;
+      stroke-linecap: round;
+    }
+
+    .file-loader .lf0 { animation: line-scan 2.4s ease-in-out infinite; animation-delay: 0.2s; }
+    .file-loader .lf1 { animation: line-scan 2.4s ease-in-out infinite; animation-delay: 0.4s; }
+    .file-loader .lf2 { animation: line-scan 2.4s ease-in-out infinite; animation-delay: 0.6s; }
+    .file-loader .lf3 { animation: line-scan 2.4s ease-in-out infinite; animation-delay: 0.8s; }
+    .file-loader .lf4 { animation: line-scan 2.4s ease-in-out infinite; animation-delay: 1.0s; }
+    .file-loader .lf5 { animation: line-scan 2.4s ease-in-out infinite; animation-delay: 1.2s; }
+
+    @keyframes line-scan {
+      0%, 100% { stroke: #2a2f3f; }
+      20%      { stroke: #C15F3C; }
+      40%      { stroke: #2a2f3f; }
+    }
+
+    /* Magnifying glass components */
+    .file-loader .glass-lens {
+      fill: rgba(193, 95, 60, 0.1);
+    }
+
+    .file-loader .glass-circle {
+      fill: none;
+      stroke: #C15F3C;
+      stroke-width: 1.8;
+    }
+
+    .file-loader .glass-handle {
+      stroke: #C15F3C;
+      stroke-width: 2;
+      stroke-linecap: round;
+    }
+
+    .file-loader g {
+      animation: glass-scan 2.4s ease-in-out infinite;
+    }
+
+    @keyframes glass-scan {
+      0%, 100% { transform: translateY(-6px); }
+      50%      { transform: translateY(6px); }
+    }
+
+    /* Thinking Loader - Analyzing/Planning/Thinking Phase */
+    .thinking-loader {
+      width: 20px;
+      height: 20px;
+      transform-origin: center;
+    }
+
+    /* Ring */
+    .thinking-loader .ring {
+      fill: none;
+      stroke: #2a2f3f;
+      stroke-width: 1.5;
+    }
+
+    /* Traveling arc on the ring */
+    .thinking-loader .arc {
+      fill: none;
+      stroke: #C15F3C;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-dasharray: 18 57;
+      stroke-dashoffset: 75;
+      animation: arc-spin 1.2s linear infinite;
+      filter: drop-shadow(0 0 3px rgba(193,95,60,0.6));
+    }
+
+    @keyframes arc-spin {
+      to { stroke-dashoffset: 0; }
+    }
+
+    /* Center dot */
+    .thinking-loader .center {
+      fill: #2a2f3f;
+      animation: center-pulse 1.2s ease-in-out infinite;
+    }
+
+    @keyframes center-pulse {
+      0%, 100% { fill: #2a2f3f; r: 3; }
+      50%      { fill: #C15F3C; r: 3.5; }
+    }
+
     /* Loader - Final Answer Generation (Wave/Stream) */
     .loader-generating {
       width: 20px;
       height: 14px;
-      box-shadow: 0 2px 0 #ff3b3b;
+      box-shadow: 0 2px 0 #C15F3C;
       position: relative;
       clip-path: inset(-15px 0 -2px);
     }
@@ -327,7 +536,7 @@
       position: absolute;
       inset: auto calc(50% - 6px) 0;
       height: 14px;
-      --g: no-repeat linear-gradient(#ff3b3b 0 0);
+      --g: no-repeat linear-gradient(#C15F3C 0 0);
       background: var(--g), var(--g), var(--g), var(--g);
       background-size: 4px 3px;
       animation:
@@ -367,7 +576,7 @@
 
     .ai-glow-box {
       position: relative;
-      border-color: #ff3b3b !important;
+      border-color: #C15F3C !important;
       animation: borderFadeIn 0.3s ease-in;
     }
 
@@ -380,13 +589,13 @@
         border-color: transparent;
       }
       100% {
-        border-color: #ff3b3b;
+        border-color: #C15F3C;
       }
     }
 
     @keyframes borderFadeOut {
       0% {
-        border-color: #ff3b3b;
+        border-color: #C15F3C;
       }
       100% {
         border-color: transparent;

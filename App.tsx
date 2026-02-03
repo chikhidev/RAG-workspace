@@ -259,7 +259,7 @@ const App: React.FC = () => {
       expanderModel: 'cohere/command-r7b-12-2024',
       reasonerModel: 'openai/gpt-oss-safeguard-20b',
       maxTokens: 2000,
-      maxAgentIterations: 5
+      maxAgentIterations: 7
     };
     return stored ? { ...defaults, ...JSON.parse(stored) } : defaults;
   };
@@ -967,20 +967,23 @@ const App: React.FC = () => {
         searchDuration = (performance.now() - tResearchStart) / 1000;
         // --- END RESEARCH LOOP ---
 
-        // 3. THINKER STEP (Self-Discussion & Prompt Rewriting)
+        // 3. THINKER STEP (Self-Discussion & Prompt Rewriting) - NOW STREAMING
         const tThink = performance.now();
         setState(prev => ({
           ...prev,
           messages: prev.messages.map(m => m.id === assistantId ? {
             ...m,
             status: 'synthesizing',
+            thoughtProcess: '', // Reset for streaming
             subtasks: m.subtasks?.map(s =>
               s.label === 'Drafting' ? { ...s, status: 'loading' } : s
             )
           } : m)
         }));
 
-        thinkerResult = await geminiRAG.thinkerStep(
+        // Stream the thinker output
+        let thinkerThoughts = '';
+        for await (const chunk of geminiRAG.thinkerStepStream(
           query,
           sources,
           state.selectedModel,
@@ -989,21 +992,27 @@ const App: React.FC = () => {
           state.googleKey,
           state.xaiKey,
           state.openaiKey,
+          state.mistralKey,
           state.customContext
-        );
-
-        setState(prev => ({
-          ...prev,
-          messages: prev.messages.map(m => m.id === assistantId ? {
-            ...m,
-            subtasks: m.subtasks?.map(s =>
-              s.label === 'Searching' ? { ...s, status: 'completed' } :
-                s.label === 'Drafting' ? { ...s, status: 'loading' } : s
-            )
-          } : m)
-        }));
-
-        await new Promise(r => setTimeout(r, 600));
+        )) {
+          if (typeof chunk === 'string') {
+            thinkerThoughts += chunk;
+            setState(prev => ({
+              ...prev,
+              messages: prev.messages.map(m => m.id === assistantId ? {
+                ...m,
+                thoughtProcess: thinkerThoughts,
+                subtasks: m.subtasks?.map(s =>
+                  s.label === 'Searching' ? { ...s, status: 'completed' } :
+                    s.label === 'Drafting' ? { ...s, status: 'loading' } : s
+                )
+              } : m)
+            }));
+          } else {
+            // Final result with parsed data
+            thinkerResult = chunk;
+          }
+        }
 
         setState(prev => ({
           ...prev,
@@ -1027,7 +1036,7 @@ const App: React.FC = () => {
           messages: prev.messages.map(m => m.id === assistantId ? {
             ...m,
             status: 'reasoning',
-            thoughtProcess: Array.isArray(thinkerResult.thoughts) ? thinkerResult.thoughts.map(t => `[${t.step}] ${t.thought}`).join('\n') : thinkerResult.thoughts,
+            thoughtProcess: thinkerThoughts,
             thinkingDuration,
             thoughtLogs: [
               ...(m.thoughtLogs || []),
@@ -1520,9 +1529,6 @@ const App: React.FC = () => {
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex flex-col gap-3 z-50 pointer-events-none w-full max-sm px-4 shadow-2xl">
           {state.toasts.map(toast => (
             <div key={toast.id} className="pointer-events-auto flex items-center gap-3 px-5 py-3.5 bg-brand-darker message-shadow rounded-2xl border border-brand-border animate-blur-text w-full max-w-md">
-              <span className={`text-[11px] font-bold uppercase tracking-widest ${toast.type === 'error' ? 'text-red-500' : 'text-emerald-500'}`}>
-                {toast.type}
-              </span>
               <div className="flex-1 flex flex-col">
                 <p className="text-[13px] text-gray-300 font-medium leading-normal">{toast.message}</p>
                 {toast.message.includes("OpenRouter Privacy Settings") && (

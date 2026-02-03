@@ -6,6 +6,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { SUPPORTED_MODELS } from '../services/modelService';
 import { MarkdownResponse } from './MarkdownResponse';
+import { TreeLoader, FileSearchLoader, ThinkingLoader } from './animations';
 
 interface Props {
   messages: Message[];
@@ -262,16 +263,18 @@ const PipelineDetails: React.FC<{
           {msg.status !== 'completed' && msg.status !== 'error' && (
             <div className="relative pl-6 pt-2">
               <div className="flex items-center gap-3">
-                <div className={
-                  msg.status === 'reasoning' && msg.content?.length ? 'loader-generating' :
-                  msg.status === 'reasoning' ? 'loader-thinking' :
-                  msg.status === 'searching' && msg.activeSubQuery?.includes('Navigating') ? 'loader-mindmap-nav' :
-                  'loader'
-                } />
+                {msg.status === 'searching' && (msg.activeSubQuery?.toLowerCase().includes('mind map') || msg.activeSubQuery?.toLowerCase().includes('navigating')) ? (
+                  <TreeLoader />
+                ) : msg.status === 'searching' ? (
+                  <FileSearchLoader />
+                ) : (
+                  <ThinkingLoader />
+                )}
                 <span className="text-[13px] font-bold text-brand-accent animate-pulse">
-                  {msg.status === 'reasoning' && msg.content?.length ? 'Generating answer...' :
-                    msg.status === 'searching' && msg.activeSubQuery?.includes('Navigating') ? 'Navigating Mind Map...' :
+                  {msg.status === 'searching' && (msg.activeSubQuery?.toLowerCase().includes('mind map') || msg.activeSubQuery?.toLowerCase().includes('navigating')) ? 
+                      (msg.activeSubQuery?.toLowerCase().includes('navigating') ? 'Navigating Mind Map...' : 'Exploring Mind Maps...') :
                     msg.status === 'searching' ? 'Searching...' :
+                    msg.status === 'synthesizing' ? 'Synthesizing...' :
                     msg.status === 'planning' ? 'Planning...' :
                       'Thinking...'}
                 </span>
@@ -655,7 +658,7 @@ export const ChatInterface: React.FC<Props> = ({
                   disabled={!isProcessing && !inputValue.trim()}
                   className={`shrink-0 h-9 w-16 flex items-center justify-center rounded-full transition-all mb-1 mr-1.5 ${isProcessing
                     ? 'bg-red-500 hover:bg-red-600 ai-glow-box'
-                    : 'bg-gradient-to-br from-brand-accent to-[#d4480e] hover:brightness-110 disabled:grayscale disabled:opacity-20'
+                    : 'bg-brand-accent hover:brightness-110 disabled:grayscale disabled:opacity-20'
                     }`}
                 >
                   {isProcessing ? (

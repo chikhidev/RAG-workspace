@@ -165,7 +165,7 @@ const LoadingScreen: React.FC<Props> = ({ isOnboarding, onComplete }) => {
                                     <div className="space-y-3">
                                         <h3 className="text-2xl font-bold text-white">All Systems Ready</h3>
                                         <p className="text-gray-400 text-sm max-w-sm font-medium">
-                                            Your dual-brain RAG environment is configured with <span className="text-white">{selectedModel}</span>. You can now start indexing documents and chatting.
+                                            Your RAG-Workspace environment is configured with <span className="text-white">{selectedModel}</span>. You can now start indexing documents and chatting.
                                         </p>
                                     </div>
                                 </div>
