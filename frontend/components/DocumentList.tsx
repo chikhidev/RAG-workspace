@@ -188,6 +188,7 @@ export const DocumentList: React.FC<Props> = ({
                 <CustomToggle
                   checked={doc.enabled}
                   onChange={() => onToggle(doc.id)}
+                  isLoading={doc.isLoading}
                 />
 
                 <div className="flex items-center gap-2 overflow-hidden">

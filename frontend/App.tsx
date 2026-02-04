@@ -1,17 +1,20 @@
 import React, { useState, useCallback, useEffect, useRef, Suspense, lazy } from 'react';
-import { AppState, Message, Document, Chunk, Toast, MindMap } from './types';
+import { AppState, Message, Document, Chunk, Toast, MindMap, User } from './types';
 import { vectorService } from './services/vectorService';
 import { geminiRAG } from './services/geminiService';
 import { fileService } from './services/fileService';
 import { modelService } from './services/modelService';
 import { commandService } from './services/commandService';
 import { mindNodeService } from './services/mindNodeService';
+import * as storageService from './services/storageService';
 import { X, Key, Shield, ExternalLink, PanelLeft, PanelLeftClose } from 'lucide-react';
 
 import LoadingScreen from './components/LoadingScreen';
 import { Header } from './components/Header';
 import { ShortcutsModal } from './components/ShortcutsModal';
 import { AuthPage } from './components/AuthPage';
+import { ProfileSettingsModal } from './components/ProfileSettingsModal';
+import { ApiKeyManagementModal } from './components/ApiKeyManagementModal';
 const DocumentList = lazy(() => import('./components/DocumentList').then(m => ({ default: m.DocumentList })));
 const ChatInterface = lazy(() => import('./components/ChatInterface').then(m => ({ default: m.ChatInterface })));
 const RightSidebar = lazy(() => import('./components/RightSidebar').then(m => ({ default: m.RightSidebar })));
@@ -33,170 +36,6 @@ const STORAGE_KEYS = {
   CUSTOM_CONTEXT: 'gemini_rag_custom_context',
   MIND_MAPS: 'gemini_rag_mind_maps',
   DELETED_DOCUMENTS: 'gemini_rag_deleted_docs'
-};
-
-const ApiKeyModal: React.FC<{
-  isOpen: boolean;
-  onClose: () => void;
-  openRouterKey: string;
-  setOpenRouterKey: (k: string) => void;
-  googleKey: string;
-  setGoogleKey: (k: string) => void;
-  xaiKey: string;
-  setXaiKey: (k: string) => void;
-  openaiKey: string;
-  setOpenaiKey: (k: string) => void;
-  mistralKey: string;
-  setMistralKey: (k: string) => void;
-}> = ({ isOpen, onClose, openRouterKey, setOpenRouterKey, googleKey, setGoogleKey, xaiKey, setXaiKey, openaiKey, setOpenaiKey, mistralKey, setMistralKey }) => {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-[1000] flex flex-col bg-brand-darker animate-in fade-in duration-200">
-      <div className="flex items-center justify-between px-8 py-6 border-b border-brand-border bg-brand-base/50">
-        <div className="flex items-center gap-3">
-          <h2 className="text-xl font-bold text-gray-100 tracking-tight">API Key Management</h2>
-        </div>
-        <button
-          onClick={onClose}
-          className="p-2 hover:bg-brand-border/50 rounded-full transition-colors text-gray-400 hover:text-white"
-        >
-          <X size={24} />
-        </button>
-      </div>
-
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-4xl mx-auto px-8 py-12 space-y-8">
-          <div className="space-y-2">
-            <h3 className="text-lg font-bold text-white">Provider Configuration</h3>
-            <p className="text-sm text-brand-muted">Manage your API credentials for various AI providers.</p>
-          </div>
-
-          <div className="bg-[#1a1a1a] border border-brand-border rounded-2xl overflow-hidden divide-y divide-brand-border/50">
-            {/* OpenRouter Row */}
-            <div className="flex items-center gap-6 p-6 hover:bg-brand-base/30 transition-colors group">
-              <div className="w-10 h-10 bg-white rounded-lg p-1.5 shrink-0 flex items-center justify-center">
-                <img src="/logos/openrouter.png" alt="OpenRouter" className="w-full h-full object-contain" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-bold text-gray-200">OpenRouter</span>
-                  <span className="px-1.5 py-0.5 rounded bg-brand-accent/10 text-brand-accent text-[10px] font-bold">PRIMARY</span>
-                </div>
-                <p className="text-[11px] text-brand-muted">Aggregator for various top-tier models (Claude, GPT-4, Llama 3)</p>
-              </div>
-              <div className="w-[400px]">
-                <input
-                  type="password"
-                  value={openRouterKey}
-                  onChange={(e) => setOpenRouterKey(e.target.value)}
-                  placeholder="sk-or-v1-..."
-                  className="w-full bg-brand-darker border border-brand-border rounded-lg px-4 py-2.5 text-[13px] font-mono text-gray-200 outline-none focus:border-brand-accent/50 transition-all placeholder:text-gray-700"
-                />
-              </div>
-            </div>
-
-            {/* Google AI Row */}
-            <div className="flex items-center gap-6 p-6 hover:bg-brand-base/30 transition-colors group">
-              <div className="w-10 h-10 bg-white rounded-lg p-1.5 shrink-0 flex items-center justify-center">
-                <img src="/logos/google.png" alt="Google AI" className="w-full h-full object-contain" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-bold text-gray-200">Google AI Studio</span>
-                </div>
-                <p className="text-[11px] text-brand-muted">Access Gemini 1.5 Pro, Flash and other Google models directly</p>
-              </div>
-              <div className="w-[400px]">
-                <input
-                  type="password"
-                  value={googleKey}
-                  onChange={(e) => setGoogleKey(e.target.value)}
-                  placeholder="AIzaSy..."
-                  className="w-full bg-brand-darker border border-brand-border rounded-lg px-4 py-2.5 text-[13px] font-mono text-gray-200 outline-none focus:border-brand-accent/50 transition-all placeholder:text-gray-700"
-                />
-              </div>
-            </div>
-
-            {/* xAI Row */}
-            <div className="flex items-center gap-6 p-6 hover:bg-brand-base/30 transition-colors group">
-              <div className="w-10 h-10 bg-white rounded-lg p-1.5 shrink-0 flex items-center justify-center">
-                <img src="/logos/xai.png" alt="xAI" className="w-full h-full object-contain" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-bold text-gray-200">xAI (Grok)</span>
-                </div>
-                <p className="text-[11px] text-brand-muted">Access Grok 3 and Grok 3 Mini models</p>
-              </div>
-              <div className="w-[400px]">
-                <input
-                  type="password"
-                  value={xaiKey}
-                  onChange={(e) => setXaiKey(e.target.value)}
-                  placeholder="xai-..."
-                  className="w-full bg-brand-darker border border-brand-border rounded-lg px-4 py-2.5 text-[13px] font-mono text-gray-200 outline-none focus:border-brand-accent/50 transition-all placeholder:text-gray-700"
-                />
-              </div>
-            </div>
-
-            {/* OpenAI Row */}
-            <div className="flex items-center gap-6 p-6 hover:bg-brand-base/30 transition-colors group">
-              <div className="w-10 h-10 bg-white rounded-lg p-1.5 shrink-0 flex items-center justify-center">
-                <img src="/logos/chatgpt.png" alt="OpenAI" className="w-full h-full object-contain" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-bold text-gray-200">OpenAI</span>
-                </div>
-                <p className="text-[11px] text-brand-muted">Access GPT-5 suite, and older GPT-4/3.5 models directly</p>
-              </div>
-              <div className="w-[400px]">
-                <input
-                  type="password"
-                  value={openaiKey}
-                  onChange={(e) => setOpenaiKey(e.target.value)}
-                  placeholder="sk-..."
-                  className="w-full bg-brand-darker border border-brand-border rounded-lg px-4 py-2.5 text-[13px] font-mono text-gray-200 outline-none focus:border-brand-accent/50 transition-all placeholder:text-gray-700"
-                />
-              </div>
-            </div>
-
-            {/* Mistral Row */}
-            <div className="flex items-center gap-6 p-6 hover:bg-brand-base/30 transition-colors group">
-              <div className="w-10 h-10 bg-white rounded-lg p-1.5 shrink-0 flex items-center justify-center">
-                <img src="/logos/mistral.png" alt="Mistral" className="w-full h-full object-contain" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-bold text-gray-200">Mistral AI</span>
-                </div>
-                <p className="text-[11px] text-brand-muted">Access Mistral Large, Small, and specialized coding models</p>
-              </div>
-              <div className="w-[400px]">
-                <input
-                  type="password"
-                  value={mistralKey}
-                  onChange={(e) => setMistralKey(e.target.value)}
-                  placeholder="..."
-                  className="w-full bg-brand-darker border border-brand-border rounded-lg px-4 py-2.5 text-[13px] font-mono text-gray-200 outline-none focus:border-brand-accent/50 transition-all placeholder:text-gray-700"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-end pt-4">
-            <button
-              onClick={onClose}
-              className="px-8 py-3 bg-brand-accent hover:bg-brand-accent/90 text-white rounded-xl text-sm font-bold tracking-wide transition-all"
-            >
-              Done
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 };
 
 const ConfirmationModal: React.FC<{
@@ -246,27 +85,116 @@ const ConfirmationModal: React.FC<{
 
 const App: React.FC = () => {
   const [authToken, setAuthToken] = useState<string | null>(localStorage.getItem('auth_token'));
+  const [user, setUser] = useState<User | undefined>(undefined);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [loadingError, setLoadingError] = useState<string | null>(null);
+
+  const fetchUser = useCallback(async () => {
+    if (!authToken) {
+      setIsAuthChecking(false);
+      return;
+    }
+    
+    try {
+      const res = await fetch('/api/users/me', {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      
+      if (res.status === 401) {
+        setAuthToken(null);
+        localStorage.removeItem('auth_token');
+        setLoadingError('Session expired. Please log in again.');
+        setIsAuthChecking(false);
+        return;
+      }
+      
+      if (!res.ok) {
+        throw new Error('Failed to fetch user');
+      }
+      
+      const data = await res.json();
+      setUser(data);
+      setIsAuthChecking(false);
+    } catch (error) {
+      console.error('Failed to fetch user:', error);
+      setLoadingError('Failed to verify authentication. Please try again.');
+      setIsAuthChecking(false);
+    }
+  }, [authToken]);
+
+  useEffect(() => {
+    fetchUser();
+  }, [fetchUser]);
+
+  const handleAvatarUpload = async (file: File) => {
+    if (!authToken) return;
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch('/api/users/me/avatar', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${authToken}` },
+        body: formData
+      });
+      if (res.ok) {
+        const updatedUser = await res.json();
+        setUser(updatedUser);
+        // We'll update state via addToast later if needed, but for now we need access to addToast which is inside the main render scope but here we are at top level... 
+        // Wait, addToast is usually part of component state management. In this App structure, addToast is defined LATER.
+        // It's better to move this handler inside the main body or just use console/alert for now, OR better yet, define it later.
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   if (!authToken) {
-    return <AuthPage onLogin={(token) => {
+    return <AuthPage onLogin={async (token) => {
       localStorage.setItem('auth_token', token);
       setAuthToken(token);
+      
+      // Migrate data from localStorage to backend
+      try {
+        await storageService.migrateAllDataToBackend(token);
+      } catch (error) {
+        console.error('Migration failed:', error);
+      }
+      
       window.location.reload();
     }} />;
   }
 
-  const loadInitialDocs = (): Document[] => {
-    const stored = localStorage.getItem(STORAGE_KEYS.DOCUMENTS);
-    return stored ? JSON.parse(stored) : [];
+  // Load data from backend instead of localStorage
+  const loadInitialDocs = async (): Promise<Document[]> => {
+    if (!authToken) return [];
+    try {
+      const docs = await storageService.fetchDocuments(authToken);
+      return docs.map(doc => ({
+        id: doc.doc_id,
+        name: doc.filename,
+        content: doc.content,
+        enabled: doc.enabled
+      }));
+    } catch (error) {
+      console.error('Failed to load documents:', error);
+      return [];
+    }
   };
 
-  const loadInitialMindMaps = (): MindMap[] => {
-    const stored = localStorage.getItem(STORAGE_KEYS.MIND_MAPS);
-    return stored ? JSON.parse(stored) : [];
+  const loadInitialConfig = async () => {
+    if (!authToken) return null;
+    try {
+      return await storageService.fetchUserConfig(authToken);
+    } catch (error) {
+      console.error('Failed to load config:', error);
+      return null;
+    }
   };
 
   const loadInitialSettings = () => {
-    const stored = localStorage.getItem(STORAGE_KEYS.SETTINGS);
     const defaults = {
       useVault: true,
       useContextHistory: false,
@@ -275,139 +203,234 @@ const App: React.FC = () => {
       maxTokens: 2000,
       maxAgentIterations: 7
     };
-    return stored ? { ...defaults, ...JSON.parse(stored) } : defaults;
+    return defaults;
   };
 
   const initialSettings = loadInitialSettings();
 
   const [state, setState] = useState<AppState & { isApiKeyModalOpen: boolean }>({
-    documents: loadInitialDocs(),
+    documents: [],
     messages: [],
     isIndexing: false,
     isProcessing: false,
     toasts: [],
     useVault: initialSettings.useVault,
     useContextHistory: initialSettings.useContextHistory,
-    contextScript: localStorage.getItem(STORAGE_KEYS.CONTEXT_SCRIPT) || "",
-    selectedModel: localStorage.getItem(STORAGE_KEYS.SELECTED_MODEL) || 'gemini-2.0-flash-thinking-exp',
-    openRouterKey: localStorage.getItem(STORAGE_KEYS.OPENROUTER_KEY) || "",
-    googleKey: localStorage.getItem(STORAGE_KEYS.GOOGLE_KEY) || "",
-    xaiKey: localStorage.getItem(STORAGE_KEYS.XAI_KEY) || "",
-    openaiKey: localStorage.getItem(STORAGE_KEYS.OPENAI_KEY) || "",
-    mistralKey: localStorage.getItem(STORAGE_KEYS.MISTRAL_KEY) || "",
+    contextScript: "",
+    selectedModel: 'gemini-2.0-flash-thinking-exp',
+    openRouterKey: "",
+    googleKey: "",
+    xaiKey: "",
+    openaiKey: "",
+    mistralKey: "",
     isApiKeyModalOpen: false,
     isInputModalOpen: false,
     maxTokens: initialSettings.maxTokens,
     maxAgentIterations: initialSettings.maxAgentIterations,
-    customContext: localStorage.getItem(STORAGE_KEYS.CUSTOM_CONTEXT) || '',
-    mindMaps: loadInitialMindMaps(),
+    customContext: '',
+    mindMaps: [],
   });
+
+  // Load data from backend on mount
+  useEffect(() => {
+    if (!authToken || isDataLoaded || isAuthChecking) return;
+    
+    const loadData = async () => {
+      try {
+        const [docs, config] = await Promise.all([
+          loadInitialDocs(),
+          loadInitialConfig()
+        ]);
+        
+        if (config) {
+          setState(prev => ({
+            ...prev,
+            documents: docs,
+            selectedModel: config.model_preference || 'gemini-2.0-flash-thinking-exp',
+            openRouterKey: config.api_keys?.openrouter || '',
+            googleKey: config.api_keys?.google || '',
+            xaiKey: config.api_keys?.xai || '',
+            openaiKey: config.api_keys?.openai || '',
+            mistralKey: config.api_keys?.mistral || '',
+            contextScript: config.context_script || '',
+            customContext: config.custom_context || '',
+            mindMaps: config.mind_maps || [],
+            useVault: config.settings?.useVault ?? true,
+            useContextHistory: config.settings?.useContextHistory ?? false,
+            maxTokens: config.settings?.maxTokens ?? 2000,
+          }));
+        } else {
+          setState(prev => ({ ...prev, documents: docs }));
+        }
+        
+        setIsDataLoaded(true);
+      } catch (error: any) {
+        console.error('Failed to load data:', error);
+        
+        // Show user-friendly error message
+        const errorMsg = error.message || 'Failed to load data from server';
+        if (errorMsg.includes('Database migration required')) {
+          setLoadingError('⚠️ Database migration required. Please run: cd backend && python migrate_db.py');
+        } else if (errorMsg.includes('Failed to fetch')) {
+          setLoadingError('⚠️ Cannot connect to backend server. Please ensure the server is running.');
+        } else {
+          setLoadingError(`⚠️ ${errorMsg}`);
+        }
+        
+        setIsDataLoaded(true);
+      }
+    };
+    
+    loadData();
+  }, [authToken, isDataLoaded, isAuthChecking]);
 
   const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false);
   const [isMindMapEditorOpen, setIsMindMapEditorOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
-  const [deletedDocuments, setDeletedDocuments] = useState<Document[]>(() => {
-    const stored = localStorage.getItem(STORAGE_KEYS.DELETED_DOCUMENTS);
-    return stored ? JSON.parse(stored) : [];
-  });
+  const [deletedDocuments, setDeletedDocuments] = useState<Document[]>([]);
 
   const [inputValue, setInputValue] = useState('');
   const [isVaultOpen, setIsVaultOpen] = useState(true);
   const [activeFileNames, setActiveFileNames] = useState<string[]>([]);
-  const [promptHistory, setPromptHistory] = useState<string[]>(() => {
-    const stored = localStorage.getItem(STORAGE_KEYS.PROMPT_HISTORY);
-    return stored ? JSON.parse(stored) : [];
-  });
+  const [promptHistory, setPromptHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [controlsWidth, setControlsWidth] = useState(350);
   const [vaultWidth, setVaultWidth] = useState(350);
   const isResizingControls = useRef(false);
   const isResizingVault = useRef(false);
 
-  const [isOnboarding, setIsOnboarding] = useState(() => !localStorage.getItem('gemini_rag_onboarded'));
+  const [isOnboarding, setIsOnboarding] = useState(false);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
 
-  const handleOnboardingComplete = (settings: { provider: string; model: string; apiKey: string }) => {
-    localStorage.setItem(STORAGE_KEYS.SELECTED_MODEL, settings.model);
-    if (settings.provider === 'google') localStorage.setItem(STORAGE_KEYS.GOOGLE_KEY, settings.apiKey);
-    else if (settings.provider === 'openrouter') localStorage.setItem(STORAGE_KEYS.OPENROUTER_KEY, settings.apiKey);
-    else if (settings.provider === 'xai') localStorage.setItem(STORAGE_KEYS.XAI_KEY, settings.apiKey);
-    else if (settings.provider === 'openai') localStorage.setItem(STORAGE_KEYS.OPENAI_KEY, settings.apiKey);
-    else if (settings.provider === 'mistral') localStorage.setItem(STORAGE_KEYS.MISTRAL_KEY, settings.apiKey);
+  const handleOnboardingComplete = async (settings: { provider: string; model: string; apiKey: string }) => {
+    if (!authToken) return;
+    
+    const apiKeys: Record<string, string> = {};
+    apiKeys[settings.provider] = settings.apiKey;
+    
+    try {
+      await storageService.updateUserConfig(authToken, {
+        model_preference: settings.model,
+        api_keys: apiKeys
+      });
 
-    localStorage.setItem('gemini_rag_onboarded', 'true');
+      setState(prev => ({
+        ...prev,
+        selectedModel: settings.model,
+        googleKey: settings.provider === 'google' ? settings.apiKey : prev.googleKey,
+        openRouterKey: settings.provider === 'openrouter' ? settings.apiKey : prev.openRouterKey,
+        xaiKey: settings.provider === 'xai' ? settings.apiKey : prev.xaiKey,
+        openaiKey: settings.provider === 'openai' ? settings.apiKey : prev.openaiKey,
+        mistralKey: settings.provider === 'mistral' ? settings.apiKey : prev.mistralKey,
+      }));
 
-    setState(prev => ({
-      ...prev,
-      selectedModel: settings.model,
-      googleKey: settings.provider === 'google' ? settings.apiKey : prev.googleKey,
-      openRouterKey: settings.provider === 'openrouter' ? settings.apiKey : prev.openRouterKey,
-      xaiKey: settings.provider === 'xai' ? settings.apiKey : prev.xaiKey,
-      openaiKey: settings.provider === 'openai' ? settings.apiKey : prev.openaiKey,
-      mistralKey: settings.provider === 'mistral' ? settings.apiKey : prev.mistralKey,
-    }));
-
-    setIsOnboarding(false);
+      setIsOnboarding(false);
+    } catch (error) {
+      console.error('Failed to save onboarding settings:', error);
+    }
   };
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // Sync documents to backend whenever they change
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.DOCUMENTS, JSON.stringify(state.documents));
-  }, [state.documents]);
+    if (!authToken || !isDataLoaded) return;
+    
+    const syncDocs = async () => {
+      for (const doc of state.documents) {
+        try {
+          await storageService.saveDocument(authToken, {
+            doc_id: doc.id,
+            filename: doc.name,
+            content: doc.content,
+            enabled: doc.enabled
+          });
+        } catch (error: any) {
+          console.error('Failed to sync document:', error);
+          // Only show toast for non-migration errors to avoid spam
+          if (!error.message?.includes('Database migration required')) {
+            const toastId = Math.random().toString(36).substring(2, 9);
+            setState(prev => ({ 
+              ...prev, 
+              toasts: [...prev.toasts, { 
+                id: toastId, 
+                message: `Failed to sync document "${doc.name}"`, 
+                type: 'error' as const
+              }] 
+            }));
+            setTimeout(() => {
+              setState(prev => ({ ...prev, toasts: prev.toasts.filter(t => t.id !== toastId) }));
+            }, 5000);
+          }
+        }
+      }
+    };
+    
+    syncDocs();
+  }, [state.documents, authToken, isDataLoaded]);
 
+  // Sync config to backend whenever it changes
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify({
-      useVault: state.useVault,
-      useContextHistory: state.useContextHistory,
-      selectedModel: state.selectedModel,
-      maxTokens: state.maxTokens
-    }));
-  }, [state.useVault, state.useContextHistory, state.selectedModel, state.maxTokens]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.OPENROUTER_KEY, state.openRouterKey);
-  }, [state.openRouterKey]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.GOOGLE_KEY, state.googleKey);
-  }, [state.googleKey]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.XAI_KEY, state.xaiKey);
-  }, [state.xaiKey]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.OPENAI_KEY, state.openaiKey);
-  }, [state.openaiKey]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.MISTRAL_KEY, state.mistralKey);
-  }, [state.mistralKey]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.CONTEXT_SCRIPT, state.contextScript);
-  }, [state.contextScript]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.MIND_MAPS, JSON.stringify(state.mindMaps));
-  }, [state.mindMaps]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.CUSTOM_CONTEXT, state.customContext);
-  }, [state.customContext]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.SELECTED_MODEL, state.selectedModel);
-  }, [state.selectedModel]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.PROMPT_HISTORY, JSON.stringify(promptHistory));
-  }, [promptHistory]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.DELETED_DOCUMENTS, JSON.stringify(deletedDocuments));
-  }, [deletedDocuments]);
+    if (!authToken || !isDataLoaded) return;
+    
+    const syncConfig = async () => {
+      try {
+        await storageService.updateUserConfig(authToken, {
+          settings: {
+            useVault: state.useVault,
+            useContextHistory: state.useContextHistory,
+            maxTokens: state.maxTokens
+          },
+          model_preference: state.selectedModel,
+          api_keys: {
+            openrouter: state.openRouterKey,
+            google: state.googleKey,
+            xai: state.xaiKey,
+            openai: state.openaiKey,
+            mistral: state.mistralKey
+          },
+          context_script: state.contextScript,
+          custom_context: state.customContext,
+          mind_maps: state.mindMaps
+        });
+      } catch (error: any) {
+        console.error('Failed to sync config:', error);
+        // Only show toast for non-migration errors to avoid spam
+        if (!error.message?.includes('Database migration required')) {
+          const toastId = Math.random().toString(36).substring(2, 9);
+          setState(prev => ({ 
+            ...prev, 
+            toasts: [...prev.toasts, { 
+              id: toastId, 
+              message: 'Failed to save settings to server', 
+              type: 'error' as const
+            }] 
+          }));
+          setTimeout(() => {
+            setState(prev => ({ ...prev, toasts: prev.toasts.filter(t => t.id !== toastId) }));
+          }, 5000);
+        }
+      }
+    };
+    
+    const debounce = setTimeout(syncConfig, 500);
+    return () => clearTimeout(debounce);
+  }, [
+    state.useVault, 
+    state.useContextHistory, 
+    state.selectedModel, 
+    state.maxTokens,
+    state.openRouterKey,
+    state.googleKey,
+    state.xaiKey,
+    state.openaiKey,
+    state.mistralKey,
+    state.contextScript,
+    state.customContext,
+    state.mindMaps,
+    authToken,
+    isDataLoaded
+  ]);
 
   const addToast = (message: string, type: Toast['type'] = 'error') => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -476,37 +499,88 @@ const App: React.FC = () => {
     const newDocs: Document[] = [];
     const fileArray = Array.from(files) as File[];
 
-    // Process sequentially to handle parsing
+    // Process sequentially to handle parsing and uploading
     for (const file of fileArray) {
       try {
         // Use fileService to parse PDF/DOCX/Text
         const text = await fileService.parseFile(file);
-        newDocs.push({
-          id: Math.random().toString(36).substring(2, 11),
-          name: file.name,
-          content: text,
-          enabled: true
-        });
+        const docId = Math.random().toString(36).substring(2, 11);
+        
+        // Only add to state if backend upload succeeds
+        if (authToken) {
+          try {
+            await storageService.saveDocument(authToken, {
+              doc_id: docId,
+              filename: file.name,
+              content: text,
+              enabled: true
+            });
+            
+            // Success! Add to local state
+            newDocs.push({
+              id: docId,
+              name: file.name,
+              content: text,
+              enabled: true
+            });
+          } catch (uploadErr: any) {
+            addToast(`Failed to upload ${file.name}: ${uploadErr.message}`, 'error');
+          }
+        } else {
+          // No auth token, just add locally (shouldn't happen but fallback)
+          newDocs.push({
+            id: docId,
+            name: file.name,
+            content: text,
+            enabled: true
+          });
+        }
       } catch (err: any) {
-        addToast(`Failed to parse ${file.name}: ${err.message}`);
+        addToast(`Failed to parse ${file.name}: ${err.message}`, 'error');
       }
     }
-    setState(prev => ({ ...prev, documents: [...prev.documents, ...newDocs] }));
-  }, [state.documents]);
+    
+    if (newDocs.length > 0) {
+      setState(prev => ({ ...prev, documents: [...prev.documents, ...newDocs] }));
+      addToast(`Successfully added ${newDocs.length} document(s)`);
+    }
+  }, [state.documents, authToken]);
 
-  const handleManualDocAdd = useCallback((name: string, content: string) => {
+  const handleManualDocAdd = useCallback(async (name: string, content: string) => {
     if (state.documents.length >= 20) {
       addToast("File limit reached (20 max).");
       return;
     }
+    
+    const docId = Math.random().toString(36).substring(2, 11);
     const newDoc: Document = {
-      id: Math.random().toString(36).substring(2, 11),
+      id: docId,
       name,
       content,
       enabled: true
     };
-    setState(prev => ({ ...prev, documents: [...prev.documents, newDoc] }));
-  }, [state.documents]);
+    
+    // Upload to backend first
+    if (authToken) {
+      try {
+        await storageService.saveDocument(authToken, {
+          doc_id: docId,
+          filename: name,
+          content,
+          enabled: true
+        });
+        
+        // Success! Add to local state
+        setState(prev => ({ ...prev, documents: [...prev.documents, newDoc] }));
+        addToast(`Added: ${name}`);
+      } catch (err: any) {
+        addToast(`Failed to save ${name}: ${err.message}`, 'error');
+      }
+    } else {
+      // No auth token, just add locally (shouldn't happen but fallback)
+      setState(prev => ({ ...prev, documents: [...prev.documents, newDoc] }));
+    }
+  }, [state.documents, authToken]);
 
   const handleUndoDelete = useCallback(() => {
     if (deletedDocuments.length === 0) {
@@ -1542,6 +1616,73 @@ const App: React.FC = () => {
     };
   }, [handleFileUpload]);
 
+  // Show loading screen during authentication check
+  if (isAuthChecking) {
+    return <LoadingScreen />;
+  }
+
+  // Show auth error in LoadingScreen if authentication failed
+  if (loadingError && !authToken) {
+    return (
+      <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-brand-base">
+        <div className="w-full max-w-md p-8 space-y-6">
+          <img src="/logo.png" alt="Copper" className="h-20 w-auto mx-auto" />
+          <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-6 text-center space-y-3">
+            <button
+              onClick={() => {
+                setLoadingError(null);
+                setIsAuthChecking(true);
+                fetchUser();
+              }}
+              className="mt-4 px-6 py-3 bg-brand-accent hover:bg-brand-accent/80 text-white rounded-xl font-bold text-sm transition-all"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading screen while fetching initial data
+  if (!isDataLoaded) {
+    return <LoadingScreen />;
+  }
+
+  // Show data loading error in LoadingScreen
+  if (loadingError) {
+    return (
+      <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-brand-base">
+        <div className="w-full max-w-2xl p-8 space-y-6">
+          <img src="/logo.png" alt="Copper" className="h-20 w-auto mx-auto" />
+          <div className="space-y-4">
+            <div className="text-center text-gray-300 whitespace-pre-wrap">
+              {loadingError}
+            </div>
+            <div className="flex gap-3 justify-center pt-2">
+              <button
+                onClick={() => window.location.reload()}
+                className="px-6 py-3 bg-brand-accent hover:bg-brand-accent/80 text-white rounded-xl font-bold text-sm transition-all"
+              >
+                Retry Connection
+              </button>
+              <button
+                onClick={() => {
+                  setAuthToken(null);
+                  localStorage.removeItem('auth_token');
+                  window.location.reload();
+                }}
+                className="px-6 py-3 bg-brand-base hover:bg-brand-border text-gray-300 rounded-xl font-bold text-sm transition-all border border-brand-border"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (isOnboarding) {
     return <LoadingScreen isOnboarding onComplete={handleOnboardingComplete} />;
   }
@@ -1567,6 +1708,15 @@ const App: React.FC = () => {
           onSettingsClick={() => setState(prev => ({ ...prev, isApiKeyModalOpen: true }))}
           onToggleVault={() => setIsVaultOpen(prev => !prev)}
           isVaultOpen={isVaultOpen}
+          user={user}
+          authToken={authToken}
+          onLogout={() => {
+            setAuthToken(null);
+            localStorage.removeItem('auth_token');
+            window.location.reload();
+          }}
+          onAvatarUpload={handleAvatarUpload}
+          onProfileClick={() => setIsProfileModalOpen(true)}
         />
 
         {/* MAIN CONTENT AREA */}
@@ -1645,15 +1795,46 @@ const App: React.FC = () => {
           <div className="flex-1 min-w-0 h-full overflow-hidden border-l border-brand-border/50 relative">
             <DocumentList
               documents={state.documents} onUpload={handleFileUpload}
-              onRemove={(id) => {
+              onRemove={async (id) => {
                 const doc = state.documents.find(d => d.id === id);
-                if (doc) {
-                  setDeletedDocuments(prev => [...prev, doc]);
-                  setState(prev => ({ ...prev, documents: prev.documents.filter(d => d.id !== id) }));
-                  addToast(`Deleted: ${doc.name}. Press Ctrl+Z to undo.`, 'error');
+                if (doc && authToken) {
+                  try {
+                    await storageService.deleteDocument(authToken, doc.id);
+                    setDeletedDocuments(prev => [...prev, doc]);
+                    setState(prev => ({ ...prev, documents: prev.documents.filter(d => d.id !== id) }));
+                    addToast(`Deleted: ${doc.name}. Press Ctrl+Z to undo.`, 'error');
+                  } catch (error) {
+                    console.error('Failed to delete document:', error);
+                    addToast('Failed to delete document', 'error');
+                  }
                 }
               }}
-              onToggle={(id) => setState(prev => ({ ...prev, documents: prev.documents.map(d => d.id === id ? { ...d, enabled: !d.enabled } : d) }))}
+              onToggle={async (id) => {
+                const doc = state.documents.find(d => d.id === id);
+                if (doc && authToken) {
+                  // Set loading state
+                  setState(prev => ({ 
+                    ...prev, 
+                    documents: prev.documents.map(d => d.id === id ? { ...d, isLoading: true } : d) 
+                  }));
+                  
+                  try {
+                    await storageService.updateDocument(authToken, doc.id, { enabled: !doc.enabled });
+                    setState(prev => ({ 
+                      ...prev, 
+                      documents: prev.documents.map(d => d.id === id ? { ...d, enabled: !d.enabled, isLoading: false } : d) 
+                    }));
+                  } catch (error) {
+                    console.error('Failed to toggle document:', error);
+                    // Remove loading state on error
+                    setState(prev => ({ 
+                      ...prev, 
+                      documents: prev.documents.map(d => d.id === id ? { ...d, isLoading: false } : d) 
+                    }));
+                    addToast('Failed to toggle document', 'error');
+                  }
+                }
+              }}
               isIndexing={state.isIndexing}
               onAddText={() => setState(prev => ({ ...prev, isInputModalOpen: true, inputModalType: 'text' }))}
               onAddLink={() => setState(prev => ({ ...prev, isInputModalOpen: true, inputModalType: 'url' }))}
@@ -1671,7 +1852,7 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        <ApiKeyModal
+        <ApiKeyManagementModal
           isOpen={state.isApiKeyModalOpen}
           onClose={() => setState(prev => ({ ...prev, isApiKeyModalOpen: false }))}
           openRouterKey={state.openRouterKey}
@@ -1744,6 +1925,14 @@ const App: React.FC = () => {
         <ShortcutsModal
           isOpen={isShortcutsOpen}
           onClose={() => setIsShortcutsOpen(false)}
+        />
+
+        <ProfileSettingsModal
+          isOpen={isProfileModalOpen}
+          onClose={() => setIsProfileModalOpen(false)}
+          user={user}
+          authToken={authToken}
+          onUpdate={fetchUser}
         />
         </div>
       </div>

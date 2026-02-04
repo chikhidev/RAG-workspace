@@ -4,6 +4,15 @@ export interface Document {
   content: string;
   enabled: boolean;
   tokens?: number;
+  isLoading?: boolean;
+}
+
+export interface User {
+  id: number;
+  email: string;
+  username?: string;
+  is_active: boolean;
+  avatar_path?: string;
 }
 
 export interface Chunk {

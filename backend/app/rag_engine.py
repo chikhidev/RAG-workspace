@@ -1,4 +1,4 @@
-import google.generativeai as genai
+from google import genai
 from typing import AsyncGenerator
 from . import models, vector_store
 
@@ -16,7 +16,7 @@ class RagEngine:
             yield "Error: Google API Key not found in configuration."
             return
 
-        genai.configure(api_key=gemini_key)
+        client = genai.Client(api_key=gemini_key)
         
         # 2. Retrieve Context if Vault is used
         context_text = ""
@@ -52,8 +52,14 @@ USER QUESTION:
         
         # 4. Stream Response
         try:
-            model = genai.GenerativeModel('gemini-1.5-pro-latest') # Simplified model selection
-            response = model.generate_content(full_prompt, stream=True)
+            # Using the new google-genai SDK
+            response = client.models.generate_content_stream(
+                model='gemini-1.5-pro',
+                contents=full_prompt,
+                config={
+                    'system_instruction': system_instruction
+                }
+            )
             
             for chunk in response:
                 if chunk.text:

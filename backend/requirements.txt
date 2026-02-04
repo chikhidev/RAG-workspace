@@ -1,13 +1,13 @@
 fastapi
 uvicorn
 python-jose[cryptography]
-passlib[bcrypt]
+bcrypt
 python-multipart
 chromadb
 sentence-transformers
 pydantic
 sqlalchemy
-google-generativeai
+google-genai
 openai
 cohere
 python-dotenv

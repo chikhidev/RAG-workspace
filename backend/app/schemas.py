@@ -10,8 +10,14 @@ class UserCreate(UserBase):
 
 class User(UserBase):
     id: int
+    username: Optional[str] = None
+    avatar_path: Optional[str] = None
     class Config:
-        orm_mode = True
+        from_attributes = True
+
+class UserUpdate(BaseModel):
+    username: Optional[str] = None
+    email: Optional[str] = None
 
 class Token(BaseModel):
     access_token: str
@@ -23,8 +29,12 @@ class TokenData(BaseModel):
 class ConfigUpdate(BaseModel):
     api_keys: Optional[Dict[str, str]] = None
     custom_instructions: Optional[str] = None
+    context_script: Optional[str] = None
+    custom_context: Optional[str] = None
     model_preference: Optional[str] = None
     generation_controls: Optional[Dict[str, Any]] = None
+    settings: Optional[Dict[str, Any]] = None
+    mind_maps: Optional[List[Dict[str, Any]]] = None
 
 class UserConfig(ConfigUpdate):
     user_id: int
@@ -38,9 +48,25 @@ class ChatRequest(BaseModel):
 
 class DocumentMetadata(BaseModel):
     id: int
+    doc_id: str
     filename: str
     file_type: str
+    content: str
+    enabled: bool
     upload_date: datetime
+    
+    class Config:
+        from_attributes = True
+
+class DocumentCreate(BaseModel):
+    doc_id: str
+    filename: str
+    content: str
+    enabled: bool = True
+
+class DocumentUpdate(BaseModel):
+    enabled: Optional[bool] = None
+    content: Optional[str] = None
 
 class ConversationBase(BaseModel):
     id: int

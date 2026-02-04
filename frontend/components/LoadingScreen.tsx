@@ -190,7 +190,7 @@ const LoadingScreen: React.FC<Props> = ({ isOnboarding, onComplete }) => {
             {!isOnboarding && (
                 <div className="flex-1 flex flex-col items-center justify-center relative z-20 gap-12">
                     {/* Copper Logo */}
-                    <img src="/COPPER_RAG_LOGO.png" alt="Copper" className="h-24 w-auto" />
+                    <img src="/logo.png" alt="Copper" className="h-24 w-auto" />
                     
                     {/* Loading Spinner */}
                     <div className="flex flex-col items-center gap-4">

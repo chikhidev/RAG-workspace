@@ -1,10 +1,12 @@
 import React from 'react';
+import { Loader2 } from 'lucide-react';
 import './CustomToggle.css';
 
 interface CustomToggleProps {
   checked: boolean;
   onChange: (checked: boolean) => void;
   disabled?: boolean;
+  isLoading?: boolean;
   activeColor?: string;
   inactiveColor?: string;
 }
@@ -13,9 +15,18 @@ export const CustomToggle: React.FC<CustomToggleProps> = ({
   checked,
   onChange,
   disabled = false,
+  isLoading = false,
   activeColor = '#c1603c77',
   inactiveColor = '#474747',
 }) => {
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center w-[48px] h-[24px]">
+        <Loader2 size={16} className="animate-spin text-brand-accent" />
+      </div>
+    );
+  }
+  
   return (
     <div 
       className="toggle-container"

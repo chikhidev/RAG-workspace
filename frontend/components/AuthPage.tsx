@@ -10,25 +10,27 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
   // You would replace this with your actual backend URL
-  const BACKEND_URL = 'http://localhost:8000';
+  const BACKEND_URL = '/api';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccessMessage('');
     setLoading(true);
 
     try {
       const endpoint = isLogin ? '/token' : '/register';
-      const body = isLogin 
-        ? new URLSearchParams({ username: email, password: password }) 
+      const body = isLogin
+        ? new URLSearchParams({ username: email, password: password })
         : JSON.stringify({ email, password });
-      
+
       const headers: any = {};
       if (!isLogin) headers['Content-Type'] = 'application/json';
-      
+
       const response = await fetch(`${BACKEND_URL}${endpoint}`, {
         method: 'POST',
         headers: isLogin ? { 'Content-Type': 'application/x-www-form-urlencoded' } : { 'Content-Type': 'application/json' },
@@ -46,7 +48,9 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
       } else {
         // Just registered, now login
         setIsLogin(true);
-        setError('Registration successful! Please login.');
+        setSuccessMessage('Registration successful! Please login with your new account.');
+        // Clear password for safety, keep email
+        setPassword('');
       }
     } catch (err: any) {
       setError(err.message);
@@ -56,12 +60,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0f0f12] text-white flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-brand-base text-white flex flex-col items-center justify-center p-4 relative overflow-hidden">
       {/* Background Layer */}
       <div className="absolute inset-0 z-0 select-none pointer-events-none">
-        <img 
-          src="/brand-rocks.png" 
-          alt="" 
+        <img
+          src="/brand-rocks.png"
+          alt=""
           className="w-full h-full object-cover opacity-30"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f12] via-[#0f0f12]/80 to-transparent" />
@@ -69,17 +73,22 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
 
       <div className="w-full max-w-md space-y-8 relative z-10">
         <div className="flex-1 flex flex-col items-center justify-center relative z-20 gap-12">
-                    {/* Copper Logo */}
-                    <img src="/COPPER_RAG_LOGO.png" alt="Copper" className="h-24 w-auto" />
-                </div>
+          {/* Copper Logo */}
+          <img src="/logo.png" alt="Copper" className="h-24 w-auto" />
+        </div>
 
-        <form className="mt-8 space-y-6 bg-white/5 p-8 rounded-2xl border border-white/10 backdrop-blur-xl" onSubmit={handleSubmit}>
+        <form className="mt-8 space-y-6 bg-brand-base/5 p-8 rounded-2xl border border-white/10 backdrop-blur-xl" onSubmit={handleSubmit}>
           {error && (
-            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+            <div className="py-3 text-red-400 text-sm bg-red-500/10 px-4 rounded-lg border border-red-500/20">
               {error}
             </div>
           )}
-          
+          {successMessage && (
+            <div className="py-3 text-green-400 text-sm bg-green-500/10 px-4 rounded-lg border border-green-500/20">
+              {successMessage}
+            </div>
+          )}
+
           <div className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-300">Email address</label>
@@ -112,22 +121,22 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium text-white bg-brand-accent hover:bg-brand-accent-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium text-white bg-brand-accent hover:bg-brand-accent-dark focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-brand-accent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
-                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
-                isLogin ? 'Sign in' : 'Create account'
+              isLogin ? 'Sign in' : 'Create account'
             )}
           </button>
-          
+
           <div className="text-center">
             <button
-                type="button"
-                className="text-sm text-brand-accent/80 hover:text-brand-accent transition-colors"
-                onClick={() => { setIsLogin(!isLogin); setError(''); }}
+              type="button"
+              className="text-sm text-brand-accent/80 hover:text-brand-accent transition-colors"
+              onClick={() => { setIsLogin(!isLogin); setError(''); }}
             >
-                {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
+              {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
             </button>
           </div>
         </form>
