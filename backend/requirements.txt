@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+chromadb
+sentence-transformers
+pydantic
+sqlalchemy
+google-generativeai
+openai
+cohere
+python-dotenv
+httpx

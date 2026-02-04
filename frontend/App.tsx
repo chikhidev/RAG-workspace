@@ -11,6 +11,7 @@ import { X, Key, Shield, ExternalLink, PanelLeft, PanelLeftClose } from 'lucide-
 import LoadingScreen from './components/LoadingScreen';
 import { Header } from './components/Header';
 import { ShortcutsModal } from './components/ShortcutsModal';
+import { AuthPage } from './components/AuthPage';
 const DocumentList = lazy(() => import('./components/DocumentList').then(m => ({ default: m.DocumentList })));
 const ChatInterface = lazy(() => import('./components/ChatInterface').then(m => ({ default: m.ChatInterface })));
 const RightSidebar = lazy(() => import('./components/RightSidebar').then(m => ({ default: m.RightSidebar })));
@@ -244,6 +245,16 @@ const ConfirmationModal: React.FC<{
 };
 
 const App: React.FC = () => {
+  const [authToken, setAuthToken] = useState<string | null>(localStorage.getItem('auth_token'));
+
+  if (!authToken) {
+    return <AuthPage onLogin={(token) => {
+      localStorage.setItem('auth_token', token);
+      setAuthToken(token);
+      window.location.reload();
+    }} />;
+  }
+
   const loadInitialDocs = (): Document[] => {
     const stored = localStorage.getItem(STORAGE_KEYS.DOCUMENTS);
     return stored ? JSON.parse(stored) : [];
