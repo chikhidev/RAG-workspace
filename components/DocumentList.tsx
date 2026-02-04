@@ -1,7 +1,8 @@
 import React from 'react';
 import { Document, MindMap } from '../types';
-import { FileText, Trash2, Upload, Box, FileCode, FileJson, File, Link as LinkIcon, FileUp, Type, Network } from 'lucide-react';
+import { FileText, Trash2, Upload, Box, Network } from 'lucide-react';
 import { CustomToggle } from './CustomToggle';
+import { getFileIcon } from './icons/FilesFormats';
 
 interface Props {
   documents: Document[];
@@ -35,27 +36,6 @@ export const DocumentList: React.FC<Props> = ({
   const isAtLimit = documents.length >= 20;
   const [fadingFileNames, setFadingFileNames] = React.useState<string[]>([]);
   const [allGlowingFiles, setAllGlowingFiles] = React.useState<string[]>([]);
-
-  // Determine icon based on file extension
-  const getFileIcon = (fileName: string) => {
-    const name = fileName.toLowerCase();
-    
-    if (name.endsWith('.pdf')) {
-      return <FileUp size={14} className="text-red-500 shrink-0" />;
-    } else if (name.endsWith('.docx') || name.endsWith('.doc')) {
-      return <FileText size={14} className="text-gray-400 shrink-0" />;
-    } else if (name.endsWith('.txt') || name.endsWith('.md')) {
-      return <Type size={14} className="text-gray-400 shrink-0" />;
-    } else if (name.endsWith('.json')) {
-      return <FileJson size={14} className="text-yellow-500 shrink-0" />;
-    } else if (name.endsWith('.html') || name.endsWith('.xml') || name.endsWith('.csv')) {
-      return <FileCode size={14} className="text-green-400 shrink-0" />;
-    } else if (name.startsWith('http://') || name.startsWith('https://')) {
-      return <LinkIcon size={14} className="text-gray-400 shrink-0" />;
-    } else {
-      return <File size={14} className="text-gray-500 shrink-0" />;
-    }
-  };
 
   // Handle active files and fade-out animation
   React.useEffect(() => {

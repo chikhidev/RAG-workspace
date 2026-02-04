@@ -728,10 +728,20 @@ const App: React.FC = () => {
             await new Promise(resolve => setTimeout(resolve, 1000));
             setActiveFileNames([]);
 
-            // Add grep results to knowledge buffer
+            // Add grep results to knowledge buffer AND sources
             if (grepResult.success && grepResult.results) {
               const formattedResults = commandService.formatGrepResults(grepResult.results as any, 15);
               currentKnowledgeBuffer += `\n--- Grep Result (Iter ${iterations}) ---\nPattern: "${grepParams.pattern}"\n${formattedResults}\n`;
+              
+              // Add grep results as source chunks for context
+              const grepResults = grepResult.results as any[];
+              grepResults.forEach((result: any) => {
+                sources.push({
+                  docId: result.fileName || 'unknown',
+                  docName: result.fileName || 'unknown',
+                  text: result.lineContent || result.content || result.line || ''
+                });
+              });
             } else {
               currentKnowledgeBuffer += `\n--- Grep Result (Iter ${iterations}) ---\nPattern: "${grepParams.pattern}"\nError: ${grepResult.error || 'No matches found'}\n`;
             }

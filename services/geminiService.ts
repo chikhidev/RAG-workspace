@@ -463,7 +463,7 @@ ${contextText}`;
       ? `Previous conversation context:\n${conversationHistory}\n`
       : 'This is a fresh query with no prior context.';
 
-    const mindMapList = mindMaps.length > 0
+    const mindMapList = mindMaps.length > 0 && mindMaps.some(m => m.enabled)
       ? mindMaps
           .filter(m => m.enabled)
           .map(m => `"${m.name}" (Topic: ${m.rootNodeText})`)
