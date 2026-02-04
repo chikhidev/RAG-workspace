@@ -597,30 +597,58 @@
     }
 
     .ai-glow-box {
-      position: relative;
       border-color: #C15F3C !important;
-      animation: borderFadeIn 0.3s ease-in;
+      animation: borderFadeIn 0.3s ease-in, glowPulse 2s ease-in-out infinite;
     }
 
     .ai-glow-box-fading {
-      animation: borderFadeOut 0.3s ease-out forwards;
+      animation: borderFadeOut 1s ease-out forwards, glowFadeOut 1s ease-out forwards;
     }
 
     @keyframes borderFadeIn {
       0% {
         border-color: transparent;
+        box-shadow: none;
       }
       100% {
         border-color: #C15F3C;
+        box-shadow: 0 0 20px rgba(193, 95, 60, 0.2), inset 0 0 15px rgba(193, 95, 60, 0.1);
       }
     }
 
     @keyframes borderFadeOut {
       0% {
         border-color: #C15F3C;
+        box-shadow: 0 0 20px rgba(193, 95, 60, 0.2), inset 0 0 15px rgba(193, 95, 60, 0.1);
+      }
+      50% {
+        border-color: rgba(193, 95, 60, 0.5);
+        box-shadow: 0 0 15px rgba(193, 95, 60, 0.15), inset 0 0 10px rgba(193, 95, 60, 0.08);
       }
       100% {
         border-color: transparent;
+        box-shadow: none;
+      }
+    }
+
+    @keyframes glowPulse {
+      0%, 100% {
+        box-shadow: 0 0 20px rgba(193, 95, 60, 0.2), inset 0 0 15px rgba(193, 95, 60, 0.1);
+      }
+      50% {
+        box-shadow: 0 0 30px rgba(193, 95, 60, 0.35), inset 0 0 20px rgba(193, 95, 60, 0.15);
+      }
+    }
+
+    @keyframes glowFadeOut {
+      0% {
+        background: linear-gradient(90deg, rgba(193, 95, 60, 0.08) 0%, rgba(193, 95, 60, 0.12) 100%);
+      }
+      50% {
+        background: linear-gradient(90deg, rgba(193, 95, 60, 0.04) 0%, rgba(193, 95, 60, 0.06) 100%);
+      }
+      100% {
+        background: transparent;
       }
     }
   </style>

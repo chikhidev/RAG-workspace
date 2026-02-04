@@ -13,7 +13,8 @@ export async function processQueryWithBackend(
   setState: Function,
   setActiveFileNames: Function,
   addToast: Function,
-  modelId?: string
+  modelId?: string,
+  abortSignal?: AbortSignal
 ) {
   setState((prev: any) => ({ ...prev, isProcessing: true }));
   
@@ -24,7 +25,7 @@ export async function processQueryWithBackend(
   try {
     // Get provider from model service
     const { modelService } = await import('../services/modelService');
-    const selectedModelId = modelId || state.selectedModel || 'gemini-1.5-flash';
+    const selectedModelId = modelId || state.selectedModel || 'nvidia/nemotron-3-nano-30b-a3b:free';
     const provider = modelService.getModelProvider(selectedModelId);
     
     // Prepare request
@@ -37,8 +38,8 @@ export async function processQueryWithBackend(
       max_iterations: state.maxAgentIterations || 7
     };
     
-    // Stream events from backend
-    for await (const event of backendChatService.streamChat(authToken, request)) {
+    // Stream events from backend with abort signal
+    for await (const event of backendChatService.streamChat(authToken, request, abortSignal)) {
       switch (event.type) {
         case 'status':
           setState((prev: any) => ({
@@ -174,13 +175,19 @@ export async function processQueryWithBackend(
       }
     }
   } catch (err: any) {
-    addToast(err.message || 'Pipeline error', 'error');
-    setState((prev: any) => ({
-      ...prev,
-      messages: prev.messages.map((m: any) =>
-        m.id === assistantId ? { ...m, status: 'error' } : m
-      )
-    }));
+    // Don't show error toast if request was aborted by user
+    if (err.name === 'AbortError' || abortSignal?.aborted) {
+      console.log('[QueryProcessor] Request aborted by user');
+      // Message was already marked as stopped in handleStop
+    } else {
+      addToast(err.message || 'Pipeline error', 'error');
+      setState((prev: any) => ({
+        ...prev,
+        messages: prev.messages.map((m: any) =>
+          m.id === assistantId ? { ...m, status: 'error' } : m
+        )
+      }));
+    }
   } finally {
     setActiveFileNames([]);
     setState((prev: any) => ({ ...prev, isProcessing: false }));

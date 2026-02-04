@@ -20,7 +20,7 @@ except ImportError:
 class AgentRAGEngine:
     """Advanced RAG engine with two-phase reasoning and streaming"""
     
-    def __init__(self, user: models.User, model_id: str = 'gemini-1.5-flash', provider: str = None):
+    def __init__(self, user: models.User, model_id: str = 'nvidia/nemotron-3-nano-30b-a3b:free', provider: str = None):
         self.user = user
         self.model_id = model_id
         # Use provided provider or detect from model ID as fallback
@@ -40,6 +40,8 @@ class AgentRAGEngine:
         1. Planning phase - agent loop with actions
         2. Thinker phase - analyze context, stream thoughts  
         3. Reasoner phase - generate final answer, stream chunks
+        
+        Supports abortion: If client disconnects, the generator will stop yielding.
         """
         
         if not use_vault or not documents:
@@ -56,55 +58,91 @@ class AgentRAGEngine:
         knowledge_buffer = ""
         iteration = 0
         
-        yield self._sse_event('status', {
-            'status': 'planning',
-            'message': 'Analyzing query and planning research...'
-        })
+        try:
+            yield self._sse_event('status', {
+                'status': 'planning',
+                'message': 'Analyzing query and planning research...'
+            })
+        except (GeneratorExit, StopAsyncIteration):
+            print("[Agent] Client disconnected during planning phase")
+            return
         
         while iteration < max_iterations:
             iteration += 1
             
-            yield self._sse_event('iteration', {
-                'iteration': iteration
-            })
+            # Send iteration marker (keep highlight active - don't clear between iterations)
+            try:
+                yield self._sse_event('iteration', {
+                    'iteration': iteration
+                })
+            except (GeneratorExit, StopAsyncIteration):
+                print(f"[Agent] Client disconnected at iteration {iteration}")
+                return
             
             # Force conclude if at max iterations
             if iteration >= max_iterations:
-                yield self._sse_event('thought', {
-                    'step': 'Finalizing',
-                    'thought': f'Reached maximum iterations ({max_iterations}). Proceeding to synthesis...',
-                    'iteration': iteration
-                })
+                try:
+                    yield self._sse_event('thought', {
+                        'step': 'Finalizing',
+                        'thought': f'Reached maximum iterations ({max_iterations}). Proceeding to synthesis...',
+                        'iteration': iteration
+                    })
+                except (GeneratorExit, StopAsyncIteration):
+                    print("[Agent] Client disconnected during max iteration check")
+                    return
                 break
             
             # Decide next action
             action = await self._decide_next_action(query, knowledge_buffer, documents, iteration, max_iterations)
             
             if action['type'] == 'conclude':
-                yield self._sse_event('thought', {
-                    'step': 'Finalizing',
-                    'thought': action.get('thought', 'Research complete, synthesizing answer...'),
-                    'iteration': iteration
-                })
+                try:
+                    yield self._sse_event('thought', {
+                        'step': 'Finalizing',
+                        'thought': action.get('thought', 'Research complete, synthesizing answer...'),
+                        'iteration': iteration
+                    })
+                except (GeneratorExit, StopAsyncIteration):
+                    print("[Agent] Client disconnected during conclude")
+                    return
                 break
             
             # Execute action
             if action['type'] == 'search':
-                yield self._sse_event('status', {
-                    'status': 'searching',
-                    'message': f"Semantic search: {action.get('query', '')[:50]}..."
-                })
-                
-                yield self._sse_event('thought', {
-                    'step': 'Searching',
-                    'thought': action.get('thought', 'Performing semantic search'),
-                    'iteration': iteration
-                })
-                
-                # Highlight files
+                # Get target files from action, or detect from context
                 target_files = action.get('target_files', [])
-                if target_files:
-                    yield self._sse_event('highlight', {'files': target_files})
+                
+                # If no target_files, try to detect relevant files from query/thought
+                if not target_files:
+                    for doc in documents:
+                        if doc.get('enabled', True):
+                            filename_lower = doc['filename'].lower()
+                            thought_lower = action.get('thought', '').lower()
+                            query_lower = action.get('query', '').lower()
+                            if filename_lower.replace('.pdf', '').replace('.txt', '') in thought_lower or \
+                               filename_lower.replace('.pdf', '').replace('.txt', '') in query_lower:
+                                target_files = [doc['filename']]
+                                break
+                
+                try:
+                    yield self._sse_event('status', {
+                        'status': 'searching',
+                        'message': f"Semantic search: {action.get('query', '')[:50]}..."
+                    })
+                    
+                    yield self._sse_event('thought', {
+                        'step': 'Searching',
+                        'thought': action.get('thought', 'Performing semantic search'),
+                        'iteration': iteration
+                    })
+                    
+                    # Highlight files being searched
+                    if target_files:
+                        yield self._sse_event('highlight', {'files': target_files})
+                        print(f"[Agent] Highlighting files: {target_files}")
+                except (GeneratorExit, StopAsyncIteration):
+                    print(f"[Agent] Client disconnected during search action (iter {iteration})")
+                    return
                 
                 # Search
                 results = await self._semantic_search(
@@ -115,49 +153,88 @@ class AgentRAGEngine:
                 
                 knowledge_buffer += f"\n--- Search Result (Iter {iteration}) ---\n{results}\n"
                 accumulated_sources.extend(self._extract_sources(results, 'search'))
-                
-                yield self._sse_event('highlight', {'files': []})
+                # Keep highlight active - will be cleared at start of next iteration
                 
             elif action['type'] == 'grep':
                 pattern = action.get('pattern', '')
-                yield self._sse_event('status', {
-                    'status': 'searching',
-                    'message': f"Pattern search: {pattern}"
-                })
                 
-                yield self._sse_event('thought', {
-                    'step': 'Grep Search',
-                    'thought': action.get('thought', f'Searching for pattern: {pattern}'),
-                    'iteration': iteration
-                })
-                
+                # Get target files from action, or detect from pattern/context
                 target_files = action.get('target_files', [])
-                if target_files:
-                    yield self._sse_event('highlight', {'files': target_files})
                 
-                results = await self._grep_search(pattern, documents, target_files)
+                # If no target_files, search ALL enabled files - the grep will find matches
+                # Don't try to guess files from thought - it's unreliable
+                # The pattern itself is the best indicator of what we're searching for
+                
+                try:
+                    yield self._sse_event('status', {
+                        'status': 'searching',
+                        'message': f"Pattern search: {pattern}"
+                    })
+                    
+                    yield self._sse_event('thought', {
+                        'step': 'Grep Search',
+                        'thought': action.get('thought', f'Searching for pattern: {pattern}'),
+                        'iteration': iteration
+                    })
+                except (GeneratorExit, StopAsyncIteration):
+                    print(f"[Agent] Client disconnected during grep action (iter {iteration})")
+                    return
+                
+                results, matched_files = await self._grep_search(pattern, documents, target_files)
+                print(f"[Agent] Grep results received: '{results[:200]}...' (total {len(results)} chars)")
+                print(f"[Agent] Matched files: {matched_files}")
+                
+                # Highlight files that actually had matches
+                if matched_files:
+                    try:
+                        yield self._sse_event('highlight', {'files': matched_files})
+                        print(f"[Agent] Highlighting files: {matched_files}")
+                    except (GeneratorExit, StopAsyncIteration):
+                        return
+                
                 knowledge_buffer += f"\n--- Grep Result (Iter {iteration}) ---\nPattern: {pattern}\n{results}\n"
-                accumulated_sources.extend(self._extract_sources(results, 'grep'))
-                
-                yield self._sse_event('highlight', {'files': []})
+                extracted = self._extract_sources(results, 'grep')
+                print(f"[Agent] Extracted {len(extracted)} sources from grep results")
+                accumulated_sources.extend(extracted)
+                print(f"[Agent] Total accumulated sources now: {len(accumulated_sources)}")
+                # Keep highlight active - will be cleared before synthesis
                 
             elif action['type'] == 'read_lines':
                 filename = action.get('filename', '')
                 start_line = action.get('start_line', 1)
                 end_line = action.get('end_line', 50)
                 
-                yield self._sse_event('status', {
-                    'status': 'searching',
-                    'message': f"Reading {filename}:{start_line}-{end_line}"
-                })
+                # Determine which file to highlight
+                highlight_file = filename
+                if not highlight_file:
+                    # Try to find file from thought
+                    for doc in documents:
+                        if doc.get('enabled', True):
+                            filename_lower = doc['filename'].lower()
+                            thought_lower = action.get('thought', '').lower()
+                            if filename_lower.replace('.pdf', '').replace('.txt', '') in thought_lower:
+                                highlight_file = doc['filename']
+                                break
                 
-                yield self._sse_event('thought', {
-                    'step': 'Read Lines',
-                    'thought': action.get('thought', f'Reading lines from {filename}'),
-                    'iteration': iteration
-                })
-                
-                yield self._sse_event('highlight', {'files': [filename]})
+                try:
+                    yield self._sse_event('status', {
+                        'status': 'searching',
+                        'message': f"Reading {filename}:{start_line}-{end_line}"
+                    })
+                    
+                    yield self._sse_event('thought', {
+                        'step': 'Read Lines',
+                        'thought': action.get('thought', f'Reading lines from {filename}'),
+                        'iteration': iteration
+                    })
+                    
+                    # Highlight the file being read
+                    if highlight_file:
+                        yield self._sse_event('highlight', {'files': [highlight_file]})
+                        print(f"[Agent] Highlighting file: {highlight_file}")
+                except (GeneratorExit, StopAsyncIteration):
+                    print(f"[Agent] Client disconnected during read_lines action (iter {iteration})")
+                    return
                 
                 results = await self._read_lines(filename, start_line, end_line, documents)
                 knowledge_buffer += f"\n--- Read Lines (Iter {iteration}) ---\n{results}\n"
@@ -165,14 +242,32 @@ class AgentRAGEngine:
                     'docName': filename,
                     'text': results
                 })
-                
-                yield self._sse_event('highlight', {'files': []})
+                # Keep highlight active - will be cleared at start of next iteration
         
         # === PHASE 2: THINKER BRAIN (Synthesis) ===
-        yield self._sse_event('status', {
-            'status': 'synthesizing',
-            'message': 'Analyzing gathered context...'
-        })
+        # Clear all file highlights before synthesis
+        try:
+            yield self._sse_event('highlight', {'files': []})
+            yield self._sse_event('status', {
+                'status': 'synthesizing',
+                'message': 'Analyzing gathered context...'
+            })
+        except (GeneratorExit, StopAsyncIteration):
+            print("[Agent] Client disconnected before synthesis phase")
+            return
+        
+        # Validate that search found something when vault is enabled
+        enabled_docs = [d for d in documents if d.get('enabled', True)]
+        if not accumulated_sources and enabled_docs:
+            print(f"[Agent] ERROR: No sources found despite {len(enabled_docs)} enabled documents")
+            try:
+                yield self._sse_event('error', {
+                    'message': 'Search completed but no relevant information was found in the vault. Try rephrasing your query or check if documents contain the information you\'re looking for.',
+                    'code': 'no_sources_found'
+                })
+            except (GeneratorExit, StopAsyncIteration):
+                print("[Agent] Client disconnected while sending error")
+            return
         
         thinker_result = None
         if accumulated_sources:
@@ -184,48 +279,99 @@ class AgentRAGEngine:
                         thinker_result = chunk
                         # Send one final thought with the full analysis
                         if full_thoughts:
-                            yield self._sse_event('thought', {
-                                'step': 'Synthesis Complete',
-                                'thought': full_thoughts,
-                                'iteration': iteration
-                            })
+                            try:
+                                yield self._sse_event('thought', {
+                                    'step': 'Synthesis Complete',
+                                    'thought': full_thoughts,
+                                    'iteration': iteration
+                                })
+                            except (GeneratorExit, StopAsyncIteration):
+                                print("[Agent] Client disconnected during synthesis")
+                                return
                     else:
                         # Accumulate thought content (don't spam individual chunks)
                         full_thoughts += chunk
+            except (GeneratorExit, StopAsyncIteration):
+                print("[Agent] Client disconnected during thinker phase")
+                return
             except Exception as e:
                 print(f"Thinker phase error: {e}")
                 import traceback
                 traceback.print_exc()
-                yield self._sse_event('thought', {
-                    'step': 'Synthesis',
-                    'thought': 'Analysis complete. Generating answer...',
-                    'iteration': iteration
-                })
+                try:
+                    yield self._sse_event('thought', {
+                        'step': 'Synthesis',
+                        'thought': 'Analysis complete. Generating answer...',
+                        'iteration': iteration
+                    })
+                except (GeneratorExit, StopAsyncIteration):
+                    return
         
         # === PHASE 3: EXPERT REASONER (Final Answer) ===
-        yield self._sse_event('status', {
-            'status': 'reasoning',
-            'message': 'Generating comprehensive answer...'
-        })
+        print(f"[Agent] Starting answer generation phase. Sources: {len(accumulated_sources)}, Thinker result: {bool(thinker_result)}")
         
         try:
+            yield self._sse_event('status', {
+                'status': 'reasoning',
+                'message': 'Generating comprehensive answer...'
+            })
+        except (GeneratorExit, StopAsyncIteration):
+            print("[Agent] Client disconnected before reasoning phase")
+            return
+        
+        # Validate we have what we need
+        if not accumulated_sources:
+            print("[Agent] WARNING: No sources accumulated, proceeding with direct generation")
+        
+        answer_generated = False
+        try:
+            print(f"[Agent] Calling _generate_answer_stream...")
+            chunk_count = 0
             async for chunk in self._generate_answer_stream(
                 query,
                 accumulated_sources,
                 thinker_result
             ):
-                yield self._sse_event('answer', {'content': chunk})
+                chunk_count += 1
+                answer_generated = True
+                try:
+                    yield self._sse_event('answer', {'content': chunk})
+                except (GeneratorExit, StopAsyncIteration):
+                    print(f"[Agent] Client disconnected during answer generation (chunks sent: {chunk_count})")
+                    return
+            print(f"[Agent] Answer generation complete. Total chunks: {chunk_count}")
+        except (GeneratorExit, StopAsyncIteration):
+            print("[Agent] Client disconnected during answer stream")
+            return
         except Exception as e:
             # Clean error messages for users
+            print(f"[Agent] ERROR in answer generation: {e}")
+            import traceback
+            traceback.print_exc()
             error_msg = self._clean_error_message(str(e))
-            yield self._sse_event('error', {'message': error_msg})
+            try:
+                yield self._sse_event('error', {'message': error_msg})
+            except (GeneratorExit, StopAsyncIteration):
+                return
+            return
+        
+        if not answer_generated:
+            print("[Agent] WARNING: No answer chunks were generated!")
+            try:
+                yield self._sse_event('error', {'message': 'Failed to generate answer. Please try again.'})
+            except (GeneratorExit, StopAsyncIteration):
+                return
             return
         
         # Complete
-        yield self._sse_event('complete', {
-            'sources': accumulated_sources[:10],  # Limit to prevent overflow
-            'iterations': iteration
-        })
+        try:
+            yield self._sse_event('complete', {
+                'sources': accumulated_sources[:10],  # Limit to prevent overflow
+                'iterations': iteration
+            })
+        except (GeneratorExit, StopAsyncIteration):
+            print("[Agent] Client disconnected at completion")
+            return
     
     def _sse_event(self, event_type: str, data: Dict) -> str:
         """Format data as Server-Sent Event"""
@@ -835,17 +981,24 @@ CRITICAL: Return ONLY valid JSON. No extra text."""
         self,
         pattern: str,
         documents: List[Dict],
-        target_files: List[str] = None
-    ) -> str:
-        """Search for exact pattern in documents"""
+        target_files: List[str] = None,
+        context_lines: int = 2  # Number of lines before/after to include
+    ) -> tuple:
+        """Search for exact pattern in documents with surrounding context.
+        Returns: (results_string, list_of_matched_filenames)
+        """
         results = []
+        matched_files = set()  # Track which files had matches
         
         # Normalize target files (remove @ prefix, case-insensitive)
         normalized_targets = None
         if target_files:
             normalized_targets = [t.lstrip('@').lower() for t in target_files]
         
-        print(f"[DEBUG] Grep searching for pattern: '{pattern}'")
+        # Split pattern into words for multi-word searches (find lines containing ANY word)
+        pattern_words = [w.strip().lower() for w in pattern.replace(',', ' ').split() if w.strip()]
+        
+        print(f"[DEBUG] Grep searching for pattern: '{pattern}' -> words: {pattern_words}")
         print(f"[DEBUG] Target files: {target_files} -> normalized: {normalized_targets}")
         
         for doc in documents:
@@ -861,18 +1014,52 @@ CRITICAL: Return ONLY valid JSON. No extra text."""
             
             content = doc['content']
             lines = content.split('\n')
+            total_lines = len(lines)
             
-            print(f"[DEBUG] Searching in {filename} ({len(lines)} lines, {len(content)} chars)")
+            print(f"[DEBUG] Searching in {filename} ({total_lines} lines, {len(content)} chars)")
+            
+            matched_ranges = []  # Track which line ranges we've already included
             
             for line_num, line in enumerate(lines, 1):
-                if pattern.lower() in line.lower():
-                    results.append(f"{filename}:{line_num}: {line.strip()}")
+                line_lower = line.lower()
+                # Match if ANY word from the pattern is found in the line
+                matches_any = any(word in line_lower for word in pattern_words) if pattern_words else pattern.lower() in line_lower
                 
-                if len(results) >= 20:
+                if matches_any:
+                    matched_files.add(filename)  # Track this file had a match
+                    
+                    # Calculate context range
+                    start = max(1, line_num - context_lines)
+                    end = min(total_lines, line_num + context_lines)
+                    
+                    # Check if this range overlaps with already matched ranges
+                    overlaps = False
+                    for (prev_start, prev_end) in matched_ranges:
+                        if start <= prev_end and end >= prev_start:
+                            overlaps = True
+                            break
+                    
+                    if not overlaps:
+                        matched_ranges.append((start, end))
+                        
+                        # Build context block with line numbers
+                        context_block = []
+                        for ctx_line_num in range(start, end + 1):
+                            ctx_line = lines[ctx_line_num - 1]
+                            # Mark the matching line
+                            if ctx_line_num == line_num:
+                                context_block.append(f">>> {filename}:{ctx_line_num}: {ctx_line.strip()}")
+                            else:
+                                context_block.append(f"    {filename}:{ctx_line_num}: {ctx_line.strip()}")
+                        
+                        results.append('\n'.join(context_block))
+                
+                if len(results) >= 10:  # Limit to 10 context blocks
                     break
         
-        print(f"[DEBUG] Grep results: {len(results)} matches")
-        return '\n'.join(results) if results else "No matches found"
+        print(f"[DEBUG] Grep results: {len(results)} context blocks from files: {list(matched_files)}")
+        result_text = '\n\n'.join(results) if results else "No matches found"
+        return result_text, list(matched_files)
     
     async def _read_lines(
         self,
@@ -926,14 +1113,46 @@ CRITICAL: Return ONLY valid JSON. No extra text."""
             for filename in matches:
                 sources.append({
                     'docName': filename,
-                    'text': results[:200]
+                    'text': results[:500]  # Include more context
                 })
         elif action_type == 'grep':
-            matches = re.findall(r'^([^:]+):(\d+):', results, re.MULTILINE)
-            for filename, line_num in matches[:5]:
+            # Parse grep output with context blocks
+            # New format: ">>> filename:linenum: content" for match, "    filename:linenum: content" for context
+            # Group lines into context blocks
+            current_block = []
+            current_filename = None
+            
+            for line in results.split('\n'):
+                # Match line (marked with >>>)
+                match_line = re.match(r'^>>>\s*([^:]+):(\d+):\s*(.*)$', line)
+                # Context line (indented with spaces)
+                context_line = re.match(r'^\s{4}([^:]+):(\d+):\s*(.*)$', line)
+                
+                if match_line:
+                    filename, line_num, content = match_line.groups()
+                    current_filename = filename
+                    current_block.append(f"**[Line {line_num}]** {content}")
+                elif context_line:
+                    filename, line_num, content = context_line.groups()
+                    current_block.append(f"[Line {line_num}] {content}")
+                elif line.strip() == '' and current_block:
+                    # End of block, save it
+                    if current_filename:
+                        sources.append({
+                            'docName': current_filename,
+                            'text': '\n'.join(current_block)
+                        })
+                    current_block = []
+                    current_filename = None
+                    
+                    if len(sources) >= 10:
+                        break
+            
+            # Don't forget last block
+            if current_block and current_filename:
                 sources.append({
-                    'docName': filename,
-                    'text': f"Line {line_num}"
+                    'docName': current_filename,
+                    'text': '\n'.join(current_block)
                 })
         
         return sources
@@ -966,11 +1185,11 @@ TASK:
 1. Extract key insights from retrieved context
 2. Link information across documents  
 3. Rewrite query as detailed instruction for answer generator
-4. Include source names with facts
+4. **IMPORTANT: Preserve [Source: filename] references** for every fact so the final answer can cite sources properly
 
 OUTPUT:
-thoughts: Your analysis as text
-rewrittenPrompt: The optimized prompt for the answer generator"""
+thoughts: Your analysis as text (include [Source: filename] for each fact)
+rewrittenPrompt: The optimized prompt for the answer generator (include all source names)"""
         
         prompt = f"User Query: {query}\n\nRetrieved Context:\n{context_text}"
         
@@ -1039,12 +1258,16 @@ rewrittenPrompt: The optimized prompt for the answer generator"""
         EXPERT REASONER: Generate final answer with streaming
         Uses thinker's analysis if available
         """
+        print(f"[Answer Gen] Starting. Query: {query[:50]}..., Sources: {len(sources)}, Provider: {self.provider}, Model: {self.model_id}")
+        
         if not self.api_key:
+            print(f"[Answer Gen] ERROR: No API key for {self.provider}")
             yield f"⚠️ No {self.provider.upper()} API key configured. Please add your {self.provider.upper()} API key in settings."
             return
         
         # Format context
         context_text = self._format_sources(sources)
+        print(f"[Answer Gen] Context formatted: {len(context_text)} chars")
         
         thinker_note = ""
         if thinker_result:
@@ -1060,10 +1283,13 @@ CONTEXT: The VAULT section below contains retrieved content from documents. Each
 TASK:
 1. Answer using vault content when available - USE THE DATA BELOW
 2. ONLY say "No vault info found" if VAULT section shows "NO CONTEXT"
-3. Cite sources using [Source: name] format
-4. Be comprehensive and well-structured
+3. **IMPORTANT: Cite ALL sources at the end of your response in a "Sources" section using Markdown format, e.g.:**
+   - [Source: filename.txt]
+   - [Source: another.pdf]
+4. Also cite inline when referencing specific facts using [Source: name] format
+5. Be comprehensive and well-structured
 {thinker_note}
-FORMAT: Double newlines between paragraphs. Avoid dense text.
+FORMAT: Double newlines between paragraphs. Avoid dense text. End with a Sources section listing all referenced documents.
 
 VAULT:
 {context_text}"""
@@ -1078,13 +1304,21 @@ VAULT:
                 {'role': 'user', 'content': prompt}
             ]
             
+            print(f"[Answer Gen] Calling LLM with {len(messages)} messages, temp=0.7, max_tokens=2000")
             # Use universal streaming LLM call
             stream_gen = await self._call_llm(messages, temperature=0.7, max_tokens=2000, stream=True)
             
+            chunk_count = 0
             async for content in stream_gen:
+                chunk_count += 1
                 yield content
+            
+            print(f"[Answer Gen] Stream complete. Chunks yielded: {chunk_count}")
                     
         except Exception as e:
+            print(f"[Answer Gen] Exception in _generate_answer_stream: {e}")
+            import traceback
+            traceback.print_exc()
             raise  # Let caller handle with clean error message
     
     async def _direct_generation(self, query: str) -> AsyncGenerator[str, None]:

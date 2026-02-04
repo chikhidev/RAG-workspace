@@ -563,6 +563,17 @@ export const ChatInterface: React.FC<Props> = ({
                           Regenerate Response
                         </button>
                       </div>
+                    ) : (!msg.content && msg.thoughtLogs && msg.thoughtLogs.length > 0 && !msg.status) ? (
+                      <div className="flex flex-col items-start gap-4">
+                        <p className="text-orange-400 italic text-[13px]">Research completed but answer generation failed.</p>
+                        <button
+                          onClick={() => onRegenerate(msg.id)}
+                          className="flex items-center gap-2 px-4 py-2 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-lg text-[12px] font-bold transition-all"
+                        >
+                          <RefreshCw size={14} />
+                          Retry Answer Generation
+                        </button>
+                      </div>
                     ) : (
                       <div className="flex items-center gap-4 py-2 px-1">
                         <div className="text-[10px] font-mono text-brand-muted tracking-[0.2em] flex items-center gap-2">

@@ -184,13 +184,23 @@ def update_config(config: schemas.ConfigUpdate, current_user: models.User = Depe
         user_config = models.UserConfig(user_id=current_user.id)
         db.add(user_config)
     
+    # Debug logging
+    print(f"[Config Update] User {current_user.id}: Received api_keys={config.api_keys}")
+    print(f"[Config Update] User {current_user.id}: Existing api_keys={user_config.api_keys}")
+    
     # MERGE api_keys instead of replacing (preserve existing keys)
     if config.api_keys is not None:
         existing_keys = user_config.api_keys or {}
-        merged_keys = {**existing_keys, **config.api_keys}
-        # Remove keys that are explicitly set to empty string
-        merged_keys = {k: v for k, v in merged_keys.items() if v}
-        user_config.api_keys = merged_keys
+        # Only merge if there are actual keys to merge
+        if config.api_keys:
+            merged_keys = {**existing_keys, **config.api_keys}
+            # Remove keys that are explicitly set to empty string
+            merged_keys = {k: v for k, v in merged_keys.items() if v}
+            user_config.api_keys = merged_keys
+            print(f"[Config Update] User {current_user.id}: Updated api_keys={user_config.api_keys}")
+        else:
+            print(f"[Config Update] User {current_user.id}: Empty api_keys sent, preserving existing")
+        # If empty dict sent, don't change anything (preserve existing)
     if config.custom_instructions is not None:
         user_config.custom_instructions = config.custom_instructions
     if config.context_script is not None:
@@ -384,8 +394,14 @@ async def chat_stream(
         'enabled': doc.enabled
     } for doc in documents]
     
+    # Debug: Log document details
+    print(f"[Chat] Documents found: {len(docs_data)}")
+    for d in docs_data:
+        print(f"  - {d['filename']}: enabled={d['enabled']}, content_len={len(d['content'] or '')}")
+    print(f"[Chat] use_vault: {request.use_vault}")
+    
     # Create engine instance with model selection and provider
-    model_id = request.model_id or 'gemini-1.5-flash'
+    model_id = request.model_id or 'nvidia/nemotron-3-nano-30b-a3b:free'
     provider = request.provider  # Get provider from frontend
     engine = agent_rag_engine_v2.AgentRAGEngine(current_user, model_id, provider)
     

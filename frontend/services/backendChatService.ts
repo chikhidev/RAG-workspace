@@ -27,10 +27,12 @@ export class BackendChatService {
   /**
    * Stream chat responses from backend
    * Yields events as they arrive via Server-Sent Events (SSE)
+   * Supports abortion via AbortSignal
    */
   async *streamChat(
     authToken: string,
-    request: ChatRequest
+    request: ChatRequest,
+    signal?: AbortSignal
   ): AsyncGenerator<StreamEvent, void, unknown> {
     // Debug: Log the request being sent
     console.log('[BackendChat] Sending request:', JSON.stringify(request, null, 2));
@@ -41,7 +43,8 @@ export class BackendChatService {
         'Authorization': `Bearer ${authToken}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(request)
+      body: JSON.stringify(request),
+      signal: signal
     });
     
     if (!response.ok) {
@@ -62,6 +65,12 @@ export class BackendChatService {
         const { done, value } = await reader.read();
         
         if (done) break;
+        
+        // Check if aborted
+        if (signal?.aborted) {
+          console.log('[BackendChat] Stream aborted by user');
+          break;
+        }
         
         // Decode chunk
         buffer += decoder.decode(value, { stream: true });
@@ -94,6 +103,13 @@ export class BackendChatService {
           }
         }
       }
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.log('[BackendChat] Request aborted');
+        // Don't throw, just exit gracefully
+        return;
+      }
+      throw error;
     } finally {
       reader.releaseLock();
     }

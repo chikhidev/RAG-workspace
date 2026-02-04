@@ -199,7 +199,7 @@ const App: React.FC = () => {
     useVault: initialSettings.useVault,
     useContextHistory: initialSettings.useContextHistory,
     contextScript: "",
-    selectedModel: 'gemini-2.0-flash-thinking-exp',
+    selectedModel: 'nvidia/nemotron-3-nano-30b-a3b:free',
     openRouterKey: "",
     googleKey: "",
     xaiKey: "",
@@ -228,7 +228,7 @@ const App: React.FC = () => {
           setState(prev => ({
             ...prev,
             documents: docs,
-            selectedModel: config.model_preference || 'gemini-2.0-flash-thinking-exp',
+            selectedModel: config.model_preference || 'nvidia/nemotron-3-nano-30b-a3b:free',
             openRouterKey: config.api_keys?.openrouter || '',
             googleKey: config.api_keys?.google || '',
             xaiKey: config.api_keys?.xai || '',
@@ -295,15 +295,15 @@ const App: React.FC = () => {
   const handleOnboardingComplete = async (settings: { provider: string; model: string; apiKey: string }) => {
     if (!authToken) return;
     
-    // Send all existing keys plus the new one to preserve them
-    const apiKeys: Record<string, string> = {
-      openrouter: state.openRouterKey,
-      google: state.googleKey,
-      xai: state.xaiKey,
-      openai: state.openaiKey,
-      mistral: state.mistralKey,
-    };
-    // Update the specific provider's key
+    // Only send keys that have actual values to preserve existing keys
+    const apiKeys: Record<string, string> = {};
+    if (state.openRouterKey) apiKeys.openrouter = state.openRouterKey;
+    if (state.googleKey) apiKeys.google = state.googleKey;
+    if (state.xaiKey) apiKeys.xai = state.xaiKey;
+    if (state.openaiKey) apiKeys.openai = state.openaiKey;
+    if (state.mistralKey) apiKeys.mistral = state.mistralKey;
+    
+    // Add the new key from onboarding
     apiKeys[settings.provider] = settings.apiKey;
     
     try {
@@ -526,6 +526,10 @@ const App: React.FC = () => {
       return;
     }
     
+    // Create new abort controller for this request
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+    
     await processQueryWithBackend(
       query,
       assistantId,
@@ -534,8 +538,14 @@ const App: React.FC = () => {
       setState,
       setActiveFileNames,
       addToast,
-      state.selectedModel
+      state.selectedModel,
+      abortController.signal
     );
+    
+    // Clear abort controller after completion
+    if (abortControllerRef.current === abortController) {
+      abortControllerRef.current = null;
+    }
   };
 
   /* 
@@ -1174,15 +1184,18 @@ const App: React.FC = () => {
           isOpen={state.isApiKeyModalOpen}
           onClose={() => setState(prev => ({ ...prev, isApiKeyModalOpen: false }))}
           onSave={() => {
-            syncConfigToBackend({
-              api_keys: {
-                openrouter: state.openRouterKey,
-                google: state.googleKey,
-                xai: state.xaiKey,
-                openai: state.openaiKey,
-                mistral: state.mistralKey
-              }
-            });
+            // Only send keys that have actual values (non-empty)
+            const apiKeys: Record<string, string> = {};
+            if (state.openRouterKey) apiKeys.openrouter = state.openRouterKey;
+            if (state.googleKey) apiKeys.google = state.googleKey;
+            if (state.xaiKey) apiKeys.xai = state.xaiKey;
+            if (state.openaiKey) apiKeys.openai = state.openaiKey;
+            if (state.mistralKey) apiKeys.mistral = state.mistralKey;
+            
+            // Only sync if there are keys to send
+            if (Object.keys(apiKeys).length > 0) {
+              syncConfigToBackend({ api_keys: apiKeys });
+            }
           }}
           openRouterKey={state.openRouterKey}
           setOpenRouterKey={(k) => setState(prev => ({ ...prev, openRouterKey: k }))}

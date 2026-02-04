@@ -17,7 +17,7 @@ const file_formats = {
       />
       <path stroke="#D5D7DA" strokeWidth={1.5} d="M24 .5V8a4 4 0 0 0 4 4h7.5" />
       <path
-        stroke="#444CE7"
+        stroke="#ffff"
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth={1.5}
@@ -35,7 +35,7 @@ const file_formats = {
       />
       <path stroke="#D5D7DA" strokeWidth={1.5} d="M24 .5V8a4 4 0 0 0 4 4h7.5" />
       <path
-        stroke="#155EEF"
+        stroke="#ffff"
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth={1.5}
@@ -53,7 +53,7 @@ const file_formats = {
       />
       <path stroke="#D5D7DA" strokeWidth={1.5} d="M24 .5V8a4 4 0 0 0 4 4h7.5" />
       <path
-        stroke="#7F56D9"
+        stroke="#ffff"
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth={1.5}
@@ -71,7 +71,7 @@ const file_formats = {
       />
       <path stroke="#D5D7DA" strokeWidth={1.5} d="M24 .5V8a4 4 0 0 0 4 4h7.5" />
       <path
-        stroke="#DD2590"
+        stroke="#ffff"
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth={1.5}
@@ -89,7 +89,7 @@ const file_formats = {
       />
       <path stroke="#D5D7DA" strokeWidth={1.5} d="M24 .5V8a4 4 0 0 0 4 4h7.5" />
       <path
-        stroke="#079455"
+        stroke="#ffff"
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth={1.5}
@@ -107,7 +107,7 @@ const file_formats = {
       />
       <path stroke="#D5D7DA" strokeWidth={1.5} d="M24 .5V8a4 4 0 0 0 4 4h7.5" />
       <path
-        stroke="#EF4444"
+        stroke="#ffff"
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth={1.5}
@@ -125,7 +125,7 @@ const file_formats = {
       />
       <path stroke="#D5D7DA" strokeWidth={1.5} d="M24 .5V8a4 4 0 0 0 4 4h7.5" />
       <path
-        stroke="#EAB308"
+        stroke="#ffff"
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth={1.5}
@@ -143,7 +143,7 @@ const file_formats = {
       />
       <path stroke="#D5D7DA" strokeWidth={1.5} d="M24 .5V8a4 4 0 0 0 4 4h7.5" />
       <path
-        stroke="#06B6D4"
+        stroke="#ffff"
         strokeLinecap="round"
         strokeLinejoin="round"
         strokeWidth={1.5}
