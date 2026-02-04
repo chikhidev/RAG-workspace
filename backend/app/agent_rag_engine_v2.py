@@ -243,6 +243,66 @@ class AgentRAGEngine:
                     'text': results
                 })
                 # Keep highlight active - will be cleared at start of next iteration
+            
+            elif action['type'] == 'sed':
+                # SED action: Replace text in a file (with user approval)
+                filename = action.get('filename', '')
+                find_pattern = action.get('find', '')
+                replace_with = action.get('replace', '')
+                
+                try:
+                    yield self._sse_event('status', {
+                        'status': 'editing',
+                        'message': f"Preparing edit for {filename}..."
+                    })
+                    
+                    yield self._sse_event('thought', {
+                        'step': 'Edit Proposal',
+                        'thought': action.get('thought', f'Proposing replacement: "{find_pattern}" → "{replace_with}" in {filename}'),
+                        'iteration': iteration
+                    })
+                    
+                    # Highlight the file being edited
+                    yield self._sse_event('highlight', {'files': [filename]})
+                except (GeneratorExit, StopAsyncIteration):
+                    print(f"[Agent] Client disconnected during sed action (iter {iteration})")
+                    return
+                
+                # Generate diff without modifying original
+                edit_result = await self._generate_edit_diff(
+                    filename, find_pattern, replace_with, documents
+                )
+                
+                if edit_result.get('error'):
+                    # Add detailed error to knowledge buffer so LLM learns and changes approach
+                    error_msg = edit_result['error']
+                    knowledge_buffer += f"\n--- Edit FAILED (Iter {iteration}) ---\nFile: {filename}\nPattern: {find_pattern}\nError: {error_msg}\nACTION REQUIRED: Use grep first to find the EXACT text, then use sed with that exact text.\n"
+                    print(f"[Agent] Sed failed: {error_msg}")
+                else:
+                    # Send edit proposal for user approval
+                    try:
+                        yield self._sse_event('edit_proposal', {
+                            'filename': filename,
+                            'doc_id': edit_result.get('doc_id'),
+                            'find': find_pattern,
+                            'replace': replace_with,
+                            'original_content': edit_result.get('original_content'),
+                            'new_content': edit_result.get('new_content'),
+                            'diff': edit_result.get('diff'),
+                            'changes_count': edit_result.get('changes_count', 0),
+                            'iteration': iteration
+                        })
+                    except (GeneratorExit, StopAsyncIteration):
+                        print("[Agent] Client disconnected during edit proposal")
+                        return
+                    
+                    knowledge_buffer += f"\n--- Edit Proposal SENT (Iter {iteration}) ---\nFile: {filename}\nFind: {find_pattern}\nReplace: {replace_with}\nChanges: {edit_result.get('changes_count', 0)} occurrence(s)\nStatus: Awaiting user approval\n"
+                    
+                    # Mark as successful action - add to sources so we don't get "no sources" error
+                    accumulated_sources.append({
+                        'docName': filename,
+                        'text': f"[Edit Proposal] Replace '{find_pattern}' with '{replace_with}' ({edit_result.get('changes_count', 0)} changes)"
+                    })
         
         # === PHASE 2: THINKER BRAIN (Synthesis) ===
         # Clear all file highlights before synthesis
@@ -817,15 +877,42 @@ ACTIONS:
 • search: Semantic search in vault (conceptual queries) - USE for general content
 • grep: Exact text matching (names, phrases, patterns) - USE FIRST for keywords
 • read_lines: Read specific lines from a file - USE for line number requests (e.g., "5th line", "lines 10-20")
+• sed: Replace text in a file (text files only: .txt, .csv, .md, .json, etc.) - USE when user asks to edit/replace/change text
 • conclude: Enough info gathered OR previous action succeeded OR file/data not found
 
+EDIT QUERIES (using sed) - CRITICAL RULES:
+**MUST grep FIRST before sed!** You cannot guess what text exists in the file.
+1. User asks to edit/replace text → grep to find the EXACT current text
+2. Once you see grep results with the exact text → use sed with that EXACT text
+3. sed does LITERAL text matching, NOT regex - use the exact characters
+
+CORRECT workflow for edits:
+• User: "replace the year to 2002 in @aot.txt"
+• Step 1: grep for relevant keywords (e.g., "year", "wall", "attack") to find the line
+• Step 2: From grep results, extract the EXACT text (e.g., "845" or "Year 845")
+• Step 3: sed with find="845", replace="2002"
+
+WRONG (will fail):
+• sed with find="200[0-9]" ← Regex won't work! Not literal text
+• sed without knowing what's in the file ← You must grep first!
+
+If "--- Edit FAILED ---" appears in RESULTS SO FAR:
+→ Your pattern wasn't found literally in the file
+→ Use grep to find the actual text first
+→ DO NOT repeat sed with same pattern
+
+• ONLY works on text files (.txt, .csv, .md, .json, .yml, .xml, .html, .css, .js, etc.)
+• Does NOT work on PDF files - conclude with explanation if PDF edit requested
+
 QUERY PARSING (CRITICAL):
+• "change/replace/edit/modify [X] to [Y]" → USER WANTS TO EDIT → grep for X first, then sed
 • "what is inside @file" → User wants FILE CONTENT → use search or read_lines on that file
 • "what is X" → grep for "X" in relevant files
 • "summarize/content/inside @file" → read_lines to get full content of file (lines 1-100)
 • Do NOT grep for words like "inside", "content", "summary" - these are command words, not search terms
 
 OPTIMAL STRATEGY FOR COMMON QUERIES:
+• "change X to Y in @file" → grep for "X" → sed with exact text → conclude
 • "what is inside @file" → read_lines file from 1-100 → conclude
 • Definition/concept question → grep once in relevant file → conclude
 • "What is X?" → grep for "X" in topic file → conclude
@@ -847,24 +934,30 @@ Before using read_lines or grep on @filename:
 → Do NOT attempt to read non-existent files
 
 DECISION PRIORITY (choose highest applicable):
-1. Results already in buffer → conclude
-2. File not found or data missing → conclude with explanation
-3. Previous action failed → try different approach ONCE or conclude
-4. User mentions @file + wants content → read_lines 1-100 → conclude
-5. Simple definition/fact + obvious target → grep once → conclude
-6. Line numbers requested → read_lines once → conclude
-7. Need exact match → grep → conclude
-8. Conceptual query → search once → conclude
+1. "--- Edit FAILED ---" in buffer → use grep to find actual text, NOT sed again
+2. "--- Edit Proposal SENT ---" in buffer → conclude (edit awaiting approval)
+3. User query contains "change/replace/edit/modify" AND grep results in buffer → use sed with exact text from grep
+4. User query contains "change/replace/edit/modify" AND no grep yet → grep first to find text
+5. Results already in buffer AND query is NOT about editing → conclude
+6. File not found or data missing → conclude with explanation
+7. Previous action failed → try different approach ONCE or conclude
+8. User mentions @file + wants content → read_lines 1-100 → conclude
+9. Simple definition/fact + obvious target → grep once → conclude
+10. Line numbers requested → read_lines once → conclude
+11. Need exact match → grep → conclude
+12. Conceptual query → search once → conclude
 
 RESPONSE FORMAT (JSON only):
 {{
-  "type": "search|grep|read_lines|conclude",
+  "type": "search|grep|read_lines|sed|conclude",
   "thought": "Why this action + what happens next",
   "query": "search query" (for search),
   "pattern": "text pattern" (for grep),
-  "filename": "exact_filename.txt" (for read_lines - must match available files),
+  "filename": "exact_filename.txt" (for read_lines or sed - must match available files),
   "start_line": 1 (for read_lines),
   "end_line": 50 (for read_lines),
+  "find": "text to find" (for sed),
+  "replace": "replacement text" (for sed),
   "target_files": ["file1.txt"] (optional for search/grep)
 }}
 
@@ -1102,6 +1195,76 @@ CRITICAL: Return ONLY valid JSON. No extra text."""
                 return result
         
         return f"File {filename} not found in vault. Available files: {', '.join([d['filename'] for d in documents if d.get('enabled', True)])}"
+    
+    async def _generate_edit_diff(
+        self,
+        filename: str,
+        find_pattern: str,
+        replace_with: str,
+        documents: List[Dict]
+    ) -> Dict:
+        """
+        Generate a diff for proposed text replacement WITHOUT modifying the original.
+        Returns the diff, original content, and new content for user approval.
+        """
+        import difflib
+        
+        # Normalize filename (remove @ prefix)
+        search_name = filename.lstrip('@').lower()
+        
+        print(f"[DEBUG] Generating edit diff for: '{filename}'")
+        print(f"[DEBUG] Find: '{find_pattern}' -> Replace: '{replace_with}'")
+        
+        for doc in documents:
+            if not doc.get('enabled', True):
+                continue
+            
+            doc_name_lower = doc['filename'].lower()
+            
+            # Match by exact name or case-insensitive
+            if doc_name_lower == search_name or doc['filename'] == filename:
+                original_content = doc['content']
+                
+                # Check if pattern exists
+                if find_pattern not in original_content:
+                    return {
+                        'error': f"Pattern '{find_pattern}' not found in {filename}",
+                        'filename': filename
+                    }
+                
+                # Count occurrences
+                changes_count = original_content.count(find_pattern)
+                
+                # Generate new content
+                new_content = original_content.replace(find_pattern, replace_with)
+                
+                # Generate unified diff
+                original_lines = original_content.splitlines(keepends=True)
+                new_lines = new_content.splitlines(keepends=True)
+                
+                diff = ''.join(difflib.unified_diff(
+                    original_lines,
+                    new_lines,
+                    fromfile=f'a/{filename}',
+                    tofile=f'b/{filename}',
+                    lineterm=''
+                ))
+                
+                print(f"[DEBUG] Edit diff generated: {changes_count} occurrences, diff size: {len(diff)} chars")
+                
+                return {
+                    'doc_id': doc.get('doc_id'),
+                    'filename': filename,
+                    'original_content': original_content,
+                    'new_content': new_content,
+                    'diff': diff,
+                    'changes_count': changes_count
+                }
+        
+        return {
+            'error': f"File {filename} not found in vault.",
+            'filename': filename
+        }
     
     def _extract_sources(self, results: str, action_type: str) -> List[Dict]:
         """Extract source references from results"""

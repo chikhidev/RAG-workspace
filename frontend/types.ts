@@ -24,6 +24,20 @@ export interface Chunk {
 
 export type PipelineStatus = 'planning' | 'expanding' | 'searching' | 'thinking' | 'synthesizing' | 'reasoning' | 'completed' | 'error';
 
+export interface EditProposal {
+  id: string;
+  filename: string;
+  doc_id: string;
+  find: string;
+  replace: string;
+  original_content: string;
+  new_content: string;
+  diff: string;
+  changes_count: number;
+  iteration: number;
+  status: 'pending' | 'approved' | 'rejected';
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -40,6 +54,7 @@ export interface Message {
   clarificationAnswer?: string;
   pendingMaxIterations?: boolean;
   wasStopped?: boolean;
+  editProposals?: EditProposal[];
   agentContext?: {
     originalQuery: string;
     knowledgeBuffer: string;

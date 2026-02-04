@@ -422,6 +422,249 @@ async def chat_stream(
         }
     )
 
+
+@app.post("/documents/approve-edit")
+async def approve_edit(
+    request: schemas.EditApprovalRequest,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(database.get_db)
+):
+    """
+    Approve or reject a proposed file edit.
+    If approved, updates the document content in the database.
+    """
+    print(f"[Edit] Received approval request for {request.filename}: approved={request.approved}")
+    
+    if not request.approved:
+        return {"status": "rejected", "message": "Edit was rejected by user."}
+    
+    # Find the document
+    document = db.query(models.Document).filter(
+        models.Document.user_id == current_user.id,
+        models.Document.doc_id == request.doc_id
+    ).first()
+    
+    if not document:
+        raise HTTPException(status_code=404, detail=f"Document {request.filename} not found")
+    
+    # Check if it's a text-based file (not PDF)
+    if document.file_type.lower() == 'pdf':
+        raise HTTPException(status_code=400, detail="Cannot edit PDF files. Only text-based files are supported.")
+    
+    # Update the document content
+    document.content = request.new_content
+    db.commit()
+    
+    print(f"[Edit] Document {request.filename} updated successfully")
+    
+    return {
+        "status": "approved",
+        "message": f"Document {request.filename} has been updated.",
+        "doc_id": request.doc_id
+    }
+
+
+# ============ CONVERSATION ENDPOINTS ============
+
+@app.get("/conversations", response_model=schemas.ConversationListResponse)
+async def list_conversations(
+    skip: int = 0,
+    limit: int = 20,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(database.get_db)
+):
+    """
+    List user's conversations with pagination.
+    Returns newest conversations first.
+    """
+    total = db.query(models.Conversation).filter(
+        models.Conversation.user_id == current_user.id
+    ).count()
+    
+    conversations = db.query(models.Conversation).filter(
+        models.Conversation.user_id == current_user.id
+    ).order_by(models.Conversation.created_at.desc()).offset(skip).limit(limit).all()
+    
+    return {
+        "conversations": conversations,
+        "total": total,
+        "has_more": (skip + limit) < total
+    }
+
+
+@app.post("/conversations", response_model=schemas.ConversationBase)
+async def create_conversation(
+    request: schemas.ConversationCreate,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(database.get_db)
+):
+    """
+    Create a new conversation.
+    """
+    conversation = models.Conversation(
+        user_id=current_user.id,
+        title=request.title or "New Conversation"
+    )
+    db.add(conversation)
+    db.commit()
+    db.refresh(conversation)
+    return conversation
+
+
+@app.get("/conversations/{conversation_id}", response_model=schemas.ConversationWithMessages)
+async def get_conversation(
+    conversation_id: int,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(database.get_db)
+):
+    """
+    Get a conversation with all its messages.
+    """
+    conversation = db.query(models.Conversation).filter(
+        models.Conversation.id == conversation_id,
+        models.Conversation.user_id == current_user.id
+    ).first()
+    
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    return conversation
+
+
+@app.get("/conversations/{conversation_id}/messages", response_model=schemas.MessagesResponse)
+async def get_conversation_messages(
+    conversation_id: int,
+    skip: int = 0,
+    limit: int = 50,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(database.get_db)
+):
+    """
+    Get messages for a conversation with pagination.
+    Returns oldest messages first within the window, but pagination goes from newest.
+    Use skip=0, limit=50 to get the 50 most recent messages.
+    Use skip=50, limit=50 to get the next 50 older messages, etc.
+    """
+    # Verify conversation belongs to user
+    conversation = db.query(models.Conversation).filter(
+        models.Conversation.id == conversation_id,
+        models.Conversation.user_id == current_user.id
+    ).first()
+    
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    total = db.query(models.Message).filter(
+        models.Message.conversation_id == conversation_id
+    ).count()
+    
+    # Get messages in reverse order (newest first for pagination), then reverse to show oldest first
+    messages = db.query(models.Message).filter(
+        models.Message.conversation_id == conversation_id
+    ).order_by(models.Message.timestamp.desc()).offset(skip).limit(limit).all()
+    
+    # Reverse to show oldest first within this batch
+    messages.reverse()
+    
+    return {
+        "messages": messages,
+        "total": total,
+        "has_more": (skip + limit) < total
+    }
+
+
+@app.post("/conversations/{conversation_id}/messages", response_model=schemas.MessageBase)
+async def add_message(
+    conversation_id: int,
+    request: schemas.MessageCreate,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(database.get_db)
+):
+    """
+    Add a message to a conversation.
+    """
+    # Verify conversation belongs to user
+    conversation = db.query(models.Conversation).filter(
+        models.Conversation.id == conversation_id,
+        models.Conversation.user_id == current_user.id
+    ).first()
+    
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    message = models.Message(
+        conversation_id=conversation_id,
+        role=request.role,
+        content=request.content,
+        extra_data=request.extra_data or {}
+    )
+    db.add(message)
+    
+    # Update conversation title from first user message if still default
+    if conversation.title == "New Conversation" and request.role == "user":
+        # Use first 50 chars of message as title
+        conversation.title = request.content[:50] + ("..." if len(request.content) > 50 else "")
+    
+    db.commit()
+    db.refresh(message)
+    return message
+
+
+@app.delete("/conversations/{conversation_id}")
+async def delete_conversation(
+    conversation_id: int,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(database.get_db)
+):
+    """
+    Delete a conversation and all its messages.
+    """
+    conversation = db.query(models.Conversation).filter(
+        models.Conversation.id == conversation_id,
+        models.Conversation.user_id == current_user.id
+    ).first()
+    
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    # Delete all messages first
+    db.query(models.Message).filter(
+        models.Message.conversation_id == conversation_id
+    ).delete()
+    
+    # Delete conversation
+    db.delete(conversation)
+    db.commit()
+    
+    return {"status": "deleted", "conversation_id": conversation_id}
+
+
+@app.patch("/conversations/{conversation_id}", response_model=schemas.ConversationBase)
+async def update_conversation(
+    conversation_id: int,
+    request: schemas.ConversationCreate,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(database.get_db)
+):
+    """
+    Update conversation title.
+    """
+    conversation = db.query(models.Conversation).filter(
+        models.Conversation.id == conversation_id,
+        models.Conversation.user_id == current_user.id
+    ).first()
+    
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    if request.title:
+        conversation.title = request.title
+    
+    db.commit()
+    db.refresh(conversation)
+    return conversation
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -77,6 +77,7 @@ class Message(Base):
     conversation_id = Column(Integer, ForeignKey("conversations.id"))
     role = Column(String) # user, assistant, system
     content = Column(Text)
+    extra_data = Column(JSON, default={})  # For sources, citations, edit proposals, etc.
     timestamp = Column(DateTime, default=datetime.utcnow)
     
     conversation = relationship("Conversation", back_populates="messages")

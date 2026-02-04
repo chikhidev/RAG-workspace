@@ -4,6 +4,7 @@ import { fileService } from './services/fileService';
 import { modelService } from './services/modelService';
 import { mindNodeService } from './services/mindNodeService';
 import * as storageService from './services/storageService';
+import { conversationService, Conversation as ConversationType } from './services/conversationService';
 import { processQueryWithBackend } from './utils/backendQueryProcessor';
 import { X, Key, Shield, ExternalLink, PanelLeft, PanelLeftClose } from 'lucide-react';
 
@@ -13,6 +14,7 @@ import { ShortcutsModal } from './components/ShortcutsModal';
 import { AuthPage } from './components/AuthPage';
 import { ProfileSettingsModal } from './components/ProfileSettingsModal';
 import { ApiKeyManagementModal } from './components/ApiKeyManagementModal';
+import { ConversationSidebar } from './components/ConversationSidebar';
 const DocumentList = lazy(() => import('./components/DocumentList').then(m => ({ default: m.DocumentList })));
 const ChatInterface = lazy(() => import('./components/ChatInterface').then(m => ({ default: m.ChatInterface })));
 const RightSidebar = lazy(() => import('./components/RightSidebar').then(m => ({ default: m.RightSidebar })));
@@ -213,15 +215,23 @@ const App: React.FC = () => {
     mindMaps: [],
   });
 
+  // Conversation state for persistence
+  const [currentConversationId, setCurrentConversationId] = useState<number | null>(null);
+  const [conversations, setConversations] = useState<ConversationType[]>([]);
+  const [conversationsHasMore, setConversationsHasMore] = useState(false);
+  const [isLoadingConversations, setIsLoadingConversations] = useState(false);
+  const [isConversationSidebarOpen, setIsConversationSidebarOpen] = useState(false);
+
   // Load data from backend on mount
   useEffect(() => {
     if (!authToken || isDataLoaded || isAuthChecking) return;
     
     const loadData = async () => {
       try {
-        const [docs, config] = await Promise.all([
+        const [docs, config, convos] = await Promise.all([
           loadInitialDocs(),
-          loadInitialConfig()
+          loadInitialConfig(),
+          conversationService.listConversations(authToken, 0, 20).catch(() => ({ conversations: [], total: 0, has_more: false }))
         ]);
         
         if (config) {
@@ -243,6 +253,29 @@ const App: React.FC = () => {
           }));
         } else {
           setState(prev => ({ ...prev, documents: docs }));
+        }
+        
+        // Load conversations
+        setConversations(convos.conversations);
+        setConversationsHasMore(convos.has_more);
+        
+        // Auto-load the most recent conversation
+        if (convos.conversations.length > 0) {
+          const mostRecent = convos.conversations[0];
+          const conversation = await conversationService.getConversation(authToken, mostRecent.id);
+          const messages: Message[] = (conversation.messages || []).map(m => ({
+            id: m.id.toString(),
+            role: m.role as 'user' | 'assistant',
+            content: m.content,
+            timestamp: new Date(m.timestamp),
+            sources: m.extra_data?.sources?.map((s: any) => ({ docId: s.docName || '', docName: s.docName || '', text: s.text || '' })),
+            thoughtLogs: m.extra_data?.thoughts,
+            modelId: m.extra_data?.model,
+            editProposals: m.extra_data?.editProposals,
+            status: 'completed' as const
+          }));
+          setState(prev => ({ ...prev, messages }));
+          setCurrentConversationId(mostRecent.id);
         }
         
         setIsDataLoaded(true);
@@ -351,15 +384,119 @@ const App: React.FC = () => {
     }
   }, [authToken]);
 
-  const addToast = (message: string, type: Toast['type'] = 'error') => {
+  // ============ CONVERSATION PERSISTENCE ============
+  
+  // Save a message to the backend conversation
+  const saveMessageToBackend = useCallback(async (
+    conversationId: number,
+    role: 'user' | 'assistant',
+    content: string,
+    extra_data?: any
+  ) => {
+    if (!authToken) return;
+    try {
+      await conversationService.addMessage(authToken, conversationId, {
+        role,
+        content,
+        extra_data
+      });
+    } catch (error) {
+      console.error('Failed to save message:', error);
+    }
+  }, [authToken]);
+
+  // Create a new conversation
+  const createNewConversation = useCallback(async (): Promise<number | null> => {
+    if (!authToken) return null;
+    try {
+      const conversation = await conversationService.createConversation(authToken);
+      setConversations(prev => [conversation, ...prev]);
+      setCurrentConversationId(conversation.id);
+      return conversation.id;
+    } catch (error) {
+      console.error('Failed to create conversation:', error);
+      return null;
+    }
+  }, [authToken]);
+
+  const addToast = useCallback((message: string, type: Toast['type'] = 'error') => {
     const id = Math.random().toString(36).substring(2, 9);
     setState(prev => ({ ...prev, toasts: [...prev.toasts, { id, message, type }] }));
     setTimeout(() => removeToast(id), 5000);
-  };
+  }, []);
 
-  const removeToast = (id: string) => {
+  const removeToast = useCallback((id: string) => {
     setState(prev => ({ ...prev, toasts: prev.toasts.filter(t => t.id !== id) }));
-  };
+  }, []);
+
+  // Load a specific conversation's messages
+  const loadConversation = useCallback(async (conversationId: number) => {
+    if (!authToken) return;
+    setIsLoadingConversations(true);
+    try {
+      const conversation = await conversationService.getConversation(authToken, conversationId);
+      // Convert backend messages to frontend Message format
+      const messages: Message[] = (conversation.messages || []).map(m => ({
+        id: m.id.toString(),
+        role: m.role as 'user' | 'assistant',
+        content: m.content,
+        timestamp: new Date(m.timestamp),
+        sources: m.extra_data?.sources?.map((s: any) => ({ docId: s.docName || '', docName: s.docName || '', text: s.text || '' })),
+        thoughtLogs: m.extra_data?.thoughts,
+        modelId: m.extra_data?.model,
+        editProposals: m.extra_data?.editProposals,
+        status: 'completed' as const
+      }));
+      setState(prev => ({ ...prev, messages }));
+      setCurrentConversationId(conversationId);
+    } catch (error) {
+      console.error('Failed to load conversation:', error);
+      addToast('Failed to load conversation', 'error');
+    } finally {
+      setIsLoadingConversations(false);
+    }
+  }, [authToken, addToast]);
+
+  // Load more older conversations for lazy loading
+  const loadMoreConversations = useCallback(async () => {
+    if (!authToken || isLoadingConversations || !conversationsHasMore) return;
+    setIsLoadingConversations(true);
+    try {
+      const response = await conversationService.listConversations(
+        authToken,
+        conversations.length,
+        20
+      );
+      setConversations(prev => [...prev, ...response.conversations]);
+      setConversationsHasMore(response.has_more);
+    } catch (error) {
+      console.error('Failed to load more conversations:', error);
+    } finally {
+      setIsLoadingConversations(false);
+    }
+  }, [authToken, conversations.length, conversationsHasMore, isLoadingConversations]);
+
+  // Start a new chat (clear current messages, reset conversation)
+  const startNewChat = useCallback(() => {
+    setState(prev => ({ ...prev, messages: [] }));
+    setCurrentConversationId(null);
+  }, []);
+
+  // Delete a conversation
+  const deleteConversation = useCallback(async (conversationId: number) => {
+    if (!authToken) return;
+    try {
+      await conversationService.deleteConversation(authToken, conversationId);
+      setConversations(prev => prev.filter(c => c.id !== conversationId));
+      if (currentConversationId === conversationId) {
+        startNewChat();
+      }
+      addToast('Conversation deleted', 'success');
+    } catch (error) {
+      console.error('Failed to delete conversation:', error);
+      addToast('Failed to delete conversation', 'error');
+    }
+  }, [authToken, currentConversationId, startNewChat, addToast]);
 
   const startResizingControls = useCallback((e: React.MouseEvent) => {
     isResizingControls.current = true;
@@ -555,6 +692,75 @@ const App: React.FC = () => {
    * See processQueryWithBackend in utils/backendQueryProcessor.ts
    */
 
+  // Handle edit proposal approval
+  const handleApproveEdit = useCallback(async (proposal: any) => {
+    if (!authToken) return;
+    
+    try {
+      const { backendChatService } = await import('./services/backendChatService');
+      await backendChatService.approveEdit(authToken, {
+        doc_id: proposal.doc_id,
+        filename: proposal.filename,
+        new_content: proposal.new_content,
+        approved: true
+      });
+      
+      // Update the proposal status in messages
+      setState(prev => ({
+        ...prev,
+        messages: prev.messages.map(m => ({
+          ...m,
+          editProposals: m.editProposals?.map(p => 
+            p.doc_id === proposal.doc_id ? { ...p, status: 'approved' as const } : p
+          )
+        }))
+      }));
+      
+      // Refresh documents to get updated content (map to frontend Document type)
+      const updatedDocs = await storageService.fetchDocuments(authToken);
+      const mappedDocs = updatedDocs.map(doc => ({
+        id: doc.doc_id,
+        name: doc.filename,
+        enabled: doc.enabled
+      }));
+      setState(prev => ({ ...prev, documents: mappedDocs }));
+      
+      addToast(`${proposal.filename} has been updated`, 'success');
+    } catch (err: any) {
+      addToast(err.message || 'Failed to apply edit', 'error');
+    }
+  }, [authToken, addToast]);
+
+  // Handle edit proposal rejection
+  const handleRejectEdit = useCallback(async (proposal: any) => {
+    if (!authToken) return;
+    
+    try {
+      const { backendChatService } = await import('./services/backendChatService');
+      await backendChatService.approveEdit(authToken, {
+        doc_id: proposal.doc_id,
+        filename: proposal.filename,
+        new_content: proposal.new_content,
+        approved: false
+      });
+      
+      // Update the proposal status in messages
+      setState(prev => ({
+        ...prev,
+        messages: prev.messages.map(m => ({
+          ...m,
+          editProposals: m.editProposals?.map(p => 
+            p.doc_id === proposal.doc_id ? { ...p, status: 'rejected' as const } : p
+          )
+        }))
+      }));
+      
+      addToast(`Edit to ${proposal.filename} was rejected`, 'info');
+    } catch (err: any) {
+      addToast(err.message || 'Failed to process rejection', 'error');
+    }
+  }, [authToken, addToast]);
+
   const handleStop = useCallback(() => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -607,6 +813,12 @@ const App: React.FC = () => {
     setPromptHistory(prev => [currentQuery, ...prev.filter(p => p !== currentQuery)].slice(0, 50));
     setHistoryIndex(-1);
 
+    // Create conversation if this is a new chat
+    let convId = currentConversationId;
+    if (!convId) {
+      convId = await createNewConversation();
+    }
+
     const assistantId = Date.now().toString() + '-ai';
     const userMsg: Message = { id: Date.now().toString(), role: 'user', content: currentQuery, timestamp: new Date() };
     const placeholder: Message = {
@@ -626,8 +838,32 @@ const App: React.FC = () => {
     setState(prev => ({ ...prev, messages: [...prev.messages, userMsg, placeholder] }));
     setInputValue('');
 
+    // Save user message to backend
+    if (convId) {
+      saveMessageToBackend(convId, 'user', currentQuery);
+    }
+
     await processQuery(currentQuery, assistantId);
-  }, [inputValue, state.isProcessing, state.documents, state.useVault, state.selectedModel, state.contextScript, state.useContextHistory, state.openRouterKey, state.googleKey, state.xaiKey, state.openaiKey]);
+    
+    // Save assistant message after completion (get the latest message from state)
+    if (convId) {
+      // Use timeout to let state update complete
+      setTimeout(() => {
+        setState(prev => {
+          const lastMessage = prev.messages.find(m => m.id === assistantId);
+          if (lastMessage && lastMessage.content) {
+            saveMessageToBackend(convId!, 'assistant', lastMessage.content, {
+              sources: lastMessage.sources,
+              thoughts: lastMessage.thoughtLogs,
+              model: lastMessage.modelId,
+              editProposals: lastMessage.editProposals
+            });
+          }
+          return prev;
+        });
+      }, 100);
+    }
+  }, [inputValue, state.isProcessing, state.documents, state.useVault, state.selectedModel, state.contextScript, state.useContextHistory, state.openRouterKey, state.googleKey, state.xaiKey, state.openaiKey, currentConversationId, createNewConversation, saveMessageToBackend]);
 
   const handleRetry = useCallback(async (failedMessageId: string) => {
     if (state.isProcessing) return;
@@ -1003,6 +1239,20 @@ const App: React.FC = () => {
   return (
     <Suspense fallback={<LoadingScreen />}>
       <div className="flex flex-col h-screen bg-brand-base text-gray-100 transition-colors overflow-hidden dark relative">
+        {/* Conversation Sidebar */}
+        <ConversationSidebar
+          isOpen={isConversationSidebarOpen}
+          onClose={() => setIsConversationSidebarOpen(false)}
+          conversations={conversations}
+          currentConversationId={currentConversationId}
+          onSelectConversation={loadConversation}
+          onNewChat={startNewChat}
+          onDeleteConversation={deleteConversation}
+          onLoadMore={loadMoreConversations}
+          hasMore={conversationsHasMore}
+          isLoading={isLoadingConversations}
+        />
+        
         {/* Drag overlay */}
         {isDraggingOver && (
           <div className="fixed inset-0 bg-brand-accent/20 border-4 border-dashed border-brand-accent rounded-lg pointer-events-none z-[200] flex items-center justify-center backdrop-blur-sm">
@@ -1030,6 +1280,7 @@ const App: React.FC = () => {
           }}
           onAvatarUpload={handleAvatarUpload}
           onProfileClick={() => setIsProfileModalOpen(true)}
+          onConversationsClick={() => setIsConversationSidebarOpen(prev => !prev)}
         />
 
         {/* MAIN CONTENT AREA */}
@@ -1107,6 +1358,8 @@ const App: React.FC = () => {
             isProcessing={state.isProcessing}
             availableDocuments={state.documents.filter(d => d.enabled)}
             onHistoryNav={handleHistoryNav}
+            onApproveEdit={handleApproveEdit}
+            onRejectEdit={handleRejectEdit}
           />
         </main>
 

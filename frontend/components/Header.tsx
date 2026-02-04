@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Menu, Settings, HelpCircle, PanelLeft, User as UserIcon, LogOut, Upload } from 'lucide-react';
+import { Menu, Settings, HelpCircle, PanelLeft, User as UserIcon, LogOut, Upload, MessageSquare } from 'lucide-react';
 
 interface HeaderProps {
   title?: string;
@@ -17,6 +17,7 @@ interface HeaderProps {
   onLogout?: () => void;
   onAvatarUpload?: (file: File) => void;
   onProfileClick?: () => void;
+  onConversationsClick?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
@@ -30,7 +31,8 @@ export const Header: React.FC<HeaderProps> = ({
   authToken,
   onLogout,
   onAvatarUpload,
-  onProfileClick
+  onProfileClick,
+  onConversationsClick
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showUserMenu, setShowUserMenu] = React.useState(false);
@@ -94,6 +96,17 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
         
         <div className="flex items-center gap-2">
+          {/* Conversations Button */}
+          {onConversationsClick && (
+            <button
+              onClick={onConversationsClick}
+              className="p-2 rounded-lg hover:bg-brand-border/20 transition-colors text-gray-400 hover:text-brand-accent"
+              title="Conversations"
+            >
+              <MessageSquare size={20} />
+            </button>
+          )}
+          
           {!isVaultOpen && onToggleVault && (
             <button
               onClick={onToggleVault}

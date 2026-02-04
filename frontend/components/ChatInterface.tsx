@@ -7,6 +7,8 @@ import rehypeRaw from 'rehype-raw';
 import { SUPPORTED_MODELS } from '../services/modelService';
 import { MarkdownResponse } from './MarkdownResponse';
 import { TreeLoader, FileSearchLoader, ThinkingLoader } from './animations';
+import { DiffView } from './DiffView';
+import { EditProposal } from '../services/backendChatService';
 
 interface Props {
   messages: Message[];
@@ -25,6 +27,8 @@ interface Props {
   maxAgentIterations: number;
   availableDocuments: Document[];
   onHistoryNav: (direction: 'up' | 'down') => void;
+  onApproveEdit?: (proposal: EditProposal) => void;
+  onRejectEdit?: (proposal: EditProposal) => void;
 }
 
 const CopyButton: React.FC<{ text: string; className?: string }> = ({ text, className = '' }) => {
@@ -293,7 +297,8 @@ const PipelineDetails: React.FC<{
 
 export const ChatInterface: React.FC<Props> = ({
   messages, selectedModelId, onRetry, onRegenerate, onUpdateSources, onClearChat,
-  inputValue, setInputValue, onSend, onStop, isProcessing, onClarifyAnswer, onMaxIterationsDecision, maxAgentIterations, availableDocuments, onHistoryNav
+  inputValue, setInputValue, onSend, onStop, isProcessing, onClarifyAnswer, onMaxIterationsDecision, maxAgentIterations, availableDocuments, onHistoryNav,
+  onApproveEdit, onRejectEdit
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -444,6 +449,21 @@ export const ChatInterface: React.FC<Props> = ({
                           onSourceClick={(fileName) => msg.sources && handleViewContexts(fileName, msg.sources, msg.id)}
                         />
                       </div>
+
+                      {/* Edit Proposals - Diff View with Approve/Reject */}
+                      {msg.editProposals && msg.editProposals.length > 0 && (
+                        <div className="space-y-4 mt-4">
+                          {msg.editProposals.map((proposal: any) => (
+                            <DiffView
+                              key={proposal.id || `${proposal.filename}-${proposal.iteration}`}
+                              proposal={proposal}
+                              onApprove={(p) => onApproveEdit?.(p)}
+                              onReject={(p) => onRejectEdit?.(p)}
+                              isProcessing={isProcessing}
+                            />
+                          ))}
+                        </div>
+                      )}
 
                       {msg.pendingClarification && (
                           <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">

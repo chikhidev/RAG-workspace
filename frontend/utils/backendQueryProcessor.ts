@@ -99,6 +99,36 @@ export async function processQueryWithBackend(
         case 'highlight':
           setActiveFileNames(event.data.files || []);
           break;
+        
+        case 'edit_proposal':
+          // Add edit proposal to message for user approval
+          setState((prev: any) => ({
+            ...prev,
+            messages: prev.messages.map((m: any) =>
+              m.id === assistantId
+                ? {
+                    ...m,
+                    editProposals: [
+                      ...(m.editProposals || []),
+                      {
+                        id: `edit_${Date.now()}`,
+                        filename: event.data.filename,
+                        doc_id: event.data.doc_id,
+                        find: event.data.find,
+                        replace: event.data.replace,
+                        original_content: event.data.original_content,
+                        new_content: event.data.new_content,
+                        diff: event.data.diff,
+                        changes_count: event.data.changes_count,
+                        iteration: event.data.iteration,
+                        status: 'pending' // pending, approved, rejected
+                      }
+                    ]
+                  }
+                : m
+            )
+          }));
+          break;
           
         case 'answer':
           fullAnswer += event.data.content;

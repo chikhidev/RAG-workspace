@@ -89,7 +89,46 @@ class ConversationBase(BaseModel):
     title: str
     created_at: datetime
     
+    class Config:
+        from_attributes = True
+
 class MessageBase(BaseModel):
+    id: int
     role: str
     content: str
     timestamp: datetime
+    extra_data: Optional[Dict[str, Any]] = None  # For sources, citations, etc.
+    
+    class Config:
+        from_attributes = True
+
+class MessageCreate(BaseModel):
+    role: str
+    content: str
+    extra_data: Optional[Dict[str, Any]] = None
+
+class ConversationCreate(BaseModel):
+    title: Optional[str] = None  # Auto-generate from first message if not provided
+
+class ConversationWithMessages(ConversationBase):
+    messages: List[MessageBase] = []
+    
+    class Config:
+        from_attributes = True
+
+class ConversationListResponse(BaseModel):
+    conversations: List[ConversationBase]
+    total: int
+    has_more: bool
+
+class MessagesResponse(BaseModel):
+    messages: List[MessageBase]
+    total: int
+    has_more: bool
+
+class EditApprovalRequest(BaseModel):
+    """Request to approve or reject a proposed file edit"""
+    doc_id: str
+    filename: str
+    new_content: str
+    approved: bool

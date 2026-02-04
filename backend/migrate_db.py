@@ -55,6 +55,16 @@ def migrate():
             print("Adding enabled column...")
             cursor.execute("ALTER TABLE documents ADD COLUMN enabled INTEGER DEFAULT 1")
         
+        # Check if messages table exists and add metadata column
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='messages'")
+        if cursor.fetchone():
+            cursor.execute("PRAGMA table_info(messages)")
+            columns = [col[1] for col in cursor.fetchall()]
+            
+            if 'extra_data' not in columns:
+                print("Adding extra_data column to messages...")
+                cursor.execute("ALTER TABLE messages ADD COLUMN extra_data TEXT DEFAULT '{}'")
+        
         conn.commit()
         print("Migration completed successfully!")
         

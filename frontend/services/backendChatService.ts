@@ -13,8 +13,20 @@ interface ChatRequest {
 }
 
 interface StreamEvent {
-  type: 'status' | 'iteration' | 'thought' | 'highlight' | 'answer' | 'complete' | 'error';
+  type: 'status' | 'iteration' | 'thought' | 'highlight' | 'answer' | 'complete' | 'error' | 'edit_proposal';
   data: any;
+}
+
+export interface EditProposal {
+  filename: string;
+  doc_id: string;
+  find: string;
+  replace: string;
+  original_content: string;
+  new_content: string;
+  diff: string;
+  changes_count: number;
+  iteration: number;
 }
 
 export class BackendChatService {
@@ -113,6 +125,35 @@ export class BackendChatService {
     } finally {
       reader.releaseLock();
     }
+  }
+
+  /**
+   * Approve or reject a proposed file edit
+   */
+  async approveEdit(
+    authToken: string,
+    proposal: {
+      doc_id: string;
+      filename: string;
+      new_content: string;
+      approved: boolean;
+    }
+  ): Promise<{ status: string; message: string; doc_id?: string }> {
+    const response = await fetch(`${this.baseUrl}/documents/approve-edit`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${authToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(proposal)
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || `Failed to process edit: ${response.statusText}`);
+    }
+
+    return response.json();
   }
 }
 
