@@ -47,6 +47,10 @@ class AgentRAGEngine:
                 yield event
             return
         
+        # Debug: Log available documents with content length
+        enabled_docs = [(d['filename'], len(d.get('content', ''))) for d in documents if d.get('enabled', True)]
+        print(f"[DEBUG] Available documents ({len(enabled_docs)}): {enabled_docs}")
+        
         # === PHASE 1: AGENT LOOP (Planning & Searching) ===
         accumulated_sources = []
         knowledge_buffer = ""
@@ -629,6 +633,14 @@ class AgentRAGEngine:
         
         system_prompt = f"""Strategic Research Agent - Adaptive RAG
 
+=== UNDERSTANDING USER QUERIES ===
+CRITICAL: When user mentions @filename, they want to search/read THAT specific file!
+• "@Python Casting.pdf" → user wants content FROM "Python Casting.pdf"
+• "what is inside @file.txt" → read or search IN "file.txt" (NOT search for word "inside")
+• "what is X in @doc.pdf" → grep for "X" in doc.pdf
+• "summarize @file" → search/read the entire file content
+• "5th line of @file" → read_lines from that file
+
 === EFFICIENCY FIRST: MINIMAL ACTIONS ===
 GOAL: Answer in 1-3 actions maximum for most queries
 Simple factual questions → 1-2 actions then CONCLUDE
@@ -661,7 +673,14 @@ ACTIONS:
 • read_lines: Read specific lines from a file - USE for line number requests (e.g., "5th line", "lines 10-20")
 • conclude: Enough info gathered OR previous action succeeded OR file/data not found
 
+QUERY PARSING (CRITICAL):
+• "what is inside @file" → User wants FILE CONTENT → use search or read_lines on that file
+• "what is X" → grep for "X" in relevant files
+• "summarize/content/inside @file" → read_lines to get full content of file (lines 1-100)
+• Do NOT grep for words like "inside", "content", "summary" - these are command words, not search terms
+
 OPTIMAL STRATEGY FOR COMMON QUERIES:
+• "what is inside @file" → read_lines file from 1-100 → conclude
 • Definition/concept question → grep once in relevant file → conclude
 • "What is X?" → grep for "X" in topic file → conclude
 • Specific facts → grep exact term → if no match, search once → conclude
@@ -685,10 +704,11 @@ DECISION PRIORITY (choose highest applicable):
 1. Results already in buffer → conclude
 2. File not found or data missing → conclude with explanation
 3. Previous action failed → try different approach ONCE or conclude
-4. Simple definition/fact + obvious target → grep once → conclude
-5. Line numbers requested → read_lines once → conclude
-6. Need exact match → grep → conclude
-7. Conceptual query → search once → conclude
+4. User mentions @file + wants content → read_lines 1-100 → conclude
+5. Simple definition/fact + obvious target → grep once → conclude
+6. Line numbers requested → read_lines once → conclude
+7. Need exact match → grep → conclude
+8. Conceptual query → search once → conclude
 
 RESPONSE FORMAT (JSON only):
 {{
@@ -704,7 +724,14 @@ RESPONSE FORMAT (JSON only):
 
 CRITICAL: Return ONLY valid JSON. No extra text."""
         
-        prompt = f"USER QUERY: {query}\nITERATION: {iteration}/{max_iterations}\n\nDecide the next action."
+        # Extract @filename references from query to help agent
+        import re
+        file_refs = re.findall(r'@([^\s@]+)', query)
+        file_hint = ""
+        if file_refs:
+            file_hint = f"\nDETECTED FILE REFERENCE(S): {file_refs} → User wants to read/search IN these files!"
+        
+        prompt = f"USER QUERY: {query}{file_hint}\nITERATION: {iteration}/{max_iterations}\n\nDecide the next action."
         
         try:
             if not self.api_key:
@@ -740,23 +767,69 @@ CRITICAL: Return ONLY valid JSON. No extra text."""
         documents: List[Dict],
         target_files: List[str] = None
     ) -> str:
-        """Perform semantic search (simplified - in production use vector DB)"""
+        """Perform semantic search across documents with keyword matching"""
         results = []
+        query_lower = query.lower()
+        query_keywords = set(query_lower.split())
         
-        for doc in documents[:5]:  # Limit to first 5 docs
+        # Normalize target files
+        normalized_targets = None
+        if target_files:
+            normalized_targets = [t.lstrip('@').lower() for t in target_files]
+        
+        print(f"[DEBUG] Semantic search for: '{query}'")
+        print(f"[DEBUG] Keywords: {query_keywords}")
+        print(f"[DEBUG] Target files: {target_files} -> normalized: {normalized_targets}")
+        
+        # Score each document by keyword relevance
+        doc_scores = []
+        for doc in documents:
             if not doc.get('enabled', True):
                 continue
             
             filename = doc['filename']
-            if target_files and filename not in target_files:
-                continue
+            filename_lower = filename.lower()
+            
+            # Check if file matches target list (case-insensitive, @ prefix handled)
+            if normalized_targets:
+                if filename_lower not in normalized_targets:
+                    continue
             
             content = doc['content']
-            # Simple chunk extraction (first 500 chars)
-            chunk = content[:500]
-            results.append(f"[From {filename}]: {chunk}")
+            content_lower = content.lower()
+            
+            # Calculate relevance score (number of query keywords found)
+            score = sum(1 for keyword in query_keywords if len(keyword) > 2 and keyword in content_lower)
+            
+            if score > 0:
+                doc_scores.append((score, filename, content))
         
-        return '\n\n'.join(results) if results else "No results found"
+        print(f"[DEBUG] Documents scored: {[(s, f) for s, f, _ in doc_scores[:5]]}")
+        
+        # Sort by relevance and take top results
+        doc_scores.sort(reverse=True, key=lambda x: x[0])
+        
+        for score, filename, content in doc_scores[:5]:
+            # Extract relevant chunks around keywords
+            chunks = []
+            for keyword in query_keywords:
+                if len(keyword) <= 2:
+                    continue
+                idx = content.lower().find(keyword)
+                if idx != -1:
+                    # Get context around the keyword (500 chars)
+                    start = max(0, idx - 250)
+                    end = min(len(content), idx + 250)
+                    chunk = content[start:end]
+                    chunks.append(chunk)
+                    if len(chunks) >= 3:  # Max 3 chunks per doc
+                        break
+            
+            if chunks:
+                combined = ' ... '.join(chunks)
+                results.append(f"[From {filename}]:\n{combined}")
+        
+        return '\n\n---\n\n'.join(results) if results else "No results found"
     
     async def _grep_search(
         self,
@@ -767,16 +840,29 @@ CRITICAL: Return ONLY valid JSON. No extra text."""
         """Search for exact pattern in documents"""
         results = []
         
+        # Normalize target files (remove @ prefix, case-insensitive)
+        normalized_targets = None
+        if target_files:
+            normalized_targets = [t.lstrip('@').lower() for t in target_files]
+        
+        print(f"[DEBUG] Grep searching for pattern: '{pattern}'")
+        print(f"[DEBUG] Target files: {target_files} -> normalized: {normalized_targets}")
+        
         for doc in documents:
             if not doc.get('enabled', True):
                 continue
             
             filename = doc['filename']
-            if target_files and filename not in target_files:
+            filename_lower = filename.lower()
+            
+            # Check if file matches target (case-insensitive, @ prefix handling)
+            if normalized_targets and filename_lower not in normalized_targets:
                 continue
             
             content = doc['content']
             lines = content.split('\n')
+            
+            print(f"[DEBUG] Searching in {filename} ({len(lines)} lines, {len(content)} chars)")
             
             for line_num, line in enumerate(lines, 1):
                 if pattern.lower() in line.lower():
@@ -785,6 +871,7 @@ CRITICAL: Return ONLY valid JSON. No extra text."""
                 if len(results) >= 20:
                     break
         
+        print(f"[DEBUG] Grep results: {len(results)} matches")
         return '\n'.join(results) if results else "No matches found"
     
     async def _read_lines(
@@ -795,10 +882,24 @@ CRITICAL: Return ONLY valid JSON. No extra text."""
         documents: List[Dict]
     ) -> str:
         """Read specific lines from a file"""
+        # Normalize filename (remove @ prefix)
+        search_name = filename.lstrip('@').lower()
+        
+        print(f"[DEBUG] Reading lines {start_line}-{end_line} from: '{filename}' (normalized: '{search_name}')")
+        print(f"[DEBUG] Available files: {[d['filename'] for d in documents if d.get('enabled', True)]}")
+        
         for doc in documents:
-            if doc['filename'] == filename:
+            if not doc.get('enabled', True):
+                continue
+                
+            doc_name_lower = doc['filename'].lower()
+            
+            # Match by exact name or case-insensitive
+            if doc_name_lower == search_name or doc['filename'] == filename:
                 lines = doc['content'].split('\n')
                 total_lines = len(lines)
+                
+                print(f"[DEBUG] Found file {doc['filename']} with {total_lines} lines")
                 
                 # Handle invalid line numbers
                 if start_line < 1:
@@ -809,7 +910,9 @@ CRITICAL: Return ONLY valid JSON. No extra text."""
                     return f"File {filename} has only {total_lines} lines. Cannot read line {start_line}."
                 
                 selected = lines[start_line-1:end_line]
-                return '\n'.join([f"{i+start_line}: {l}" for i, l in enumerate(selected)])
+                result = '\n'.join([f"{i+start_line}: {l}" for i, l in enumerate(selected)])
+                print(f"[DEBUG] Read lines result: {result[:200]}...")
+                return result
         
         return f"File {filename} not found in vault. Available files: {', '.join([d['filename'] for d in documents if d.get('enabled', True)])}"
     

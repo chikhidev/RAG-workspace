@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef, Suspense, lazy } from 'react';
 import { AppState, Message, Document, Chunk, Toast, MindMap, User } from './types';
-import { vectorService } from './services/vectorService';
 import { fileService } from './services/fileService';
 import { modelService } from './services/modelService';
 import { mindNodeService } from './services/mindNodeService';
@@ -158,8 +157,8 @@ const App: React.FC = () => {
       return docs.map(doc => ({
         id: doc.doc_id,
         name: doc.filename,
-        content: doc.content,
         enabled: doc.enabled
+        // No content - backend manages document content for RAG
       }));
     } catch (error) {
       console.error('Failed to load documents:', error);
@@ -296,7 +295,15 @@ const App: React.FC = () => {
   const handleOnboardingComplete = async (settings: { provider: string; model: string; apiKey: string }) => {
     if (!authToken) return;
     
-    const apiKeys: Record<string, string> = {};
+    // Send all existing keys plus the new one to preserve them
+    const apiKeys: Record<string, string> = {
+      openrouter: state.openRouterKey,
+      google: state.googleKey,
+      xai: state.xaiKey,
+      openai: state.openaiKey,
+      mistral: state.mistralKey,
+    };
+    // Update the specific provider's key
     apiKeys[settings.provider] = settings.apiKey;
     
     try {
@@ -322,43 +329,6 @@ const App: React.FC = () => {
   };
 
   const abortControllerRef = useRef<AbortController | null>(null);
-
-  // Sync documents to backend whenever they change
-  useEffect(() => {
-    if (!authToken || !isDataLoaded) return;
-    
-    const syncDocs = async () => {
-      for (const doc of state.documents) {
-        try {
-          await storageService.saveDocument(authToken, {
-            doc_id: doc.id,
-            filename: doc.name,
-            content: doc.content,
-            enabled: doc.enabled
-          });
-        } catch (error: any) {
-          console.error('Failed to sync document:', error);
-          // Only show toast for non-migration errors to avoid spam
-          if (!error.message?.includes('Database migration required')) {
-            const toastId = Math.random().toString(36).substring(2, 9);
-            setState(prev => ({ 
-              ...prev, 
-              toasts: [...prev.toasts, { 
-                id: toastId, 
-                message: `Failed to sync document "${doc.name}"`, 
-                type: 'error' as const
-              }] 
-            }));
-            setTimeout(() => {
-              setState(prev => ({ ...prev, toasts: prev.toasts.filter(t => t.id !== toastId) }));
-            }, 5000);
-          }
-        }
-      }
-    };
-    
-    syncDocs();
-  }, [state.documents, authToken, isDataLoaded]);
 
   // Helper function to sync specific config changes to backend
   const syncConfigToBackend = useCallback(async (updates: Partial<{
@@ -465,11 +435,10 @@ const App: React.FC = () => {
               enabled: true
             });
             
-            // Success! Add to local state
+            // Success! Add to local state (without content - backend has it)
             newDocs.push({
               id: docId,
               name: file.name,
-              content: text,
               enabled: true
             });
           } catch (uploadErr: any) {
@@ -480,7 +449,6 @@ const App: React.FC = () => {
           newDocs.push({
             id: docId,
             name: file.name,
-            content: text,
             enabled: true
           });
         }
@@ -502,12 +470,6 @@ const App: React.FC = () => {
     }
     
     const docId = Math.random().toString(36).substring(2, 11);
-    const newDoc: Document = {
-      id: docId,
-      name,
-      content,
-      enabled: true
-    };
     
     // Upload to backend first
     if (authToken) {
@@ -519,7 +481,12 @@ const App: React.FC = () => {
           enabled: true
         });
         
-        // Success! Add to local state
+        // Success! Add to local state (without content - backend has it)
+        const newDoc: Document = {
+          id: docId,
+          name,
+          enabled: true
+        };
         setState(prev => ({ ...prev, documents: [...prev.documents, newDoc] }));
         addToast(`Added: ${name}`);
       } catch (err: any) {
@@ -527,9 +494,14 @@ const App: React.FC = () => {
       }
     } else {
       // No auth token, just add locally (shouldn't happen but fallback)
+      const newDoc: Document = {
+        id: docId,
+        name,
+        enabled: true
+      };
       setState(prev => ({ ...prev, documents: [...prev.documents, newDoc] }));
     }
-  }, [state.documents, authToken]);
+  }, [state.documents, authToken, addToast]);
 
   const handleUndoDelete = useCallback(() => {
     if (deletedDocuments.length === 0) {
@@ -545,32 +517,7 @@ const App: React.FC = () => {
     addToast(`Recovered: ${lastDeleted.name}`, 'error');
   }, [deletedDocuments]);
 
-  useEffect(() => {
-    const runIndexing = async () => {
-      setState(prev => ({ ...prev, isIndexing: true }));
-      try {
-        // Convert enabled mind maps to documents
-        const mindMapDocs: Document[] = state.mindMaps
-          .filter(map => map.enabled)
-          .map(map => ({
-            id: map.id,
-            name: map.name,
-            content: mindNodeService.mindMapToDocument(map),
-            enabled: true,
-          }));
-
-        // Combine regular documents and mind map documents
-        const allDocs = [
-          ...state.documents.filter(d => d.enabled),
-          ...mindMapDocs
-        ];
-
-        await vectorService.indexDocuments(allDocs);
-      } catch (err) { addToast("Indexing failure."); }
-      finally { setState(prev => ({ ...prev, isIndexing: false })); }
-    };
-    runIndexing();
-  }, [state.documents, state.mindMaps]);
+  // No frontend indexing needed - backend handles all document operations
 
   // NEW: Backend-powered query processing
   const processQuery = async (query: string, assistantId: string, skipResearch: boolean = false, resetIterations: boolean = false) => {

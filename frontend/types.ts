@@ -1,7 +1,7 @@
 export interface Document {
   id: string;
   name: string;
-  content: string;
+  content?: string; // Optional - only used during upload, not fetched from backend
   enabled: boolean;
   tokens?: number;
   isLoading?: boolean;

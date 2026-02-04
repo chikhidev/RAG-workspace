@@ -184,8 +184,13 @@ def update_config(config: schemas.ConfigUpdate, current_user: models.User = Depe
         user_config = models.UserConfig(user_id=current_user.id)
         db.add(user_config)
     
+    # MERGE api_keys instead of replacing (preserve existing keys)
     if config.api_keys is not None:
-        user_config.api_keys = config.api_keys
+        existing_keys = user_config.api_keys or {}
+        merged_keys = {**existing_keys, **config.api_keys}
+        # Remove keys that are explicitly set to empty string
+        merged_keys = {k: v for k, v in merged_keys.items() if v}
+        user_config.api_keys = merged_keys
     if config.custom_instructions is not None:
         user_config.custom_instructions = config.custom_instructions
     if config.context_script is not None:
@@ -196,10 +201,11 @@ def update_config(config: schemas.ConfigUpdate, current_user: models.User = Depe
         user_config.model_preference = config.model_preference
     if config.generation_controls is not None:
         user_config.generation_controls = config.generation_controls
+    # MERGE settings instead of replacing (preserve existing settings)
     if config.settings is not None:
-        user_config.settings = config.settings
-    if config.mind_maps is not None:
-        user_config.mind_maps = config.mind_maps
+        existing_settings = user_config.settings or {}
+        merged_settings = {**existing_settings, **config.settings}
+        user_config.settings = merged_settings
     if config.mind_maps is not None:
         user_config.mind_maps = config.mind_maps
         
@@ -263,8 +269,9 @@ async def upload_file(
     
     return {"filename": file.filename, "status": "uploaded"}
 
-@app.get("/documents", response_model=List[schemas.DocumentMetadata])
+@app.get("/documents", response_model=List[schemas.DocumentSummary])
 def list_documents(current_user: models.User = Depends(auth.get_current_user), db: Session = Depends(database.get_db)):
+    """Get list of documents without content - only metadata for UI"""
     return db.query(models.Document).filter(models.Document.user_id == current_user.id).all()
 
 @app.post("/documents", response_model=schemas.DocumentMetadata)

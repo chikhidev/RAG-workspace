@@ -577,7 +577,7 @@ export const ChatInterface: React.FC<Props> = ({
                       if (!model) return null;
                       return (
                         <div className="mt-3 flex items-center gap-2 opacity-60 hover:opacity-100 transition-opacity">
-                          <div className="w-4 h-4 rounded bg-white/10 p-0.5 flex items-center justify-center">
+                          <div className="w-4 h-4 rounded bg-white p-0.5 flex items-center justify-center">
                             <img src={model.logo} alt={model.name} className="w-full h-full object-contain" />
                           </div>
                           <span className="text-[10px] text-gray-500 font-medium">{model.name}</span>

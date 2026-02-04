@@ -49,7 +49,20 @@ class ChatRequest(BaseModel):
     max_iterations: int = 7
     active_files: List[str] = [] # Filenames to focus on
 
+class DocumentSummary(BaseModel):
+    """Document metadata without content - for list endpoint"""
+    id: int
+    doc_id: str
+    filename: str
+    file_type: str
+    enabled: bool
+    upload_date: datetime
+    
+    class Config:
+        from_attributes = True
+
 class DocumentMetadata(BaseModel):
+    """Full document metadata with content - for create/update operations"""
     id: int
     doc_id: str
     filename: str
