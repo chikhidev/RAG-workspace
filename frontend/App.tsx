@@ -1,12 +1,11 @@
 import React, { useState, useCallback, useEffect, useRef, Suspense, lazy } from 'react';
 import { AppState, Message, Document, Chunk, Toast, MindMap, User } from './types';
 import { vectorService } from './services/vectorService';
-import { geminiRAG } from './services/geminiService';
 import { fileService } from './services/fileService';
 import { modelService } from './services/modelService';
-import { commandService } from './services/commandService';
 import { mindNodeService } from './services/mindNodeService';
 import * as storageService from './services/storageService';
+import { processQueryWithBackend } from './utils/backendQueryProcessor';
 import { X, Key, Shield, ExternalLink, PanelLeft, PanelLeftClose } from 'lucide-react';
 
 import LoadingScreen from './components/LoadingScreen';
@@ -151,22 +150,6 @@ const App: React.FC = () => {
     }
   };
 
-  if (!authToken) {
-    return <AuthPage onLogin={async (token) => {
-      localStorage.setItem('auth_token', token);
-      setAuthToken(token);
-      
-      // Migrate data from localStorage to backend
-      try {
-        await storageService.migrateAllDataToBackend(token);
-      } catch (error) {
-        console.error('Migration failed:', error);
-      }
-      
-      window.location.reload();
-    }} />;
-  }
-
   // Load data from backend instead of localStorage
   const loadInitialDocs = async (): Promise<Document[]> => {
     if (!authToken) return [];
@@ -284,6 +267,14 @@ const App: React.FC = () => {
     loadData();
   }, [authToken, isDataLoaded, isAuthChecking]);
 
+  // Reset data loaded flag when authToken changes (logout/login)
+  useEffect(() => {
+    if (!authToken) {
+      setIsDataLoaded(false);
+      setLoadingError(null);
+    }
+  }, [authToken]);
+
   const [isModelSelectorOpen, setIsModelSelectorOpen] = useState(false);
   const [isMindMapEditorOpen, setIsMindMapEditorOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
@@ -369,68 +360,26 @@ const App: React.FC = () => {
     syncDocs();
   }, [state.documents, authToken, isDataLoaded]);
 
-  // Sync config to backend whenever it changes
-  useEffect(() => {
-    if (!authToken || !isDataLoaded) return;
+  // Helper function to sync specific config changes to backend
+  const syncConfigToBackend = useCallback(async (updates: Partial<{
+    settings?: { useVault?: boolean; useContextHistory?: boolean; maxTokens?: number };
+    model_preference?: string;
+    api_keys?: Record<string, string>;
+    context_script?: string;
+    custom_context?: string;
+    mind_maps?: any[];
+  }>) => {
+    if (!authToken) return;
     
-    const syncConfig = async () => {
-      try {
-        await storageService.updateUserConfig(authToken, {
-          settings: {
-            useVault: state.useVault,
-            useContextHistory: state.useContextHistory,
-            maxTokens: state.maxTokens
-          },
-          model_preference: state.selectedModel,
-          api_keys: {
-            openrouter: state.openRouterKey,
-            google: state.googleKey,
-            xai: state.xaiKey,
-            openai: state.openaiKey,
-            mistral: state.mistralKey
-          },
-          context_script: state.contextScript,
-          custom_context: state.customContext,
-          mind_maps: state.mindMaps
-        });
-      } catch (error: any) {
-        console.error('Failed to sync config:', error);
-        // Only show toast for non-migration errors to avoid spam
-        if (!error.message?.includes('Database migration required')) {
-          const toastId = Math.random().toString(36).substring(2, 9);
-          setState(prev => ({ 
-            ...prev, 
-            toasts: [...prev.toasts, { 
-              id: toastId, 
-              message: 'Failed to save settings to server', 
-              type: 'error' as const
-            }] 
-          }));
-          setTimeout(() => {
-            setState(prev => ({ ...prev, toasts: prev.toasts.filter(t => t.id !== toastId) }));
-          }, 5000);
-        }
+    try {
+      await storageService.updateUserConfig(authToken, updates);
+    } catch (error: any) {
+      console.error('Failed to sync config:', error);
+      if (!error.message?.includes('Database migration required')) {
+        addToast('Failed to save settings to server', 'error');
       }
-    };
-    
-    const debounce = setTimeout(syncConfig, 500);
-    return () => clearTimeout(debounce);
-  }, [
-    state.useVault, 
-    state.useContextHistory, 
-    state.selectedModel, 
-    state.maxTokens,
-    state.openRouterKey,
-    state.googleKey,
-    state.xaiKey,
-    state.openaiKey,
-    state.mistralKey,
-    state.contextScript,
-    state.customContext,
-    state.mindMaps,
-    authToken,
-    isDataLoaded
-  ]);
+    }
+  }, [authToken]);
 
   const addToast = (message: string, type: Toast['type'] = 'error') => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -623,641 +572,31 @@ const App: React.FC = () => {
     runIndexing();
   }, [state.documents, state.mindMaps]);
 
+  // NEW: Backend-powered query processing
   const processQuery = async (query: string, assistantId: string, skipResearch: boolean = false, resetIterations: boolean = false) => {
-    setState(prev => ({ ...prev, isProcessing: true }));
-    abortControllerRef.current = new AbortController();
-
-    try {
-      // EXTRACT TAGS: Find @FileName mentions in the prompt (case-insensitive)
-      const queryLower = query.toLowerCase();
-      const taggedFileNames = state.documents
-        .filter(d => queryLower.includes(`@${d.name.toLowerCase()}`))
-        .map(d => d.name);
-
-      let expandedQuery = '';
-      let sources: Chunk[] = [];
-      let expansionDuration = 0;
-      let planningDuration = 0;
-      let searchDuration = 0;
-      let thinkingDuration = 0;
-      let reasoningDuration = 0;
-      let thinkerResult = undefined;
-
-      const activeDocs = state.documents.filter(d => d.enabled);
-      const hist = state.useContextHistory ? state.contextScript : "";
-
-      if (abortControllerRef.current.signal.aborted) throw new Error("Aborted");
-
-      if (state.useVault && activeDocs.length > 0 && !skipResearch) {
-        // --- AGENTIC RESEARCH LOOP ---
-        const tResearchStart = performance.now();
-        const currentMsg = state.messages.find(m => m.id === assistantId);
-        let currentKnowledgeBuffer = currentMsg?.agentContext?.knowledgeBuffer || "";
-        let iterations = resetIterations ? 0 : (currentMsg?.agentContext?.iterations || 0);
-        const maxAgentIterations = state.maxAgentIterations;
-        let isResearchFinalized = false;
-        if (currentMsg?.agentContext?.sources) {
-          sources = [...currentMsg.agentContext.sources];
-        }
-
-        setState(prev => ({
-          ...prev,
-          messages: prev.messages.map(m => m.id === assistantId ? {
-            ...m,
-            status: 'planning',
-            pendingClarification: undefined,
-            agentContext: m.agentContext ? m.agentContext : {
-              originalQuery: query,
-              knowledgeBuffer: '',
-              iterations: 0,
-              sources: [],
-              turnTitles: {}
-            },
-            thoughtLogs: (m.thoughtLogs && m.thoughtLogs.length > 0) ? m.thoughtLogs : [{ timestamp: Date.now(), step: 'Thinking', thought: 'Analyzing goal and drafting research strategy...', turn: 0 }],
-            subtasks: [
-              { label: 'Planning', status: 'loading' },
-              { label: 'Searching', status: 'pending' },
-              { label: 'Drafting', status: 'pending' }
-            ]
-          } : m)
-        }));
-
-        while (iterations < maxAgentIterations && !isResearchFinalized) {
-          iterations++;
-          if (abortControllerRef.current.signal.aborted) throw new Error("Aborted");
-
-          const tIteration = performance.now();
-          const availableFileNames = activeDocs.map(d => d.name);
-          const filePreviews = activeDocs.map(d => `${d.name}: ${d.content.slice(0, 500)}...`);
-
-          // Prepare mind map metadata for LLM context
-          const mindMapMetadata = state.mindMaps.map(m => ({
-            name: m.name,
-            enabled: m.enabled,
-            rootNodeText: m.rootNodeId && m.nodes[m.rootNodeId] 
-              ? m.nodes[m.rootNodeId].text 
-              : 'Untitled'
-          }));
-
-          const plan = await geminiRAG.decideNextAction(
-            query,
-            availableFileNames,
-            filePreviews,
-            hist,
-            currentKnowledgeBuffer,
-            taggedFileNames,
-            mindMapMetadata,
-            state.selectedModel,
-            state.openRouterKey,
-            state.googleKey,
-            state.xaiKey,
-            state.openaiKey,
-            state.mistralKey,
-            state.customContext
-          );
-
-          const action = plan.nextAction;
-
-          if (action.type === 'search' && action.searchParams) {
-            const sub = action.searchParams;
-            setState(prev => ({
-              ...prev,
-              messages: prev.messages.map(m => m.id === assistantId ? {
-                ...m,
-                status: 'searching',
-                activeSubQuery: sub.query,
-                agentContext: {
-                  ...(m.agentContext || {}),
-                  originalQuery: query,
-                  knowledgeBuffer: currentKnowledgeBuffer,
-                  iterations: iterations,
-                  sources: [...sources],
-                  turnTitles: {
-                    ...(m.agentContext?.turnTitles || {}),
-                    [iterations]: plan.turnTitle
-                  }
-                },
-                thoughtLogs: [
-                  ...(m.thoughtLogs || []),
-                  { timestamp: Date.now(), step: `Searching`, thought: action.thought, turn: iterations }
-                ],
-                subtasks: m.subtasks?.map(s =>
-                  s.label === 'Searching' ? { ...s, status: 'loading', detail: `Searching: ${sub.query}` } :
-                    s.label === 'Planning' ? { ...s, status: 'completed' } : s
-                )
-              } : m)
-            }));
-
-            const searchTargets = sub.targetFiles || plan.targetFiles || taggedFileNames;
-            setActiveFileNames(searchTargets.length > 0 ? searchTargets : activeDocs.map(d => d.name));
-            
-            const subResults = await vectorService.search(
-              sub.query,
-              sub.expectedChunks || 3,
-              searchTargets
-            );
-
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            setActiveFileNames([]);
-            // Accumulate results
-            const resultText = subResults.map(c => `[From ${c.docName}]: ${c.text}`).join('\n');
-            currentKnowledgeBuffer += `\n--- Search Result (Iter ${iterations}) ---\n${resultText}\n`;
-
-            // Deduplicate chunks for sources
-            subResults.forEach(c => {
-              if (!sources.some(s => s.text === c.text)) {
-                sources.push(c);
-              }
-            });
-
-          } else if (action.type === 'grep' && action.grepParams) {
-            const grepParams = action.grepParams;
-            setState(prev => ({
-              ...prev,
-              messages: prev.messages.map(m => m.id === assistantId ? {
-                ...m,
-                status: 'searching',
-                activeSubQuery: `grep: ${grepParams.pattern}`,
-                agentContext: {
-                  ...(m.agentContext || {}),
-                  originalQuery: query,
-                  knowledgeBuffer: currentKnowledgeBuffer,
-                  iterations: iterations,
-                  sources: [...sources],
-                  turnTitles: {
-                    ...(m.agentContext?.turnTitles || {}),
-                    [iterations]: plan.turnTitle
-                  }
-                },
-                thoughtLogs: [
-                  ...(m.thoughtLogs || []),
-                  { timestamp: Date.now(), step: `Grep Search`, thought: action.thought, turn: iterations }
-                ],
-                subtasks: m.subtasks?.map(s =>
-                  s.label === 'Searching' ? { ...s, status: 'loading', detail: `Grep: ${grepParams.pattern}` } :
-                    s.label === 'Planning' ? { ...s, status: 'completed' } : s
-                )
-              } : m)
-            }));
-
-            setActiveFileNames(grepParams.targetFiles || activeDocs.map(d => d.name));
-            
-            const grepResult = await commandService.executeGrep(
-              grepParams.pattern,
-              grepParams.targetFiles,
-              activeDocs,
-              grepParams.caseSensitive || false,
-              grepParams.maxResults || 20
-            );
-
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            setActiveFileNames([]);
-
-            // Add grep results to knowledge buffer AND sources
-            if (grepResult.success && grepResult.results) {
-              const formattedResults = commandService.formatGrepResults(grepResult.results as any, 15);
-              currentKnowledgeBuffer += `\n--- Grep Result (Iter ${iterations}) ---\nPattern: "${grepParams.pattern}"\n${formattedResults}\n`;
-              
-              // Add grep results as source chunks for context
-              const grepResults = grepResult.results as any[];
-              grepResults.forEach((result: any) => {
-                sources.push({
-                  docId: result.fileName || 'unknown',
-                  docName: result.fileName || 'unknown',
-                  text: result.lineContent || result.content || result.line || ''
-                });
-              });
-            } else {
-              currentKnowledgeBuffer += `\n--- Grep Result (Iter ${iterations}) ---\nPattern: "${grepParams.pattern}"\nError: ${grepResult.error || 'No matches found'}\n`;
-            }
-
-          } else if (action.type === 'read_lines' && action.readLinesParams) {
-            const readParams = action.readLinesParams;
-            setState(prev => ({
-              ...prev,
-              messages: prev.messages.map(m => m.id === assistantId ? {
-                ...m,
-                status: 'searching',
-                activeSubQuery: `Reading ${readParams.fileName} lines ${readParams.startLine}-${readParams.endLine}`,
-                agentContext: {
-                  ...(m.agentContext || {}),
-                  originalQuery: query,
-                  knowledgeBuffer: currentKnowledgeBuffer,
-                  iterations: iterations,
-                  sources: [...sources],
-                  turnTitles: {
-                    ...(m.agentContext?.turnTitles || {}),
-                    [iterations]: plan.turnTitle
-                  }
-                },
-                thoughtLogs: [
-                  ...(m.thoughtLogs || []),
-                  { timestamp: Date.now(), step: `Read Lines`, thought: action.thought, turn: iterations }
-                ],
-                subtasks: m.subtasks?.map(s =>
-                  s.label === 'Searching' ? { ...s, status: 'loading', detail: `Reading ${readParams.fileName}:${readParams.startLine}-${readParams.endLine}` } :
-                    s.label === 'Planning' ? { ...s, status: 'completed' } : s
-                )
-              } : m)
-            }));
-
-            setActiveFileNames([readParams.fileName]);
-            
-            const readResult = await commandService.readLines(
-              readParams.fileName,
-              readParams.startLine,
-              readParams.endLine,
-              activeDocs
-            );
-
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            setActiveFileNames([]);
-
-            // Add read lines results to knowledge buffer
-            if (readResult.success && readResult.results) {
-              const formattedResult = commandService.formatReadLinesResult(readResult.results as any);
-              currentKnowledgeBuffer += `\n--- Read Lines (Iter ${iterations}) ---\n${formattedResult}\n`;
-              
-              // Also add as a source chunk for context
-              const readLinesResult = readResult.results as any;
-              sources.push({
-                docId: readParams.fileName,
-                docName: readParams.fileName,
-                text: readLinesResult.content
-              });
-            } else {
-              currentKnowledgeBuffer += `\n--- Read Lines (Iter ${iterations}) ---\nFile: ${readParams.fileName}\nError: ${readResult.error || 'Failed to read'}\n`;
-            }
-
-          } else if (action.type === 'mindmap_search' && action.mindMapSearchParams) {
-            const mindMapParams = action.mindMapSearchParams;
-            setState(prev => ({
-              ...prev,
-              messages: prev.messages.map(m => m.id === assistantId ? {
-                ...m,
-                status: 'searching',
-                activeSubQuery: `Exploring mind maps for: ${mindMapParams.query}`,
-                agentContext: {
-                  ...(m.agentContext || {}),
-                  originalQuery: query,
-                  knowledgeBuffer: currentKnowledgeBuffer,
-                  iterations: iterations,
-                  sources: [...sources],
-                  turnTitles: {
-                    ...(m.agentContext?.turnTitles || {}),
-                    [iterations]: plan.turnTitle
-                  }
-                },
-                thoughtLogs: [
-                  ...(m.thoughtLogs || []),
-                  { timestamp: Date.now(), step: `Mind Map Search`, thought: action.thought, turn: iterations }
-                ],
-                subtasks: m.subtasks?.map(s =>
-                  s.label === 'Searching' ? { ...s, status: 'loading', detail: `Mind Map: ${mindMapParams.query}` } :
-                    s.label === 'Planning' ? { ...s, status: 'completed' } : s
-                )
-              } : m)
-            }));
-
-            // Highlight the mind maps being searched
-            const searchedMindMapNames = state.mindMaps
-              .filter(m => m.enabled)
-              .map(m => m.name);
-            setActiveFileNames(searchedMindMapNames);
-
-            const mindMapResult = await commandService.searchMindMaps(
-              mindMapParams.query,
-              state.mindMaps,
-              mindMapParams.maxResults || 5
-            );
-
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            setActiveFileNames([]);
-
-            // Add mind map results to knowledge buffer
-            if (mindMapResult.success && mindMapResult.results) {
-              currentKnowledgeBuffer += `\n--- Mind Map Search (Iter ${iterations}) ---\n${mindMapResult.summary}\n`;
-              
-              // Add relevant nodes as source chunks
-              const mapResults = mindMapResult.results as any[];
-              for (const mapResult of mapResults) {
-                for (const nodeResult of mapResult.results) {
-                  sources.push({
-                    docId: mapResult.mindMapId,
-                    docName: `${mapResult.mindMapName} (Mind Map)`,
-                    text: `${nodeResult.nodeText}\nPath: ${nodeResult.path.join(' → ')}`
-                  });
-                }
-              }
-            } else {
-              currentKnowledgeBuffer += `\n--- Mind Map Search (Iter ${iterations}) ---\nQuery: "${mindMapParams.query}"\n${mindMapResult.summary}\n`;
-            }
-
-          } else if (action.type === 'mindmap_navigate' && action.mindMapNavigateParams) {
-            const navParams = action.mindMapNavigateParams;
-            setState(prev => ({
-              ...prev,
-              messages: prev.messages.map(m => m.id === assistantId ? {
-                ...m,
-                status: 'searching',
-                activeSubQuery: `Navigating to node in mind map...`,
-                agentContext: {
-                  ...(m.agentContext || {}),
-                  originalQuery: query,
-                  knowledgeBuffer: currentKnowledgeBuffer,
-                  iterations: iterations,
-                  sources: [...sources],
-                  turnTitles: {
-                    ...(m.agentContext?.turnTitles || {}),
-                    [iterations]: plan.turnTitle
-                  }
-                },
-                thoughtLogs: [
-                  ...(m.thoughtLogs || []),
-                  { timestamp: Date.now(), step: `Mind Map Navigate`, thought: action.thought, turn: iterations }
-                ],
-                subtasks: m.subtasks?.map(s =>
-                  s.label === 'Searching' ? { ...s, status: 'loading', detail: `Navigating mind map node` } :
-                    s.label === 'Planning' ? { ...s, status: 'completed' } : s
-                )
-              } : m)
-            }));
-
-            // Find the mind map and highlight it
-            const targetMindMap = state.mindMaps.find(m => m.id === navParams.mindMapId);
-            if (targetMindMap) {
-              setActiveFileNames([targetMindMap.name]);
-            }
-
-            const navResult = await commandService.navigateMindMapNode(
-              navParams.nodeId,
-              navParams.mindMapId,
-              state.mindMaps
-            );
-
-            await new Promise(resolve => setTimeout(resolve, 800));
-            setActiveFileNames([]);
-
-            // Add navigation results to knowledge buffer
-            if (navResult.success && navResult.results) {
-              currentKnowledgeBuffer += `\n--- Mind Map Navigate (Iter ${iterations}) ---\n${navResult.summary}\n`;
-              
-              // Add the navigated node as a source
-              const navData = navResult.results as any;
-              if (navData.currentNode) {
-                sources.push({
-                  docId: navParams.mindMapId,
-                  docName: `${navData.mindMapName} (Mind Map)`,
-                  text: `${navData.currentNode.nodeText}\nPath: ${navData.currentNode.path.join(' → ')}`
-                });
-              }
-            } else {
-              currentKnowledgeBuffer += `\n--- Mind Map Navigate (Iter ${iterations}) ---\nNode: ${navParams.nodeId}\nError: ${navResult.error || 'Navigation failed'}\n`;
-            }
-
-          } else if (action.type === 'clarify' && action.clarificationQuestion) {
-            setState(prev => ({
-              ...prev,
-              messages: prev.messages.map(m => m.id === assistantId ? {
-                ...m,
-                status: 'completed', // Stop the loop and wait
-                pendingClarification: action.clarificationQuestion,
-                agentContext: {
-                  originalQuery: query,
-                  knowledgeBuffer: currentKnowledgeBuffer,
-                  iterations: iterations,
-                  sources: [...sources],
-                  turnTitles: {
-                    ...(m.agentContext?.turnTitles || {}),
-                    [iterations]: plan.turnTitle
-                  }
-                },
-                thoughtLogs: [
-                  ...(m.thoughtLogs || []),
-                  { timestamp: Date.now(), step: 'Clarifying', thought: 'Clarification needed from user to proceed.', turn: iterations }
-                ]
-              } : m)
-            }));
-            return; // EXIT processQuery and wait for user
-
-          } else if (action.type === 'conclude') {
-            isResearchFinalized = true;
-            setState(prev => ({
-              ...prev,
-              messages: prev.messages.map(m => m.id === assistantId ? {
-                ...m,
-                agentContext: m.agentContext ? {
-                  ...m.agentContext,
-                  turnTitles: {
-                    ...(m.agentContext.turnTitles || {}),
-                    [iterations]: plan.turnTitle
-                  }
-                } : undefined,
-                thoughtLogs: [
-                  ...(m.thoughtLogs || []),
-                  { timestamp: Date.now(), step: 'Finalizing', thought: action.thought || 'Research phase concluded. Synthesizing final response.', turn: iterations }
-                ]
-              } : m)
-            }));
-          }
-        }
-
-        // Check if we hit max iterations without concluding
-        if (iterations >= maxAgentIterations && !isResearchFinalized) {
-          setState(prev => ({
-            ...prev,
-            messages: prev.messages.map(m => m.id === assistantId ? {
-              ...m,
-              status: 'completed',
-              pendingMaxIterations: true,
-              agentContext: {
-                originalQuery: query,
-                knowledgeBuffer: currentKnowledgeBuffer,
-                iterations: iterations,
-                sources: [...sources],
-                turnTitles: m.agentContext?.turnTitles || {}
-              },
-              thoughtLogs: [
-                ...(m.thoughtLogs || []),
-                { timestamp: Date.now(), step: 'Max Iterations', thought: `Reached ${maxAgentIterations} iterations. Asking user whether to continue or stop.`, turn: iterations }
-              ]
-            } : m)
-          }));
-          return; // EXIT and wait for user decision
-        }
-
-        searchDuration = (performance.now() - tResearchStart) / 1000;
-        // --- END RESEARCH LOOP ---
-
-        // 3. THINKER STEP (Self-Discussion & Prompt Rewriting) - NOW STREAMING
-        const tThink = performance.now();
-        setState(prev => ({
-          ...prev,
-          messages: prev.messages.map(m => m.id === assistantId ? {
-            ...m,
-            status: 'synthesizing',
-            thoughtProcess: '', // Reset for streaming
-            subtasks: m.subtasks?.map(s =>
-              s.label === 'Drafting' ? { ...s, status: 'loading' } : s
-            )
-          } : m)
-        }));
-
-        // Stream the thinker output
-        let thinkerThoughts = '';
-        for await (const chunk of geminiRAG.thinkerStepStream(
-          query,
-          sources,
-          state.selectedModel,
-          activeDocs.map(d => d.name),
-          state.openRouterKey,
-          state.googleKey,
-          state.xaiKey,
-          state.openaiKey,
-          state.customContext
-        )) {
-          if (typeof chunk === 'string') {
-            thinkerThoughts += chunk;
-            setState(prev => ({
-              ...prev,
-              messages: prev.messages.map(m => m.id === assistantId ? {
-                ...m,
-                thoughtProcess: thinkerThoughts,
-                subtasks: m.subtasks?.map(s =>
-                  s.label === 'Searching' ? { ...s, status: 'completed' } :
-                    s.label === 'Drafting' ? { ...s, status: 'loading' } : s
-                )
-              } : m)
-            }));
-          } else {
-            // Final result with parsed data
-            thinkerResult = chunk;
-          }
-        }
-
-        setState(prev => ({
-          ...prev,
-          messages: prev.messages.map(m => m.id === assistantId ? {
-            ...m,
-            subtasks: m.subtasks?.map(s =>
-              s.label === 'Drafting' ? { ...s, status: 'completed' } : s
-            )
-          } : m)
-        }));
-        thinkingDuration = (performance.now() - tThink) / 1000;
-
-        if (abortControllerRef.current.signal.aborted) throw new Error("Aborted");
-
-        const synthesisThoughts = thinkerResult && thinkerResult.thoughts
-          ? (Array.isArray(thinkerResult.thoughts)
-            ? thinkerResult.thoughts.map(t => ({ timestamp: Date.now(), step: t.step, thought: t.thought }))
-            : [{ timestamp: Date.now(), step: 'Synthesis', thought: thinkerResult.thoughts }])
-          : [];
-
-        setState(prev => ({
-          ...prev,
-          messages: prev.messages.map(m => m.id === assistantId ? {
-            ...m,
-            status: 'reasoning',
-            thoughtProcess: thinkerThoughts,
-            thinkingDuration,
-            thoughtLogs: [
-              ...(m.thoughtLogs || []),
-              ...synthesisThoughts,
-              { timestamp: Date.now(), step: 'Finalizing', thought: 'Final synthesis complete. Generating comprehensive answer...' }
-            ],
-            subtasks: m.subtasks?.map(s =>
-              s.label === 'Drafting' ? { ...s, status: 'completed' } : s
-            )
-          } : m)
-        }));
-
-      } else {
-        setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, status: 'reasoning' } : m) }));
-      }
-
-      const t3 = performance.now();
-
-      // 4. GENERATION (STREAMING)
-      let fullAnswer = "";
-      const stream = geminiRAG.generateAnswerStream(
-        query, expandedQuery, sources,
-        0.7,
-        state.useVault, state.selectedModel, hist, state.openRouterKey,
-        state.googleKey,
-        state.xaiKey,
-        state.openaiKey,
-        state.mistralKey,
-        taggedFileNames,
-        thinkerResult,
-        state.maxTokens
-      );
-
-      for await (const chunk of stream) {
-        if (abortControllerRef.current.signal.aborted) break;
-        fullAnswer += chunk;
-
-        // Update UI with partial answer
-        setState(prev => ({
-          ...prev,
-          messages: prev.messages.map(m => m.id === assistantId ? {
-            ...m,
-            content: fullAnswer,
-            // Keep status as reasoning while streaming
-          } : m)
-        }));
-      }
-
-      reasoningDuration = (performance.now() - t3) / 1000;
-
-      if (abortControllerRef.current.signal.aborted) throw new Error("Aborted");
-
-      // Add a note about trying other models if needed
-      const modelNote = `\n\n<span class="text-xs text-gray-500">If unsatisfied with this response, try a different model: Claude for reasoning, GPT-4 for analysis, Gemini Flash for speed, or Claude for long context. Switch models to re-submit.</span>`;
-
-      setState(prev => ({
-        ...prev,
-        messages: prev.messages.map(m => m.id === assistantId ? {
-          ...m,
-          status: 'completed',
-          content: fullAnswer + modelNote,
-          modelId: state.selectedModel,
-          reasoningDuration,
-          expansionDuration,
-          planningDuration,
-          searchDuration,
-          thinkingDuration
-        } : m)
-      }));
-
-      if (state.useContextHistory) {
-        // Now the expander brain handles the summarization
-        const scriptLine = await geminiRAG.generateSummary(
-          query,
-          fullAnswer,
-          Array.from(new Set(sources.map(s => s.docName))),
-          state.selectedModel,
-          state.openRouterKey,
-          state.googleKey,
-          state.xaiKey,
-          state.openaiKey
-        );
-        setState(prev => ({ ...prev, contextScript: prev.contextScript ? `${prev.contextScript}\n${scriptLine}` : scriptLine }));
-      }
-    } catch (err: any) {
-      setActiveFileNames([]);
-      if (err.message === "Aborted") {
-        setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, status: 'error', content: prev.messages.find(msg => msg.id === assistantId)?.content || 'Generation stopped by user.' } : m) }));
-      } else {
-        addToast(err.message || "Pipeline error.");
-        setState(prev => ({ ...prev, messages: prev.messages.map(m => m.id === assistantId ? { ...m, status: 'error' } : m) }));
-      }
-    } finally {
-      setActiveFileNames([]);
-      setState(prev => ({ ...prev, isProcessing: false }));
-      abortControllerRef.current = null;
+    if (!authToken) {
+      addToast('Not authenticated', 'error');
+      return;
     }
+    
+    await processQueryWithBackend(
+      query,
+      assistantId,
+      authToken,
+      state,
+      setState,
+      setActiveFileNames,
+      addToast,
+      state.selectedModel
+    );
   };
+
+  /* 
+   * OLD FRONTEND RAG CODE - Removed for security
+   * All LLM processing now happens in backend agent_rag_engine.py
+   * This keeps API keys and prompts secure on the server
+   * See processQueryWithBackend in utils/backendQueryProcessor.ts
+   */
 
   const handleStop = useCallback(() => {
     if (abortControllerRef.current) {
@@ -1621,6 +960,23 @@ const App: React.FC = () => {
     return <LoadingScreen />;
   }
 
+  // Show auth page if not logged in
+  if (!authToken) {
+    return <AuthPage onLogin={async (token) => {
+      localStorage.setItem('auth_token', token);
+      setAuthToken(token);
+      
+      // Migrate data from localStorage to backend
+      try {
+        await storageService.migrateAllDataToBackend(token);
+      } catch (error) {
+        console.error('Migration failed:', error);
+      }
+      
+      window.location.reload();
+    }} />;
+  }
+
   // Show auth error in LoadingScreen if authentication failed
   if (loadingError && !authToken) {
     return (
@@ -1731,23 +1087,38 @@ const App: React.FC = () => {
               inputValue={inputValue} setInputValue={setInputValue}
               onSend={handleSend} onStop={handleStop} onHistoryNav={handleHistoryNav}
               isProcessing={state.isProcessing}
-              useVault={state.useVault} setUseVault={(v) => setState(prev => ({ ...prev, useVault: v }))}
+              useVault={state.useVault} setUseVault={(v) => {
+                setState(prev => ({ ...prev, useVault: v }));
+                syncConfigToBackend({ settings: { useVault: v, useContextHistory: state.useContextHistory, maxTokens: state.maxTokens } });
+              }}
               useContextHistory={state.useContextHistory}
-              setUseContextHistory={(v) => setState(prev => ({ ...prev, useContextHistory: v }))}
+              setUseContextHistory={(v) => {
+                setState(prev => ({ ...prev, useContextHistory: v }));
+                syncConfigToBackend({ settings: { useVault: state.useVault, useContextHistory: v, maxTokens: state.maxTokens } });
+              }}
               onClearContext={handleClearContextHistory}
               selectedModel={state.selectedModel}
-              setSelectedModel={(m) => setState(prev => ({ ...prev, selectedModel: m }))}
+              setSelectedModel={(m) => {
+                setState(prev => ({ ...prev, selectedModel: m }));
+                syncConfigToBackend({ model_preference: m });
+              }}
               openRouterKey={state.openRouterKey} setOpenRouterKey={(k) => setState(prev => ({ ...prev, openRouterKey: k }))}
               onOpenApiManagement={() => setState(prev => ({ ...prev, isApiKeyModalOpen: true }))}
               onOpenModelSelector={() => setIsModelSelectorOpen(true)}
               availableDocuments={state.documents.filter(d => d.enabled)}
               onClearChat={onClearChat}
               maxTokens={state.maxTokens}
-              setMaxTokens={(n) => setState(prev => ({ ...prev, maxTokens: n }))}
+              setMaxTokens={(n) => {
+                setState(prev => ({ ...prev, maxTokens: n }));
+                syncConfigToBackend({ settings: { useVault: state.useVault, useContextHistory: state.useContextHistory, maxTokens: n } });
+              }}
               maxAgentIterations={state.maxAgentIterations}
               setMaxAgentIterations={(n) => setState(prev => ({ ...prev, maxAgentIterations: n }))}
               customContext={state.customContext}
-              setCustomContext={(v) => setState(prev => ({ ...prev, customContext: v }))}
+              setCustomContext={(v) => {
+                setState(prev => ({ ...prev, customContext: v }));
+                syncConfigToBackend({ custom_context: v });
+              }}
             />
 
             {/* INTERNAL COLLAPSE BUTTON REMOVED AS PER USER REQUEST */}
@@ -1855,6 +1226,17 @@ const App: React.FC = () => {
         <ApiKeyManagementModal
           isOpen={state.isApiKeyModalOpen}
           onClose={() => setState(prev => ({ ...prev, isApiKeyModalOpen: false }))}
+          onSave={() => {
+            syncConfigToBackend({
+              api_keys: {
+                openrouter: state.openRouterKey,
+                google: state.googleKey,
+                xai: state.xaiKey,
+                openai: state.openaiKey,
+                mistral: state.mistralKey
+              }
+            });
+          }}
           openRouterKey={state.openRouterKey}
           setOpenRouterKey={(k) => setState(prev => ({ ...prev, openRouterKey: k }))}
           googleKey={state.googleKey}
@@ -1888,7 +1270,10 @@ const App: React.FC = () => {
           isOpen={isMindMapEditorOpen}
           onClose={() => setIsMindMapEditorOpen(false)}
           mindMaps={state.mindMaps}
-          onSaveMindMaps={(maps) => setState(prev => ({ ...prev, mindMaps: maps }))}
+          onSaveMindMaps={(maps) => {
+            setState(prev => ({ ...prev, mindMaps: maps }));
+            syncConfigToBackend({ mind_maps: maps });
+          }}
         />
 
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex flex-col gap-3 z-50 pointer-events-none w-full max-sm px-4 shadow-2xl">
@@ -1918,7 +1303,10 @@ const App: React.FC = () => {
           isOpen={isModelSelectorOpen}
           onClose={() => setIsModelSelectorOpen(false)}
           currentModelId={state.selectedModel}
-          onSelect={(m) => setState(prev => ({ ...prev, selectedModel: m }))}
+          onSelect={(m) => {
+            setState(prev => ({ ...prev, selectedModel: m }));
+            syncConfigToBackend({ model_preference: m });
+          }}
           title="Select Primary Intelligence"
         />
 

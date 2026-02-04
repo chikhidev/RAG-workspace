@@ -42,8 +42,11 @@ class UserConfig(ConfigUpdate):
 class ChatRequest(BaseModel):
     message: str
     model_id: Optional[str] = None
+    provider: Optional[str] = None
     conversation_id: Optional[int] = None
     use_vault: bool = True
+    use_context_history: bool = False
+    max_iterations: int = 7
     active_files: List[str] = [] # Filenames to focus on
 
 class DocumentMetadata(BaseModel):

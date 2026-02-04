@@ -200,6 +200,8 @@ def update_config(config: schemas.ConfigUpdate, current_user: models.User = Depe
         user_config.settings = config.settings
     if config.mind_maps is not None:
         user_config.mind_maps = config.mind_maps
+    if config.mind_maps is not None:
+        user_config.mind_maps = config.mind_maps
         
     db.commit()
     db.refresh(user_config)
@@ -354,11 +356,47 @@ async def chat_stream(
     current_user: models.User = Depends(auth.get_current_user),
     db: Session = Depends(database.get_db)
 ):
-    engine = rag_engine.RagEngine(current_user)
+    """
+    Stream chat responses with full RAG pipeline and agent loop
+    Sends Server-Sent Events (SSE) for: status updates, file highlights, thoughts, answer chunks
+    """
+    from . import agent_rag_engine_v2
     
+    # Debug: Log received request
+    print(f"[Chat] Received request - model_id: {request.model_id}, provider: {request.provider}")
+    
+    # Get user's documents
+    documents = db.query(models.Document).filter(
+        models.Document.user_id == current_user.id
+    ).all()
+    
+    docs_data = [{
+        'doc_id': doc.doc_id,
+        'filename': doc.filename,
+        'content': doc.content,
+        'enabled': doc.enabled
+    } for doc in documents]
+    
+    # Create engine instance with model selection and provider
+    model_id = request.model_id or 'gemini-1.5-flash'
+    provider = request.provider  # Get provider from frontend
+    engine = agent_rag_engine_v2.AgentRAGEngine(current_user, model_id, provider)
+    
+    # Process query with streaming events
     return StreamingResponse(
-        engine.generate_stream(request.message, request.use_vault, request.active_files),
-        media_type="text/event-stream"
+        engine.process_query_stream(
+            query=request.message,
+            documents=docs_data,
+            use_vault=request.use_vault,
+            use_context_history=request.use_context_history,
+            max_iterations=request.max_iterations
+        ),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
     )
 
 if __name__ == "__main__":

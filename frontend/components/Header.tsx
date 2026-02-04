@@ -87,7 +87,7 @@ export const Header: React.FC<HeaderProps> = ({
               <Menu size={20} />
             </button>
           )}
-          <img src="/logo.png" alt="Copper" className="h-6 w-auto" />
+          <img src="/logo.png" alt="Copper" className="h-4 w-auto" />
           <h1 className="text-xl font-bold text-gray-100 truncate">
             {title} <span className="text-sm text-gray-400 ml-2">workspace</span>
           </h1>

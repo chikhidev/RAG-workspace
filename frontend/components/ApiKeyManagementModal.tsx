@@ -4,6 +4,7 @@ import { X, Eye, EyeOff, Key } from 'lucide-react';
 interface ApiKeyManagementModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSave?: () => void;
   openRouterKey: string;
   setOpenRouterKey: (k: string) => void;
   googleKey: string;
@@ -56,7 +57,7 @@ const providers = [
 ];
 
 export const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({
-  isOpen, onClose, openRouterKey, setOpenRouterKey, googleKey, setGoogleKey, 
+  isOpen, onClose, onSave, openRouterKey, setOpenRouterKey, googleKey, setGoogleKey, 
   xaiKey, setXaiKey, openaiKey, setOpenaiKey, mistralKey, setMistralKey
 }) => {
   const [visibleKeys, setVisibleKeys] = useState<Record<string, boolean>>({});
@@ -167,7 +168,10 @@ export const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({
       <div className="border-t border-brand-border bg-brand-base/80 backdrop-blur-md px-8 py-6 shrink-0 z-50 sticky bottom-0">
         <div className="max-w-5xl mx-auto flex justify-end gap-3">
           <button
-            onClick={onClose}
+            onClick={() => {
+              onSave?.();
+              onClose();
+            }}
             className="px-6 py-3 bg-brand-accent hover:bg-brand-accent/90 text-white rounded-lg text-sm font-bold tracking-wide transition-all hover:-translate-y-0.5 active:translate-y-0"
           >
             Done
