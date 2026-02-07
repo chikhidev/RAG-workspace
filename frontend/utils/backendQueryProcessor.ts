@@ -14,12 +14,13 @@ export async function processQueryWithBackend(
   setActiveFileNames: Function,
   addToast: Function,
   modelId?: string,
-  abortSignal?: AbortSignal
+  abortSignal?: AbortSignal,
+  filteredSources?: Array<{ docName: string; text: string }>
 ) {
   setState((prev: any) => ({ ...prev, isProcessing: true }));
   
   let fullAnswer = '';
-  let sources: any[] = [];
+  let sources: any[] = filteredSources ? [...filteredSources] : [];
   let iterations = 0;
   
   try {
@@ -29,7 +30,7 @@ export async function processQueryWithBackend(
     const provider = modelService.getModelProvider(selectedModelId);
     
     // Prepare request
-    const request = {
+    const request: any = {
       message: query,
       model_id: selectedModelId,
       provider: provider,
@@ -37,6 +38,11 @@ export async function processQueryWithBackend(
       use_context_history: state.useContextHistory,
       max_iterations: state.maxAgentIterations || 7
     };
+    
+    // Add filtered sources if provided (for regeneration)
+    if (filteredSources) {
+      request.filtered_sources = filteredSources;
+    }
     
     // Stream events from backend with abort signal
     for await (const event of backendChatService.streamChat(authToken, request, abortSignal)) {
@@ -100,6 +106,22 @@ export async function processQueryWithBackend(
           setActiveFileNames(event.data.files || []);
           break;
           
+        case 'source':
+          // Stream sources in real-time as they're discovered
+          sources.push(event.data);
+          setState((prev: any) => ({
+            ...prev,
+            messages: prev.messages.map((m: any) =>
+              m.id === assistantId
+                ? {
+                    ...m,
+                    sources: [...sources]
+                  }
+                : m
+            )
+          }));
+          break;
+          
         case 'answer':
           fullAnswer += event.data.content;
           setState((prev: any) => ({
@@ -117,7 +139,8 @@ export async function processQueryWithBackend(
           break;
           
         case 'complete':
-          sources = event.data.sources || [];
+          // Don't overwrite sources if they were already streamed via 'source' events
+          // Backend may still send empty array in complete event for backward compatibility
           setState((prev: any) => ({
             ...prev,
             messages: prev.messages.map((m: any) =>
@@ -128,7 +151,7 @@ export async function processQueryWithBackend(
                     content: fullAnswer,
                     agentContext: {
                       ...(m.agentContext || {}),
-                      sources: sources,
+                      sources: m.sources || sources,  // Use already streamed sources if available
                       iterations: event.data.iterations
                     }
                   }
@@ -190,6 +213,16 @@ export async function processQueryWithBackend(
     }
   } finally {
     setActiveFileNames([]);
-    setState((prev: any) => ({ ...prev, isProcessing: false }));
+    setState((prev: any) => ({
+      ...prev,
+      isProcessing: false,
+      // Safety net: if the stream ended without a 'complete' event,
+      // force any still-processing assistant message to 'completed'
+      messages: prev.messages.map((m: any) =>
+        m.id === assistantId && m.status !== 'completed' && m.status !== 'error'
+          ? { ...m, status: 'completed' }
+          : m
+      )
+    }));
   }
 }

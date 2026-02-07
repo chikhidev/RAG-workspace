@@ -9,7 +9,7 @@ class UserCreate(UserBase):
     password: str
 
 class User(UserBase):
-    id: int
+    id: str
     username: Optional[str] = None
     avatar_path: Optional[str] = None
     class Config:
@@ -37,13 +37,13 @@ class ConfigUpdate(BaseModel):
     mind_maps: Optional[List[Dict[str, Any]]] = None
 
 class UserConfig(ConfigUpdate):
-    user_id: int
+    user_id: str
 
 class ChatRequest(BaseModel):
     message: str
     model_id: Optional[str] = None
     provider: Optional[str] = None
-    conversation_id: Optional[int] = None
+    conversation_id: Optional[str] = None
     use_vault: bool = True
     use_context_history: bool = False
     max_iterations: int = 7
@@ -51,10 +51,9 @@ class ChatRequest(BaseModel):
 
 class DocumentSummary(BaseModel):
     """Document metadata without content - for list endpoint"""
-    id: int
+    id: str
     doc_id: str
     filename: str
-    file_type: str
     enabled: bool
     upload_date: datetime
     
@@ -63,10 +62,9 @@ class DocumentSummary(BaseModel):
 
 class DocumentMetadata(BaseModel):
     """Full document metadata with content - for create/update operations"""
-    id: int
+    id: str
     doc_id: str
     filename: str
-    file_type: str
     content: str
     enabled: bool
     upload_date: datetime
@@ -85,50 +83,42 @@ class DocumentUpdate(BaseModel):
     content: Optional[str] = None
 
 class ConversationBase(BaseModel):
-    id: int
     title: str
-    created_at: datetime
-    
-    class Config:
-        from_attributes = True
+
+class ConversationCreate(ConversationBase):
+    pass
+
+class ConversationUpdate(BaseModel):
+    title: Optional[str] = None
 
 class MessageBase(BaseModel):
-    id: int
     role: str
     content: str
-    timestamp: datetime
-    extra_data: Optional[Dict[str, Any]] = None  # For sources, citations, etc.
-    
-    class Config:
-        from_attributes = True
-
-class MessageCreate(BaseModel):
-    role: str
-    content: str
+    model: Optional[str] = None
     extra_data: Optional[Dict[str, Any]] = None
 
-class ConversationCreate(BaseModel):
-    title: Optional[str] = None  # Auto-generate from first message if not provided
+class MessageCreate(MessageBase):
+    conversation_id: str
 
-class ConversationWithMessages(ConversationBase):
-    messages: List[MessageBase] = []
+class Message(MessageBase):
+    id: str
+    conversation_id: str
+    timestamp: datetime
     
     class Config:
         from_attributes = True
 
-class ConversationListResponse(BaseModel):
-    conversations: List[ConversationBase]
-    total: int
-    has_more: bool
+class Conversation(ConversationBase):
+    id: str
+    created_at: datetime
+    message_count: Optional[int] = None
+    last_message: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
 
-class MessagesResponse(BaseModel):
-    messages: List[MessageBase]
-    total: int
-    has_more: bool
-
-class EditApprovalRequest(BaseModel):
-    """Request to approve or reject a proposed file edit"""
-    doc_id: str
-    filename: str
-    new_content: str
-    approved: bool
+class ConversationWithMessages(Conversation):
+    messages: List[Message] = []
+    
+    class Config:
+        from_attributes = True

@@ -12,7 +12,6 @@ import 'katex/dist/katex.min.css';
 interface MarkdownResponseProps {
   content: string;
   className?: string;
-  onSourceClick?: (fileName: string) => void;
 }
 
 const CodeBlock = ({ inline, className, children, ...props }: any) => {
@@ -210,18 +209,17 @@ const TaskListItem = ({ checked, children }: any) => {
   );
 };
 
-const SourceTag = ({ name, onClick }: { name: string; onClick?: (name: string) => void }) => {
+const SourceTag = ({ name }: { name: string }) => {
   return (
-    <button
-      onClick={() => onClick?.(name)}
-      className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-brand-base rounded border border-brand-border text-[11px] text-gray-400 font-medium hover:border-brand-accent hover:text-brand-accent transition-all mx-1 align-baseline translate-y-[1px]"
+    <span
+      className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-brand-base rounded border border-brand-border text-[11px] text-gray-400 font-medium mx-1 align-baseline translate-y-[1px]"
     >
       {name}
-    </button>
+    </span>
   );
 };
 
-export const MarkdownResponse: React.FC<MarkdownResponseProps> = ({ content, className = '', onSourceClick }) => {
+export const MarkdownResponse: React.FC<MarkdownResponseProps> = ({ content, className = '' }) => {
   // Pre-process content to handle [Source: filename.md]
   const processedContent = content.replace(/\[Source:\s*([^\]]+)\]/g, (match, fileName) => {
     return `<source-tag name="${fileName.trim()}"></source-tag>`;
@@ -236,7 +234,7 @@ export const MarkdownResponse: React.FC<MarkdownResponseProps> = ({ content, cla
           // Custom Source Tag
           // @ts-ignore
           'source-tag': ({ node, ...props }: any) => (
-            <SourceTag name={props.name} onClick={onSourceClick} />
+            <SourceTag name={props.name} />
           ),
           // Headings
           h1: ({ children }) => (

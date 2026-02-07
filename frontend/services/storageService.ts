@@ -180,8 +180,25 @@ export async function migrateDocumentsToBackend(authToken: string): Promise<void
 
 /**
  * Sync configuration from localStorage to backend (migration helper)
+ * Only migrates if there is actual localStorage data to migrate.
  */
 export async function migrateConfigToBackend(authToken: string): Promise<void> {
+  // Check if there's any localStorage config data to migrate
+  const configKeys = [
+    'gemini_rag_openrouter_key',
+    'gemini_rag_google_key',
+    'gemini_rag_xai_key',
+    'gemini_rag_openai_key',
+    'gemini_rag_mistral_key',
+    'gemini_rag_custom_context',
+    'gemini_rag_context_script',
+    'gemini_rag_selected_model',
+    'gemini_rag_settings_v2',
+    'gemini_rag_mind_maps'
+  ];
+  const hasAnyData = configKeys.some(key => localStorage.getItem(key) !== null);
+  if (!hasAnyData) return; // Nothing to migrate
+
   const config: UserConfig = {
     api_keys: {
       openrouter: localStorage.getItem('gemini_rag_openrouter_key') || '',

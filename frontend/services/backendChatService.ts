@@ -10,10 +10,11 @@ interface ChatRequest {
   use_vault: boolean;
   use_context_history: boolean;
   max_iterations: number;
+  filtered_sources?: Array<{ docName: string; text: string }>;
 }
 
 interface StreamEvent {
-  type: 'status' | 'iteration' | 'thought' | 'highlight' | 'answer' | 'complete' | 'error';
+  type: 'status' | 'iteration' | 'thought' | 'highlight' | 'answer' | 'complete' | 'error' | 'source';
   data: any;
 }
 
@@ -61,10 +62,18 @@ export class BackendChatService {
     let buffer = '';
     
     try {
+      // Track currentEvent across reads — event: and data: lines
+      // may be split across TCP chunks
+      let currentEvent: string | null = null;
+      
       while (true) {
         const { done, value } = await reader.read();
         
-        if (done) break;
+        if (done) {
+          // Flush remaining buffer (final decode without stream flag)
+          buffer += decoder.decode();
+          break;
+        }
         
         // Check if aborted
         if (signal?.aborted) {
@@ -78,8 +87,6 @@ export class BackendChatService {
         // Process complete SSE messages
         const lines = buffer.split('\n');
         buffer = lines.pop() || ''; // Keep incomplete line in buffer
-        
-        let currentEvent: string | null = null;
         
         for (const line of lines) {
           if (line.startsWith('event:')) {
@@ -99,6 +106,30 @@ export class BackendChatService {
               }
             }
             
+            currentEvent = null;
+          }
+        }
+      }
+      
+      // Process any remaining buffer content after stream ends
+      if (buffer.trim()) {
+        const remainingLines = buffer.split('\n');
+        for (const line of remainingLines) {
+          if (line.startsWith('event:')) {
+            currentEvent = line.substring(6).trim();
+          } else if (line.startsWith('data:')) {
+            const dataStr = line.substring(5).trim();
+            if (dataStr && currentEvent) {
+              try {
+                const data = JSON.parse(dataStr);
+                yield {
+                  type: currentEvent as StreamEvent['type'],
+                  data
+                };
+              } catch (e) {
+                console.error('Failed to parse remaining SSE data:', dataStr);
+              }
+            }
             currentEvent = null;
           }
         }

@@ -6,9 +6,13 @@ python-multipart
 chromadb
 sentence-transformers
 pydantic
-sqlalchemy
+motor
+pymongo
 google-genai
 openai
 cohere
 python-dotenv
 httpx
+authlib
+itsdangerous
+cryptography

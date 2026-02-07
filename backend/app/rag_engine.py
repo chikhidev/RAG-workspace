@@ -1,12 +1,13 @@
 from google import genai
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Dict
 from . import models, vector_store
 
 class RagEngine:
-    def __init__(self, user: models.User):
+    def __init__(self, user: models.User, api_keys: Dict[str, str] = None, model_preference: str = None, custom_instructions: str = None):
         self.user = user
-        self.api_keys = user.config.api_keys if user.config else {}
-        self.model_pref = user.config.model_preference if user.config else "gemini-1.5-pro"
+        self.api_keys = api_keys or {}
+        self.model_pref = model_preference or "gemini-1.5-pro"
+        self.custom_instructions = custom_instructions or "You are a helpful AI assistant."
         
     async def generate_stream(self, message: str, use_vault: bool, active_files: list[str]) -> AsyncGenerator[str, None]:
         # 1. Setup Provider
@@ -37,7 +38,7 @@ class RagEngine:
                 context_text = "\n\n".join(context_parts)
         
         # 3. Construct Prompt
-        system_instruction = self.user.config.custom_instructions if self.user.config and self.user.config.custom_instructions else "You are a helpful AI assistant."
+        system_instruction = self.custom_instructions
         
         full_prompt = message
         if context_text:

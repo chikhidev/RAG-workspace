@@ -30,24 +30,33 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
       
       // Load avatar if exists
       if (user.avatar_path && authToken) {
-        fetch(`/api${user.avatar_path}`, {
-          headers: { 'Authorization': `Bearer ${authToken}` }
-        })
-        .then(res => res.ok ? res.blob() : null)
-        .then(blob => {
-          if (blob) setAvatarBlobUrl(URL.createObjectURL(blob));
-        })
-        .catch(console.error);
+        // Check if avatar_path is an external URL (e.g., from Google OAuth)
+        if (user.avatar_path.startsWith('http://') || user.avatar_path.startsWith('https://')) {
+          // Use external URL directly
+          setAvatarBlobUrl(user.avatar_path);
+        } else {
+          // Fetch avatar from backend with auth headers (local uploads)
+          fetch(`/api${user.avatar_path}`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+          })
+          .then(res => res.ok ? res.blob() : null)
+          .then(blob => {
+            if (blob) setAvatarBlobUrl(URL.createObjectURL(blob));
+          })
+          .catch(console.error);
+        }
       } else {
         setAvatarBlobUrl(null);
       }
     }
   }, [user, authToken, isOpen]);
 
-  // Clean up blob URL
+  // Clean up blob URL (only for local uploads, not external URLs)
   useEffect(() => {
     return () => {
-      if (avatarBlobUrl) URL.revokeObjectURL(avatarBlobUrl);
+      if (avatarBlobUrl && !avatarBlobUrl.startsWith('http')) {
+        URL.revokeObjectURL(avatarBlobUrl);
+      }
     };
   }, [avatarBlobUrl]);
 

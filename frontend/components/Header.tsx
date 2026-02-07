@@ -43,28 +43,36 @@ export const Header: React.FC<HeaderProps> = ({
 
   useEffect(() => {
     if (user?.avatar_path && authToken) {
-      // Fetch avatar with auth headers
-      fetch(`/api${user.avatar_path}`, {
-        headers: {
-          'Authorization': `Bearer ${authToken}`
-        }
-      })
-      .then(res => {
-        if (res.ok) return res.blob();
-        throw new Error('Failed to load avatar');
-      })
-      .then(blob => {
-        const url = URL.createObjectURL(blob);
-        setAvatarBlobUrl(url);
-      })
-      .catch(err => {
-        console.error("Error loading avatar:", err);
-        setAvatarBlobUrl(null);
-      });
+      // Check if avatar_path is an external URL (e.g., from Google OAuth)
+      if (user.avatar_path.startsWith('http://') || user.avatar_path.startsWith('https://')) {
+        // Use external URL directly
+        setAvatarBlobUrl(user.avatar_path);
+      } else {
+        // Fetch avatar from backend with auth headers (local uploads)
+        fetch(`/api${user.avatar_path}`, {
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        })
+        .then(res => {
+          if (res.ok) return res.blob();
+          throw new Error('Failed to load avatar');
+        })
+        .then(blob => {
+          const url = URL.createObjectURL(blob);
+          setAvatarBlobUrl(url);
+        })
+        .catch(err => {
+          console.error("Error loading avatar:", err);
+          setAvatarBlobUrl(null);
+        });
 
-      return () => {
-        if (avatarBlobUrl) URL.revokeObjectURL(avatarBlobUrl);
-      };
+        return () => {
+          if (avatarBlobUrl && !avatarBlobUrl.startsWith('http')) {
+            URL.revokeObjectURL(avatarBlobUrl);
+          }
+        };
+      }
     }
   }, [user?.avatar_path, authToken]);
 
@@ -94,7 +102,7 @@ export const Header: React.FC<HeaderProps> = ({
               <Menu size={responsive.isMobile ? 18 : 20} />
             </button>
           )}
-          <img src="/logo.png" alt="Copper" className={`w-auto flex-shrink-0 ${responsive.isMobile ? 'h-3' : 'h-4'}`} />
+          <img src="/logo.png" alt="Copper" className={`w-auto flex-shrink-0 ${responsive.isMobile ? 'h-9' : 'h-6'}`} />
           <h1 className={`font-bold text-gray-100 truncate ${responsive.isMobile ? 'text-base' : 'text-xl'}`}>
             {title} <span className={`text-gray-400 ml-1 md:ml-2 ${responsive.isMobile ? 'hidden' : 'inline text-sm'}`}>workspace</span>
           </h1>

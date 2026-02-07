@@ -4,7 +4,7 @@ import { X, Eye, EyeOff, Key, AlertCircle, Save } from 'lucide-react';
 interface ApiKeyManagementModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave?: () => void;
+  onSave?: (keys: { openrouter: string; google: string; xai: string; openai: string; mistral: string }) => void;
   openRouterKey: string;
   setOpenRouterKey: (k: string) => void;
   googleKey: string;
@@ -155,7 +155,8 @@ export const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({
     setOpenaiKey(localKeys.openai);
     setMistralKey(localKeys.mistral);
     
-    onSave?.();
+    // Pass the keys directly to onSave to avoid race conditions with async state updates
+    onSave?.(localKeys);
     onClose();
   };
 
@@ -188,14 +189,9 @@ export const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-5xl mx-auto px-8 py-12 space-y-8">
-          <div className="space-y-2">
-            <h3 className="text-lg font-bold text-white">Provider Configuration</h3>
-            <p className="text-sm text-brand-muted">Manage your API credentials for various AI providers. Keys are stored securely on your device.</p>
-          </div>
 
           {/* Providers Grid */}
-          <div className="space-y-3">
-            {providers.map((provider) => (
+          <div className="space-y-3">{providers.map((provider) => (
               <div
                 key={provider.id}
                 className="bg-[#1a1a1a] border border-brand-border rounded-xl p-6 hover:border-brand-accent/30 transition-all hover:shadow-lg hover:shadow-brand-accent/5"

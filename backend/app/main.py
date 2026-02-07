@@ -1,18 +1,24 @@
-from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, Form
+from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.responses import StreamingResponse, FileResponse, RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session
+from starlette.middleware.sessions import SessionMiddleware
 from typing import List
 import shutil
 import os
-from . import models, schemas, auth, database, rag_engine
-from .database import engine
-
-# Create the database tables
-models.Base.metadata.create_all(bind=engine)
+import httpx
+from bson import ObjectId
+from . import models, schemas, auth, database, rag_engine, encryption
 
 app = FastAPI()
+
+@app.on_event("startup")
+async def startup_db_client():
+    await database.connect_to_mongo()
+
+@app.on_event("shutdown")
+async def shutdown_db_client():
+    await database.close_mongo_connection()
 
 # Secure file access - NO STATIC MOUNT FOR UPLOADS
 UPLOAD_DIR = "uploads"
@@ -54,31 +60,158 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- Auth Routes ---
+# Add Session Middleware for OAuth (configured for Codespaces/HTTPS)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.getenv("SECRET_KEY", "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"),
+    same_site="none",  # Allow cross-site cookies for OAuth
+    https_only=True    # Secure cookies for HTTPS (Codespaces)
+)
 
-@app.post("/token", response_model=schemas.Token)
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.get_db)):
-    user = db.query(models.User).filter(models.User.email == form_data.username).first()
-    if not user or not auth.verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
+# --- Google OAuth Routes (Only Authentication Method) ---
+
+@app.get("/auth/google/login")
+async def google_login(request: Request):
+    """Initiate Google OAuth flow (stateless for Codespaces compatibility)"""
+    # Build Google OAuth URL manually to avoid session issues
+    google_auth_url = "https://accounts.google.com/o/oauth2/v2/auth"
+    
+    params = {
+        "client_id": auth.GOOGLE_CLIENT_ID,
+        "redirect_uri": auth.GOOGLE_REDIRECT_URI,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "access_type": "online",
+    }
+    
+    # Build the authorization URL
+    from urllib.parse import urlencode
+    auth_url = f"{google_auth_url}?{urlencode(params)}"
+    
+    return RedirectResponse(url=auth_url)
+
+@app.get("/auth/google/callback")
+async def google_callback(request: Request, code: str = None, db = Depends(database.get_db)):
+    """Handle Google OAuth callback (stateless)"""
+    try:
+        if not code:
+            raise HTTPException(status_code=400, detail="No authorization code provided")
+        
+        # Exchange code for tokens
+        token_url = "https://oauth2.googleapis.com/token"
+        token_data = {
+            "code": code,
+            "client_id": auth.GOOGLE_CLIENT_ID,
+            "client_secret": auth.GOOGLE_CLIENT_SECRET,
+            "redirect_uri": auth.GOOGLE_REDIRECT_URI,
+            "grant_type": "authorization_code",
+        }
+        
+        async with httpx.AsyncClient() as client:
+            token_response = await client.post(token_url, data=token_data)
+            
+            if token_response.status_code != 200:
+                print(f"Token exchange error: {token_response.text}")
+                raise HTTPException(status_code=400, detail="Failed to exchange code for token")
+            
+            tokens = token_response.json()
+            id_token = tokens.get("id_token")
+            
+            # Verify and decode the ID token
+            userinfo_url = "https://www.googleapis.com/oauth2/v3/userinfo"
+            userinfo_response = await client.get(
+                userinfo_url,
+                headers={"Authorization": f"Bearer {tokens.get('access_token')}"}
+            )
+            
+            if userinfo_response.status_code != 200:
+                raise HTTPException(status_code=400, detail="Failed to get user info")
+            
+            user_info = userinfo_response.json()
+        
+        email = user_info.get('email')
+        name = user_info.get('name')
+        picture = user_info.get('picture')
+        google_id = user_info.get('sub')
+        
+        if not email:
+            raise HTTPException(status_code=400, detail="Email not provided by Google")
+        
+        # Get or create user
+        user = await auth.get_or_create_oauth_user(
+            db=db,
+            email=email,
+            oauth_provider='google',
+            oauth_id=google_id,
+            name=name,
+            picture=picture
         )
-    access_token = auth.create_access_token(data={"sub": user.email})
-    return {"access_token": access_token, "token_type": "bearer"}
+        
+        # Create access token
+        access_token = auth.create_access_token(data={"sub": user.email})
+        
+        # Redirect to frontend with token
+        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
+        return RedirectResponse(url=f"{frontend_url}?token={access_token}")
+        
+    except Exception as e:
+        print(f"OAuth error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
+        return RedirectResponse(url=f"{frontend_url}?error=oauth_failed")
 
-@app.post("/register", response_model=schemas.User)
-def register_user(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
-    db_user = db.query(models.User).filter(models.User.email == user.email).first()
-    if db_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
-    hashed_password = auth.get_password_hash(user.password)
-    new_user = models.User(email=user.email, hashed_password=hashed_password)
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return new_user
+@app.post("/auth/google/verify")
+async def verify_google_token(token_data: dict, db = Depends(database.get_db)):
+    """Verify Google ID token from frontend (alternative flow)"""
+    try:
+        id_token = token_data.get('credential')
+        if not id_token:
+            raise HTTPException(status_code=400, detail="No credential provided")
+        
+        # Verify the token with Google
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"https://oauth2.googleapis.com/tokeninfo?id_token={id_token}"
+            )
+            
+            if response.status_code != 200:
+                raise HTTPException(status_code=401, detail="Invalid token")
+            
+            user_info = response.json()
+            
+            # Verify audience
+            if user_info.get('aud') != auth.GOOGLE_CLIENT_ID:
+                raise HTTPException(status_code=401, detail="Invalid token audience")
+            
+            email = user_info.get('email')
+            name = user_info.get('name')
+            picture = user_info.get('picture')
+            google_id = user_info.get('sub')
+            
+            if not email:
+                raise HTTPException(status_code=400, detail="Email not provided by Google")
+            
+            # Get or create user
+            user = await auth.get_or_create_oauth_user(
+                db=db,
+                email=email,
+                oauth_provider='google',
+                oauth_id=google_id,
+                name=name,
+                picture=picture
+            )
+            
+            # Create access token
+            access_token = auth.create_access_token(data={"sub": user.email})
+            
+            return {"access_token": access_token, "token_type": "bearer"}
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Token verification error: {str(e)}")
+        raise HTTPException(status_code=401, detail="Token verification failed")
 
 @app.get("/users/me", response_model=schemas.User)
 async def read_users_me(current_user: models.User = Depends(auth.get_current_user)):
@@ -88,20 +221,28 @@ async def read_users_me(current_user: models.User = Depends(auth.get_current_use
 async def update_user(
     user_update: schemas.UserUpdate,
     current_user: models.User = Depends(auth.get_current_user),
-    db: Session = Depends(database.get_db)
+    db = Depends(database.get_db)
 ):
+    update_data = {}
     if user_update.username is not None:
-        current_user.username = user_update.username
+        update_data["username"] = user_update.username
     if user_update.email is not None:
         # Check if email is taken
-        existing = db.query(models.User).filter(models.User.email == user_update.email).first()
-        if existing and existing.id != current_user.id:
+        existing = await db.users.find_one({"email": user_update.email})
+        if existing and str(existing["_id"]) != str(current_user.id):
             raise HTTPException(status_code=400, detail="Email already registered")
-        current_user.email = user_update.email
+        update_data["email"] = user_update.email
     
-    db.commit()
-    db.refresh(current_user)
-    return current_user
+    if update_data:
+        await db.users.update_one(
+            {"_id": ObjectId(current_user.id)},
+            {"$set": update_data}
+        )
+    
+    # Get updated user
+    updated_user = await db.users.find_one({"_id": ObjectId(current_user.id)})
+    updated_user["id"] = str(updated_user.pop("_id"))
+    return schemas.User(**updated_user)
 
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
@@ -110,7 +251,7 @@ MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 async def upload_avatar(
     file: UploadFile = File(...),
     current_user: models.User = Depends(auth.get_current_user),
-    db: Session = Depends(database.get_db)
+    db = Depends(database.get_db)
 ):
     # Security: Validate file type
     if file.content_type not in ALLOWED_IMAGE_TYPES:
@@ -143,18 +284,26 @@ async def upload_avatar(
             buffer.write(chunk)
         
     # Update user model with full URL path relative to backend
-    # This assumes backend is served at root or we use relative paths in frontend
-    current_user.avatar_path = f"/uploads/{avatar_filename}"
-    db.commit()
-    db.refresh(current_user)
+    avatar_path = f"/uploads/{avatar_filename}"
+    await db.users.update_one(
+        {"_id": ObjectId(current_user.id)},
+        {"$set": {"avatar_path": avatar_path}}
+    )
     
-    return current_user
+    # Get updated user
+    updated_user = await db.users.find_one({"_id": ObjectId(current_user.id)})
+    updated_user["id"] = str(updated_user.pop("_id"))
+    return schemas.User(**updated_user)
 
 # --- Config Routes ---
 
 @app.get("/config", response_model=schemas.ConfigUpdate)
-def get_config(current_user: models.User = Depends(auth.get_current_user), db: Session = Depends(database.get_db)):
-    if not current_user.config:
+async def get_config(current_user: models.User = Depends(auth.get_current_user), db = Depends(database.get_db)):
+    print(f"[GET /config] Loading config for user: {current_user.email} (ID: {current_user.id})")
+    user_config = await db.user_configs.find_one({"user_id": str(current_user.id)})
+    
+    if not user_config:
+        print(f"[GET /config] No config found for user {current_user.email}, returning defaults")
         # Return empty config with defaults
         return {
             "api_keys": {},
@@ -166,71 +315,313 @@ def get_config(current_user: models.User = Depends(auth.get_current_user), db: S
             "settings": {},
             "mind_maps": []
         }
+    
+    # Decrypt API keys before sending to client
+    encrypted_keys = user_config.get("api_keys", {})
+    print(f"[GET /config] Found config with {len(encrypted_keys)} encrypted key(s)")
+    
+    try:
+        decrypted_keys = encryption.decrypt_api_keys(encrypted_keys)
+        print(f"[GET /config] Successfully decrypted {len(decrypted_keys)} key(s)")
+    except Exception as e:
+        print(f"[GET /config] ERROR decrypting API keys: {e}")
+        decrypted_keys = {}
+    
     return {
-        "api_keys": current_user.config.api_keys or {},
-        "custom_instructions": current_user.config.custom_instructions or "",
-        "context_script": current_user.config.context_script or "",
-        "custom_context": current_user.config.custom_context or "",
-        "model_preference": current_user.config.model_preference or "gemini-2.0-flash-thinking-exp",
-        "generation_controls": current_user.config.generation_controls or {},
-        "settings": current_user.config.settings or {},
-        "mind_maps": current_user.config.mind_maps or []
+        "api_keys": decrypted_keys,
+        "custom_instructions": user_config.get("custom_instructions", ""),
+        "context_script": user_config.get("context_script", ""),
+        "custom_context": user_config.get("custom_context", ""),
+        "model_preference": user_config.get("model_preference", "gemini-2.0-flash-thinking-exp"),
+        "generation_controls": user_config.get("generation_controls", {}),
+        "settings": user_config.get("settings", {}),
+        "mind_maps": user_config.get("mind_maps", [])
     }
 
 @app.post("/config", response_model=schemas.ConfigUpdate)
-def update_config(config: schemas.ConfigUpdate, current_user: models.User = Depends(auth.get_current_user), db: Session = Depends(database.get_db)):
-    user_config = current_user.config
+async def update_config(config: schemas.ConfigUpdate, current_user: models.User = Depends(auth.get_current_user), db = Depends(database.get_db)):
+    print(f"[POST /config] Updating config for user: {current_user.email} (ID: {current_user.id})")
+    print(f"[POST /config] Received API keys: {list(config.api_keys.keys()) if config.api_keys else 'None'}")
+    print(f"[POST /config] Model preference: {config.model_preference}")
+    
+    user_config = await db.user_configs.find_one({"user_id": str(current_user.id)})
+    
     if not user_config:
-        user_config = models.UserConfig(user_id=current_user.id)
-        db.add(user_config)
-    
-    # Debug logging
-    print(f"[Config Update] User {current_user.id}: Received api_keys={config.api_keys}")
-    print(f"[Config Update] User {current_user.id}: Existing api_keys={user_config.api_keys}")
-    
-    # MERGE api_keys instead of replacing (preserve existing keys)
-    if config.api_keys is not None:
-        existing_keys = user_config.api_keys or {}
-        # Only merge if there are actual keys to merge
-        if config.api_keys:
-            merged_keys = {**existing_keys, **config.api_keys}
-            # Remove keys that are explicitly set to empty string
-            merged_keys = {k: v for k, v in merged_keys.items() if v}
-            user_config.api_keys = merged_keys
-            print(f"[Config Update] User {current_user.id}: Updated api_keys={user_config.api_keys}")
-        else:
-            print(f"[Config Update] User {current_user.id}: Empty api_keys sent, preserving existing")
-        # If empty dict sent, don't change anything (preserve existing)
-    if config.custom_instructions is not None:
-        user_config.custom_instructions = config.custom_instructions
-    if config.context_script is not None:
-        user_config.context_script = config.context_script
-    if config.custom_context is not None:
-        user_config.custom_context = config.custom_context
-    if config.model_preference is not None:
-        user_config.model_preference = config.model_preference
-    if config.generation_controls is not None:
-        user_config.generation_controls = config.generation_controls
-    # MERGE settings instead of replacing (preserve existing settings)
-    if config.settings is not None:
-        existing_settings = user_config.settings or {}
-        merged_settings = {**existing_settings, **config.settings}
-        user_config.settings = merged_settings
-    if config.mind_maps is not None:
-        user_config.mind_maps = config.mind_maps
+        # Encrypt API keys before storing
+        encrypted_keys = encryption.encrypt_api_keys(config.api_keys or {})
+        print(f"[POST /config] No existing config - creating new with {len(encrypted_keys)} encrypted key(s)")
         
-    db.commit()
-    db.refresh(user_config)
+        # Create new config
+        config_data = {
+            "user_id": str(current_user.id),
+            "api_keys": encrypted_keys,
+            "custom_instructions": config.custom_instructions or "",
+            "context_script": config.context_script or "",
+            "custom_context": config.custom_context or "",
+            "model_preference": config.model_preference or "gemini-2.0-flash-thinking-exp",
+            "generation_controls": config.generation_controls or {},
+            "settings": config.settings or {},
+            "mind_maps": config.mind_maps or []
+        }
+        await db.user_configs.insert_one(config_data)
+        user_config = config_data
+    else:
+        # Update existing config
+        print(f"[POST /config] Found existing config - merging updates")
+        update_data = {}
+        
+        # MERGE api_keys instead of replacing (preserve existing keys)
+        if config.api_keys is not None:
+            # Decrypt existing keys first
+            existing_encrypted = user_config.get("api_keys", {})
+            existing_keys = encryption.decrypt_api_keys(existing_encrypted)
+            print(f"[POST /config] Existing keys: {list(existing_keys.keys())}, New keys: {list(config.api_keys.keys())}")
+            
+            # Only merge if there are actual keys to merge
+            if config.api_keys:
+                merged_keys = {**existing_keys, **config.api_keys}
+                # Remove keys that are explicitly set to empty string
+                merged_keys = {k: v for k, v in merged_keys.items() if v}
+                # Encrypt before saving
+                update_data["api_keys"] = encryption.encrypt_api_keys(merged_keys)
+                print(f"[POST /config] Merged keys: {list(merged_keys.keys())}")
+            # If empty dict sent, don't change anything (preserve existing)
+        if config.custom_instructions is not None:
+            update_data["custom_instructions"] = config.custom_instructions
+        if config.context_script is not None:
+            update_data["context_script"] = config.context_script
+        if config.custom_context is not None:
+            update_data["custom_context"] = config.custom_context
+        if config.model_preference is not None:
+            update_data["model_preference"] = config.model_preference
+        if config.generation_controls is not None:
+            update_data["generation_controls"] = config.generation_controls
+        # MERGE settings instead of replacing (preserve existing settings)
+        if config.settings is not None:
+            existing_settings = user_config.get("settings", {})
+            merged_settings = {**existing_settings, **config.settings}
+            update_data["settings"] = merged_settings
+        if config.mind_maps is not None:
+            update_data["mind_maps"] = config.mind_maps
+        
+        if update_data:
+            await db.user_configs.update_one(
+                {"user_id": str(current_user.id)},
+                {"$set": update_data}
+            )
+            print(f"[POST /config] Successfully updated config in database")
+            # Refresh config
+            user_config = await db.user_configs.find_one({"user_id": str(current_user.id)})
+        else:
+            print(f"[POST /config] No updates to apply")
+    
+    # Decrypt API keys before returning to client
+    encrypted_keys = user_config.get("api_keys", {})
+    decrypted_keys = encryption.decrypt_api_keys(encrypted_keys)
+    print(f"[POST /config] Returning config with {len(decrypted_keys)} decrypted key(s)")
+    
     return {
-        "api_keys": user_config.api_keys or {},
-        "custom_instructions": user_config.custom_instructions or "",
-        "context_script": user_config.context_script or "",
-        "custom_context": user_config.custom_context or "",
-        "model_preference": user_config.model_preference or "gemini-2.0-flash-thinking-exp",
-        "generation_controls": user_config.generation_controls or {},
-        "settings": user_config.settings or {},
-        "mind_maps": user_config.mind_maps or []
+        "api_keys": decrypted_keys,
+        "custom_instructions": user_config.get("custom_instructions", ""),
+        "context_script": user_config.get("context_script", ""),
+        "custom_context": user_config.get("custom_context", ""),
+        "model_preference": user_config.get("model_preference", "gemini-2.0-flash-thinking-exp"),
+        "generation_controls": user_config.get("generation_controls", {}),
+        "settings": user_config.get("settings", {}),
+        "mind_maps": user_config.get("mind_maps", [])
     }
+
+# --- Conversation Routes ---
+
+@app.get("/conversations", response_model=List[schemas.Conversation])
+async def list_conversations(
+    current_user: models.User = Depends(auth.get_current_user),
+    db = Depends(database.get_db)
+):
+    """Get all conversations for the current user with message preview"""
+    conversations = await db.conversations.find(
+        {"user_id": str(current_user.id)}
+    ).sort("created_at", -1).to_list(length=None)
+    
+    result = []
+    for conv in conversations:
+        # Get message count and last message
+        message_count = await db.messages.count_documents(
+            {"conversation_id": str(conv["_id"])}
+        )
+        
+        last_message_doc = await db.messages.find_one(
+            {"conversation_id": str(conv["_id"])},
+            sort=[("timestamp", -1)]
+        )
+        
+        result.append(schemas.Conversation(
+            id=str(conv["_id"]),
+            title=conv["title"],
+            created_at=conv["created_at"],
+            message_count=message_count,
+            last_message=last_message_doc["content"][:100] if last_message_doc else None
+        ))
+    
+    return result
+
+@app.post("/conversations", response_model=schemas.Conversation)
+async def create_conversation(
+    conversation: schemas.ConversationCreate,
+    current_user: models.User = Depends(auth.get_current_user),
+    db = Depends(database.get_db)
+):
+    """Create a new conversation"""
+    from datetime import datetime
+    new_conversation_data = {
+        "user_id": str(current_user.id),
+        "title": conversation.title,
+        "created_at": datetime.utcnow()
+    }
+    result = await db.conversations.insert_one(new_conversation_data)
+    
+    return schemas.Conversation(
+        id=str(result.inserted_id),
+        title=new_conversation_data["title"],
+        created_at=new_conversation_data["created_at"],
+        message_count=0,
+        last_message=None
+    )
+
+@app.get("/conversations/{conversation_id}", response_model=schemas.ConversationWithMessages)
+async def get_conversation(
+    conversation_id: str,
+    current_user: models.User = Depends(auth.get_current_user),
+    db = Depends(database.get_db)
+):
+    """Get a specific conversation with all messages"""
+    # Validate ObjectId format
+    if len(conversation_id) != 24:
+        raise HTTPException(status_code=400, detail="Invalid conversation ID format")
+    
+    try:
+        conv_obj_id = ObjectId(conversation_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid conversation ID")
+    
+    conversation = await db.conversations.find_one(
+        {"_id": conv_obj_id, "user_id": str(current_user.id)}
+    )
+    
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    messages = await db.messages.find(
+        {"conversation_id": conversation_id}
+    ).sort("timestamp", 1).to_list(length=None)
+    
+    return schemas.ConversationWithMessages(
+        id=str(conversation["_id"]),
+        title=conversation["title"],
+        created_at=conversation["created_at"],
+        messages=[schemas.Message(
+            id=str(msg["_id"]),
+            conversation_id=msg["conversation_id"],
+            role=msg["role"],
+            content=msg["content"],
+            model=msg.get("model"),
+            extra_data=msg.get("extra_data", {}),
+            timestamp=msg["timestamp"]
+        ) for msg in messages]
+    )
+
+@app.put("/conversations/{conversation_id}", response_model=schemas.Conversation)
+async def update_conversation(
+    conversation_id: str,
+    update: schemas.ConversationUpdate,
+    current_user: models.User = Depends(auth.get_current_user),
+    db = Depends(database.get_db)
+):
+    """Update conversation title"""
+    conversation = await db.conversations.find_one(
+        {"_id": ObjectId(conversation_id), "user_id": str(current_user.id)}
+    )
+    
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    if update.title is not None:
+        await db.conversations.update_one(
+            {"_id": ObjectId(conversation_id)},
+            {"$set": {"title": update.title}}
+        )
+        conversation["title"] = update.title
+    
+    # Get message count for response
+    message_count = await db.messages.count_documents(
+        {"conversation_id": conversation_id}
+    )
+    
+    return schemas.Conversation(
+        id=str(conversation["_id"]),
+        title=conversation["title"],
+        created_at=conversation["created_at"],
+        message_count=message_count
+    )
+
+@app.delete("/conversations/{conversation_id}")
+async def delete_conversation(
+    conversation_id: str,
+    current_user: models.User = Depends(auth.get_current_user),
+    db = Depends(database.get_db)
+):
+    """Delete a conversation and all its messages"""
+    conversation = await db.conversations.find_one(
+        {"_id": ObjectId(conversation_id), "user_id": str(current_user.id)}
+    )
+    
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    # Delete all messages first
+    await db.messages.delete_many({"conversation_id": conversation_id})
+    
+    # Delete conversation
+    await db.conversations.delete_one({"_id": ObjectId(conversation_id)})
+    
+    return {"message": "Conversation deleted successfully"}
+
+@app.post("/conversations/{conversation_id}/messages", response_model=schemas.Message)
+async def add_message(
+    conversation_id: str,
+    message: schemas.MessageBase,
+    current_user: models.User = Depends(auth.get_current_user),
+    db = Depends(database.get_db)
+):
+    """Add a message to a conversation"""
+    # Verify conversation belongs to user
+    conversation = await db.conversations.find_one(
+        {"_id": ObjectId(conversation_id), "user_id": str(current_user.id)}
+    )
+    
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    from datetime import datetime
+    new_message_data = {
+        "conversation_id": conversation_id,
+        "role": message.role,
+        "content": message.content,
+        "model": message.model,
+        "extra_data": message.extra_data or {},
+        "timestamp": datetime.utcnow()
+    }
+    result = await db.messages.insert_one(new_message_data)
+    
+    return schemas.Message(
+        id=str(result.inserted_id),
+        conversation_id=new_message_data["conversation_id"],
+        role=new_message_data["role"],
+        content=new_message_data["content"],
+        model=new_message_data["model"],
+        extra_data=new_message_data["extra_data"],
+        timestamp=new_message_data["timestamp"]
+    )
 
 # --- File Routes (Placeholder for now) ---
 
@@ -242,7 +633,7 @@ if not os.path.exists(UPLOAD_DIR):
 async def upload_file(
     file: UploadFile = File(...), 
     current_user: models.User = Depends(auth.get_current_user),
-    db: Session = Depends(database.get_db)
+    db = Depends(database.get_db)
 ):
     # Security: Basic extension check for docs
     allowed_exts = {".pdf", ".txt", ".md", ".docx"}
@@ -266,103 +657,143 @@ async def upload_file(
             buffer.write(chunk)
     
     # Metadata Entry
-    new_doc = models.Document(
-        user_id=current_user.id,
-        filename=file.filename,
-        file_type=file.content_type,
-        content_hash="todo_hash"
-    )
-    db.add(new_doc)
-    db.commit()
+    from datetime import datetime
+    new_doc_data = {
+        "user_id": str(current_user.id),
+        "filename": file.filename,
+        "file_type": file.content_type,
+        "content_hash": "todo_hash",
+        "doc_id": "",  # Will be set by frontend
+        "content": "",
+        "enabled": True,
+        "upload_date": datetime.utcnow()
+    }
+    await db.documents.insert_one(new_doc_data)
     
     # TODO: Trigger indexing task (RagEngine)
     
     return {"filename": file.filename, "status": "uploaded"}
 
 @app.get("/documents", response_model=List[schemas.DocumentSummary])
-def list_documents(current_user: models.User = Depends(auth.get_current_user), db: Session = Depends(database.get_db)):
+async def list_documents(current_user: models.User = Depends(auth.get_current_user), db = Depends(database.get_db)):
     """Get list of documents without content - only metadata for UI"""
-    return db.query(models.Document).filter(models.Document.user_id == current_user.id).all()
+    docs = await db.documents.find({"user_id": str(current_user.id)}).to_list(length=None)
+    return [schemas.DocumentSummary(
+        id=str(doc["_id"]),
+        doc_id=doc["doc_id"],
+        filename=doc["filename"],
+        enabled=doc["enabled"],
+        upload_date=doc["upload_date"]
+    ) for doc in docs]
 
 @app.post("/documents", response_model=schemas.DocumentMetadata)
-def create_document(
+async def create_document(
     doc: schemas.DocumentCreate,
     current_user: models.User = Depends(auth.get_current_user),
-    db: Session = Depends(database.get_db)
+    db = Depends(database.get_db)
 ):
     """Create or update a document with content"""
     # Check if document with this doc_id already exists
-    existing = db.query(models.Document).filter(
-        models.Document.user_id == current_user.id,
-        models.Document.doc_id == doc.doc_id
-    ).first()
+    existing = await db.documents.find_one(
+        {"user_id": str(current_user.id), "doc_id": doc.doc_id}
+    )
     
     if existing:
         # Update existing document
-        existing.filename = doc.filename
-        existing.content = doc.content
-        existing.enabled = doc.enabled
-        db.commit()
-        db.refresh(existing)
-        return existing
+        await db.documents.update_one(
+            {"_id": existing["_id"]},
+            {"$set": {
+                "filename": doc.filename,
+                "content": doc.content,
+                "enabled": doc.enabled
+            }}
+        )
+        updated_doc = await db.documents.find_one({"_id": existing["_id"]})
+        return schemas.DocumentMetadata(
+            id=str(updated_doc["_id"]),
+            doc_id=updated_doc["doc_id"],
+            filename=updated_doc["filename"],
+            enabled=updated_doc["enabled"],
+            content=updated_doc["content"],
+            upload_date=updated_doc["upload_date"]
+        )
     
     # Create new document
-    new_doc = models.Document(
-        user_id=current_user.id,
-        doc_id=doc.doc_id,
-        filename=doc.filename,
-        file_type="text/plain",  # Can be enhanced
-        content=doc.content,
-        content_hash="",  # Can add hashing later
-        enabled=doc.enabled
+    from datetime import datetime
+    new_doc_data = {
+        "user_id": str(current_user.id),
+        "doc_id": doc.doc_id,
+        "filename": doc.filename,
+        "file_type": "text/plain",  # Can be enhanced
+        "content": doc.content,
+        "content_hash": "",  # Can add hashing later
+        "enabled": doc.enabled,
+        "upload_date": datetime.utcnow()
+    }
+    result = await db.documents.insert_one(new_doc_data)
+    new_doc_data["_id"] = result.inserted_id
+    
+    return schemas.DocumentMetadata(
+        id=str(new_doc_data["_id"]),
+        doc_id=new_doc_data["doc_id"],
+        filename=new_doc_data["filename"],
+        enabled=new_doc_data["enabled"],
+        content=new_doc_data["content"],
+        upload_date=new_doc_data["upload_date"]
     )
-    db.add(new_doc)
-    db.commit()
-    db.refresh(new_doc)
-    return new_doc
 
 @app.put("/documents/{doc_id}", response_model=schemas.DocumentMetadata)
-def update_document(
+async def update_document(
     doc_id: str,
     doc_update: schemas.DocumentUpdate,
     current_user: models.User = Depends(auth.get_current_user),
-    db: Session = Depends(database.get_db)
+    db = Depends(database.get_db)
 ):
     """Update document enabled status or content"""
-    document = db.query(models.Document).filter(
-        models.Document.user_id == current_user.id,
-        models.Document.doc_id == doc_id
-    ).first()
+    document = await db.documents.find_one(
+        {"user_id": str(current_user.id), "doc_id": doc_id}
+    )
     
     if not document:
         raise HTTPException(status_code=404, detail="Document not found")
     
+    update_data = {}
     if doc_update.enabled is not None:
-        document.enabled = doc_update.enabled
+        update_data["enabled"] = doc_update.enabled
     if doc_update.content is not None:
-        document.content = doc_update.content
+        update_data["content"] = doc_update.content
     
-    db.commit()
-    db.refresh(document)
-    return document
+    if update_data:
+        await db.documents.update_one(
+            {"_id": document["_id"]},
+            {"$set": update_data}
+        )
+        document = await db.documents.find_one({"_id": document["_id"]})
+    
+    return schemas.DocumentMetadata(
+        id=str(document["_id"]),
+        doc_id=document["doc_id"],
+        filename=document["filename"],
+        enabled=document["enabled"],
+        content=document["content"],
+        upload_date=document["upload_date"]
+    )
 
 @app.delete("/documents/{doc_id}")
-def delete_document(
+async def delete_document(
     doc_id: str,
     current_user: models.User = Depends(auth.get_current_user),
-    db: Session = Depends(database.get_db)
+    db = Depends(database.get_db)
 ):
     """Delete a document"""
-    document = db.query(models.Document).filter(
-        models.Document.user_id == current_user.id,
-        models.Document.doc_id == doc_id
-    ).first()
+    document = await db.documents.find_one(
+        {"user_id": str(current_user.id), "doc_id": doc_id}
+    )
     
     if not document:
         raise HTTPException(status_code=404, detail="Document not found")
     
-    db.delete(document)
-    db.commit()
+    await db.documents.delete_one({"_id": document["_id"]})
     return {"status": "deleted", "doc_id": doc_id}
 
 # --- Chat Routes ---
@@ -371,7 +802,7 @@ def delete_document(
 async def chat_stream(
     request: schemas.ChatRequest,
     current_user: models.User = Depends(auth.get_current_user),
-    db: Session = Depends(database.get_db)
+    db = Depends(database.get_db)
 ):
     """
     Stream chat responses with full RAG pipeline and agent loop
@@ -383,15 +814,15 @@ async def chat_stream(
     print(f"[Chat] Received request - model_id: {request.model_id}, provider: {request.provider}")
     
     # Get user's documents
-    documents = db.query(models.Document).filter(
-        models.Document.user_id == current_user.id
-    ).all()
+    documents = await db.documents.find(
+        {"user_id": str(current_user.id)}
+    ).to_list(length=None)
     
     docs_data = [{
-        'doc_id': doc.doc_id,
-        'filename': doc.filename,
-        'content': doc.content,
-        'enabled': doc.enabled
+        'doc_id': doc['doc_id'],
+        'filename': doc['filename'],
+        'content': doc['content'],
+        'enabled': doc['enabled']
     } for doc in documents]
     
     # Debug: Log document details
@@ -400,10 +831,15 @@ async def chat_stream(
         print(f"  - {d['filename']}: enabled={d['enabled']}, content_len={len(d['content'] or '')}")
     print(f"[Chat] use_vault: {request.use_vault}")
     
+    # Get user config and decrypt API keys
+    user_config = await db.user_configs.find_one({"user_id": str(current_user.id)})
+    encrypted_keys = user_config.get("api_keys", {}) if user_config else {}
+    decrypted_keys = encryption.decrypt_api_keys(encrypted_keys)
+    
     # Create engine instance with model selection and provider
     model_id = request.model_id or 'nvidia/nemotron-3-nano-30b-a3b:free'
     provider = request.provider  # Get provider from frontend
-    engine = agent_rag_engine_v2.AgentRAGEngine(current_user, model_id, provider)
+    engine = agent_rag_engine_v2.AgentRAGEngine(current_user, model_id, provider, decrypted_keys)
     
     # Process query with streaming events
     return StreamingResponse(
@@ -421,249 +857,6 @@ async def chat_stream(
             "X-Accel-Buffering": "no"
         }
     )
-
-
-@app.post("/documents/approve-edit")
-async def approve_edit(
-    request: schemas.EditApprovalRequest,
-    current_user: models.User = Depends(auth.get_current_user),
-    db: Session = Depends(database.get_db)
-):
-    """
-    Approve or reject a proposed file edit.
-    If approved, updates the document content in the database.
-    """
-    print(f"[Edit] Received approval request for {request.filename}: approved={request.approved}")
-    
-    if not request.approved:
-        return {"status": "rejected", "message": "Edit was rejected by user."}
-    
-    # Find the document
-    document = db.query(models.Document).filter(
-        models.Document.user_id == current_user.id,
-        models.Document.doc_id == request.doc_id
-    ).first()
-    
-    if not document:
-        raise HTTPException(status_code=404, detail=f"Document {request.filename} not found")
-    
-    # Check if it's a text-based file (not PDF)
-    if document.file_type.lower() == 'pdf':
-        raise HTTPException(status_code=400, detail="Cannot edit PDF files. Only text-based files are supported.")
-    
-    # Update the document content
-    document.content = request.new_content
-    db.commit()
-    
-    print(f"[Edit] Document {request.filename} updated successfully")
-    
-    return {
-        "status": "approved",
-        "message": f"Document {request.filename} has been updated.",
-        "doc_id": request.doc_id
-    }
-
-
-# ============ CONVERSATION ENDPOINTS ============
-
-@app.get("/conversations", response_model=schemas.ConversationListResponse)
-async def list_conversations(
-    skip: int = 0,
-    limit: int = 20,
-    current_user: models.User = Depends(auth.get_current_user),
-    db: Session = Depends(database.get_db)
-):
-    """
-    List user's conversations with pagination.
-    Returns newest conversations first.
-    """
-    total = db.query(models.Conversation).filter(
-        models.Conversation.user_id == current_user.id
-    ).count()
-    
-    conversations = db.query(models.Conversation).filter(
-        models.Conversation.user_id == current_user.id
-    ).order_by(models.Conversation.created_at.desc()).offset(skip).limit(limit).all()
-    
-    return {
-        "conversations": conversations,
-        "total": total,
-        "has_more": (skip + limit) < total
-    }
-
-
-@app.post("/conversations", response_model=schemas.ConversationBase)
-async def create_conversation(
-    request: schemas.ConversationCreate,
-    current_user: models.User = Depends(auth.get_current_user),
-    db: Session = Depends(database.get_db)
-):
-    """
-    Create a new conversation.
-    """
-    conversation = models.Conversation(
-        user_id=current_user.id,
-        title=request.title or "New Conversation"
-    )
-    db.add(conversation)
-    db.commit()
-    db.refresh(conversation)
-    return conversation
-
-
-@app.get("/conversations/{conversation_id}", response_model=schemas.ConversationWithMessages)
-async def get_conversation(
-    conversation_id: int,
-    current_user: models.User = Depends(auth.get_current_user),
-    db: Session = Depends(database.get_db)
-):
-    """
-    Get a conversation with all its messages.
-    """
-    conversation = db.query(models.Conversation).filter(
-        models.Conversation.id == conversation_id,
-        models.Conversation.user_id == current_user.id
-    ).first()
-    
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
-    
-    return conversation
-
-
-@app.get("/conversations/{conversation_id}/messages", response_model=schemas.MessagesResponse)
-async def get_conversation_messages(
-    conversation_id: int,
-    skip: int = 0,
-    limit: int = 50,
-    current_user: models.User = Depends(auth.get_current_user),
-    db: Session = Depends(database.get_db)
-):
-    """
-    Get messages for a conversation with pagination.
-    Returns oldest messages first within the window, but pagination goes from newest.
-    Use skip=0, limit=50 to get the 50 most recent messages.
-    Use skip=50, limit=50 to get the next 50 older messages, etc.
-    """
-    # Verify conversation belongs to user
-    conversation = db.query(models.Conversation).filter(
-        models.Conversation.id == conversation_id,
-        models.Conversation.user_id == current_user.id
-    ).first()
-    
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
-    
-    total = db.query(models.Message).filter(
-        models.Message.conversation_id == conversation_id
-    ).count()
-    
-    # Get messages in reverse order (newest first for pagination), then reverse to show oldest first
-    messages = db.query(models.Message).filter(
-        models.Message.conversation_id == conversation_id
-    ).order_by(models.Message.timestamp.desc()).offset(skip).limit(limit).all()
-    
-    # Reverse to show oldest first within this batch
-    messages.reverse()
-    
-    return {
-        "messages": messages,
-        "total": total,
-        "has_more": (skip + limit) < total
-    }
-
-
-@app.post("/conversations/{conversation_id}/messages", response_model=schemas.MessageBase)
-async def add_message(
-    conversation_id: int,
-    request: schemas.MessageCreate,
-    current_user: models.User = Depends(auth.get_current_user),
-    db: Session = Depends(database.get_db)
-):
-    """
-    Add a message to a conversation.
-    """
-    # Verify conversation belongs to user
-    conversation = db.query(models.Conversation).filter(
-        models.Conversation.id == conversation_id,
-        models.Conversation.user_id == current_user.id
-    ).first()
-    
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
-    
-    message = models.Message(
-        conversation_id=conversation_id,
-        role=request.role,
-        content=request.content,
-        extra_data=request.extra_data or {}
-    )
-    db.add(message)
-    
-    # Update conversation title from first user message if still default
-    if conversation.title == "New Conversation" and request.role == "user":
-        # Use first 50 chars of message as title
-        conversation.title = request.content[:50] + ("..." if len(request.content) > 50 else "")
-    
-    db.commit()
-    db.refresh(message)
-    return message
-
-
-@app.delete("/conversations/{conversation_id}")
-async def delete_conversation(
-    conversation_id: int,
-    current_user: models.User = Depends(auth.get_current_user),
-    db: Session = Depends(database.get_db)
-):
-    """
-    Delete a conversation and all its messages.
-    """
-    conversation = db.query(models.Conversation).filter(
-        models.Conversation.id == conversation_id,
-        models.Conversation.user_id == current_user.id
-    ).first()
-    
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
-    
-    # Delete all messages first
-    db.query(models.Message).filter(
-        models.Message.conversation_id == conversation_id
-    ).delete()
-    
-    # Delete conversation
-    db.delete(conversation)
-    db.commit()
-    
-    return {"status": "deleted", "conversation_id": conversation_id}
-
-
-@app.patch("/conversations/{conversation_id}", response_model=schemas.ConversationBase)
-async def update_conversation(
-    conversation_id: int,
-    request: schemas.ConversationCreate,
-    current_user: models.User = Depends(auth.get_current_user),
-    db: Session = Depends(database.get_db)
-):
-    """
-    Update conversation title.
-    """
-    conversation = db.query(models.Conversation).filter(
-        models.Conversation.id == conversation_id,
-        models.Conversation.user_id == current_user.id
-    ).first()
-    
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
-    
-    if request.title:
-        conversation.title = request.title
-    
-    db.commit()
-    db.refresh(conversation)
-    return conversation
-
 
 if __name__ == "__main__":
     import uvicorn

@@ -19,14 +19,14 @@ class LocalEmbeddingFunction:
 
 embedding_fn = LocalEmbeddingFunction()
 
-def get_collection(user_id: int):
+def get_collection(user_id: str):
     collection_name = f"user_{user_id}_docs"
     return client.get_or_create_collection(
         name=collection_name, 
         embedding_function=embedding_fn
     )
 
-def add_documents(user_id: int, documents: list[dict]):
+def add_documents(user_id: str, documents: list[dict]):
     """
     documents: list of dicts with {'id': str, 'text': str, 'metadata': dict}
     """
@@ -42,7 +42,7 @@ def add_documents(user_id: int, documents: list[dict]):
         metadatas=metadatas
     )
 
-def search(user_id: int, query: str, n_results: int = 5):
+def search(user_id: str, query: str, n_results: int = 5):
     collection = get_collection(user_id)
     results = collection.query(
         query_texts=[query],

@@ -1603,8 +1603,8 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
     }
   },
   {
-    id: 'devstral-small-latest',
-    name: 'Devstral Small Latest',
+    id: 'codestral-latest',
+    name: 'Codestral Latest',
     provider: 'mistral',
     description: 'Mistral - Specialized coding model with 256K context window.',
     size: 'small',
@@ -1740,8 +1740,8 @@ export const SUPPORTED_MODELS: ModelDefinition[] = [
     }
   },
   {
-    id: 'devstral-small-2501',
-    name: 'Devstral Small 2501',
+    id: 'codestral-2501',
+    name: 'Codestral 2501',
     provider: 'mistral',
     description: 'Mistral - Coding model snapshot from January 2025.',
     size: 'small',

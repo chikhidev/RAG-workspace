@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef, Suspense, lazy } from 'react';
-import { AppState, Message, Document, Chunk, Toast, MindMap, User } from './types';
+import { AppState, Message, Document, Toast, MindMap, User } from './types';
 import { fileService } from './services/fileService';
 import { modelService } from './services/modelService';
 import { mindNodeService } from './services/mindNodeService';
@@ -226,6 +226,12 @@ const App: React.FC = () => {
         ]);
         
         if (config) {
+          console.log('[loadData] Config received from server:', {
+            model_preference: config.model_preference,
+            api_keys: config.api_keys ? Object.keys(config.api_keys) : []
+          });
+          console.log('[loadData] Setting state with mistralKey:', config.api_keys?.mistral ? '✓ SET' : '✗ MISSING');
+          
           setState(prev => ({
             ...prev,
             documents: docs,
@@ -701,31 +707,12 @@ const App: React.FC = () => {
     const valToUse = customValue ?? inputValue;
     if (!valToUse.trim() || state.isProcessing) return;
     
-    // Check if the API key for the selected model's provider is set
-    const missingProvider = modelService.getRequiredApiKey(state.selectedModel, {
-      modelId: state.selectedModel,
-      systemInstruction: '',
-      prompt: '',
-      temperature: 0.7,
-      openRouterKey: state.openRouterKey,
-      googleKey: state.googleKey,
-      xaiKey: state.xaiKey,
-      openaiKey: state.openaiKey,
-      mistralKey: state.mistralKey
-    });
-
-    if (missingProvider) {
-      setState(prev => ({ ...prev, isApiKeyModalOpen: true }));
-      const providerNames: Record<string, string> = {
-        'openrouter': 'OpenRouter',
-        'google': 'Google AI',
-        'xai': 'xAI',
-        'openai': 'OpenAI',
-        'mistral': 'Mistral AI'
-      };
-      addToast(`Please set your ${providerNames[missingProvider] || missingProvider} API Key first.`);
-      return;
-    }
+    console.log('[handleSend] Selected model:', state.selectedModel);
+    
+    // Note: API key validation is handled by the backend.
+    // The backend reads keys directly from the database, so the frontend
+    // state may be stale. We no longer block requests based on frontend key state.
+    // If a key is missing, the backend will return a clear error in the stream.
 
     const currentQuery = valToUse.trim();
     setPromptHistory(prev => [currentQuery, ...prev.filter(p => p !== currentQuery)].slice(0, 50));
@@ -805,7 +792,7 @@ const App: React.FC = () => {
     }
 
     await processQuery(currentQuery, assistantId);
-  }, [inputValue, state.isProcessing, state.documents, state.useVault, state.selectedModel, state.contextScript, state.useContextHistory, state.openRouterKey, state.googleKey, state.xaiKey, state.openaiKey]);
+  }, [inputValue, state.isProcessing, state.documents, state.useVault, state.selectedModel, state.contextScript, state.useContextHistory, state.openRouterKey, state.googleKey, state.xaiKey, state.openaiKey, state.mistralKey, state.maxAgentIterations, authToken, currentConversationId]);
 
   const handleRetry = useCallback(async (failedMessageId: string) => {
     if (state.isProcessing) return;
@@ -822,14 +809,7 @@ const App: React.FC = () => {
     }));
 
     await processQuery(userMsg.content, failedMessageId);
-  }, [state.messages, state.isProcessing, state.useVault, state.documents, state.selectedModel, state.contextScript, state.useContextHistory, state.openRouterKey]);
-
-  const handleUpdateSources = useCallback((messageId: string, newSources: Chunk[]) => {
-    setState(prev => ({
-      ...prev,
-      messages: prev.messages.map(m => m.id === messageId ? { ...m, sources: newSources } : m)
-    }));
-  }, []);
+  }, [state.messages, state.isProcessing, state.useVault, state.documents, state.selectedModel, state.contextScript, state.useContextHistory, state.openRouterKey, state.googleKey, state.xaiKey, state.openaiKey, state.mistralKey]);
 
   const handleRegenerate = useCallback(async (messageId: string) => {
     if (state.isProcessing) return;
@@ -1279,7 +1259,6 @@ const App: React.FC = () => {
             selectedModelId={state.selectedModel}
             onRetry={handleRetry}
             onRegenerate={handleRegenerate}
-            onUpdateSources={handleUpdateSources}
             onClearChat={onClearChat}
             inputValue={inputValue}
             setInputValue={setInputValue}
@@ -1367,14 +1346,14 @@ const App: React.FC = () => {
         <ApiKeyManagementModal
           isOpen={state.isApiKeyModalOpen}
           onClose={() => setState(prev => ({ ...prev, isApiKeyModalOpen: false }))}
-          onSave={() => {
+          onSave={(keys) => {
             // Only send keys that have actual values (non-empty)
             const apiKeys: Record<string, string> = {};
-            if (state.openRouterKey) apiKeys.openrouter = state.openRouterKey;
-            if (state.googleKey) apiKeys.google = state.googleKey;
-            if (state.xaiKey) apiKeys.xai = state.xaiKey;
-            if (state.openaiKey) apiKeys.openai = state.openaiKey;
-            if (state.mistralKey) apiKeys.mistral = state.mistralKey;
+            if (keys.openrouter) apiKeys.openrouter = keys.openrouter;
+            if (keys.google) apiKeys.google = keys.google;
+            if (keys.xai) apiKeys.xai = keys.xai;
+            if (keys.openai) apiKeys.openai = keys.openai;
+            if (keys.mistral) apiKeys.mistral = keys.mistral;
             
             // Only sync if there are keys to send
             if (Object.keys(apiKeys).length > 0) {

@@ -16,7 +16,7 @@ export const CustomToggle: React.FC<CustomToggleProps> = ({
   onChange,
   disabled = false,
   isLoading = false,
-  activeColor = '#c1603c77',
+  activeColor = '#a7623783',
   inactiveColor = '#474747',
 }) => {
   if (isLoading) {
