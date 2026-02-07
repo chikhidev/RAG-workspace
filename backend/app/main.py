@@ -150,16 +150,16 @@ async def google_callback(request: Request, code: str = None, db = Depends(datab
         # Create access token
         access_token = auth.create_access_token(data={"sub": user.email})
         
-        # Redirect to frontend with token
+        # Redirect to frontend /app with token
         frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
-        return RedirectResponse(url=f"{frontend_url}?token={access_token}")
+        return RedirectResponse(url=f"{frontend_url}/app?token={access_token}")
         
     except Exception as e:
         print(f"OAuth error: {str(e)}")
         import traceback
         traceback.print_exc()
         frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
-        return RedirectResponse(url=f"{frontend_url}?error=oauth_failed")
+        return RedirectResponse(url=f"{frontend_url}/app?error=oauth_failed")
 
 @app.post("/auth/google/verify")
 async def verify_google_token(token_data: dict, db = Depends(database.get_db)):
@@ -848,7 +848,9 @@ async def chat_stream(
             documents=docs_data,
             use_vault=request.use_vault,
             use_context_history=request.use_context_history,
-            max_iterations=request.max_iterations
+            max_iterations=request.max_iterations,
+            skip_research=request.skip_research,
+            prior_context=request.prior_context
         ),
         media_type="text/event-stream",
         headers={

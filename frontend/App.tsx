@@ -605,7 +605,13 @@ const App: React.FC = () => {
   // No frontend indexing needed - backend handles all document operations
 
   // NEW: Backend-powered query processing
-  const processQuery = async (query: string, assistantId: string, skipResearch: boolean = false, resetIterations: boolean = false) => {
+  const processQuery = async (
+    query: string,
+    assistantId: string,
+    skipResearch: boolean = false,
+    resetIterations: boolean = false,
+    priorContext?: string
+  ) => {
     if (!authToken) {
       addToast('Not authenticated', 'error');
       return;
@@ -624,7 +630,10 @@ const App: React.FC = () => {
       setActiveFileNames,
       addToast,
       state.selectedModel,
-      abortController.signal
+      abortController.signal,
+      undefined, // filteredSources
+      skipResearch,
+      priorContext
     );
     
     // Clear abort controller after completion
@@ -900,8 +909,14 @@ const App: React.FC = () => {
         } : m)
       }));
 
-      // Skip research and go straight to thinker/answer generation
-      await processQuery(msg.agentContext?.originalQuery || "", messageId, true, false);
+      // Skip research and go straight to thinker/answer generation with collected knowledge
+      await processQuery(
+        msg.agentContext?.originalQuery || "",
+        messageId,
+        true,
+        false,
+        msg.agentContext?.knowledgeBuffer || ''
+      );
     } else {
       // User chose to continue - RESET iteration counter to allow more iterations
       setState(prev => ({
@@ -920,8 +935,14 @@ const App: React.FC = () => {
         } : m)
       }));
 
-      // Continue research loop with resetIterations flag
-      await processQuery(msg.agentContext?.originalQuery || "", messageId, false, true);
+      // Continue research loop - send with prior context so backend can build on it
+      await processQuery(
+        msg.agentContext?.originalQuery || "",
+        messageId,
+        false,
+        true,
+        msg.agentContext?.knowledgeBuffer || ''
+      );
     }
   }, [state.messages, state.maxAgentIterations, processQuery]);
 
@@ -1092,7 +1113,8 @@ const App: React.FC = () => {
         console.error('Migration failed:', error);
       }
       
-      window.location.reload();
+      // Redirect to /app instead of reloading
+      window.location.href = '/app';
     }} />;
   }
 

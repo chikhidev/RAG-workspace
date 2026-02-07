@@ -14,7 +14,7 @@ interface ChatRequest {
 }
 
 interface StreamEvent {
-  type: 'status' | 'iteration' | 'thought' | 'highlight' | 'answer' | 'complete' | 'error' | 'source';
+  type: 'status' | 'iteration' | 'thought' | 'highlight' | 'answer' | 'complete' | 'error' | 'source' | 'max_iterations_reached';
   data: any;
 }
 

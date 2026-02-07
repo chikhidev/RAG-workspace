@@ -34,7 +34,9 @@ class AgentRAGEngine:
         documents: List[Dict],
         use_vault: bool = True,
         use_context_history: bool = False,
-        max_iterations: int = 7
+        max_iterations: int = 7,
+        skip_research: bool = False,
+        prior_context: str = None
     ) -> AsyncGenerator[str, None]:
         """
         Main entry point - implements the exact flow from geminiService.ts:
@@ -53,6 +55,81 @@ class AgentRAGEngine:
         # Debug: Log available documents with content length
         enabled_docs = [(d['filename'], len(d.get('content', ''))) for d in documents if d.get('enabled', True)]
         print(f"[DEBUG] Available documents ({len(enabled_docs)}): {enabled_docs}")
+        
+        # === SKIP RESEARCH MODE (user chose "Generate Answer" after max iterations) ===
+        if skip_research and prior_context:
+            print(f"[Agent] Skip research mode - generating answer from prior context ({len(prior_context)} chars)")
+            accumulated_sources = self._extract_sources(prior_context, 'prior')
+            # Jump straight to synthesis/answer phases
+            try:
+                yield self._sse_event('status', {
+                    'status': 'synthesizing',
+                    'message': 'Generating answer from gathered research...'
+                })
+            except (GeneratorExit, StopAsyncIteration):
+                return
+            
+            # Go to thinker then answer
+            thinker_result = None
+            if accumulated_sources:
+                try:
+                    full_thoughts = ""
+                    async for chunk in self._thinker_step_stream(query, accumulated_sources):
+                        if isinstance(chunk, dict):
+                            thinker_result = chunk
+                            if full_thoughts:
+                                try:
+                                    yield self._sse_event('thought', {
+                                        'step': 'Synthesis Complete',
+                                        'thought': full_thoughts,
+                                        'iteration': 0
+                                    })
+                                except (GeneratorExit, StopAsyncIteration):
+                                    return
+                        else:
+                            full_thoughts += chunk
+                except Exception as e:
+                    print(f"Thinker phase error (skip_research): {e}")
+            
+            try:
+                yield self._sse_event('status', {
+                    'status': 'reasoning',
+                    'message': 'Generating comprehensive answer...'
+                })
+            except (GeneratorExit, StopAsyncIteration):
+                return
+            
+            answer_generated = False
+            try:
+                async for chunk in self._generate_answer_stream(query, accumulated_sources, thinker_result):
+                    answer_generated = True
+                    try:
+                        yield self._sse_event('answer', {'content': chunk})
+                    except (GeneratorExit, StopAsyncIteration):
+                        return
+            except Exception as e:
+                error_msg = self._clean_error_message(str(e))
+                try:
+                    yield self._sse_event('error', {'message': error_msg})
+                except (GeneratorExit, StopAsyncIteration):
+                    pass
+                return
+            
+            if not answer_generated:
+                try:
+                    yield self._sse_event('error', {'message': 'Failed to generate answer. Please try again.'})
+                except (GeneratorExit, StopAsyncIteration):
+                    pass
+                return
+            
+            try:
+                yield self._sse_event('complete', {
+                    'sources': accumulated_sources[:10],
+                    'iterations': 0
+                })
+            except (GeneratorExit, StopAsyncIteration):
+                pass
+            return
         
         # === PHASE 1: AGENT LOOP (Planning & Searching) ===
         accumulated_sources = []
@@ -80,21 +157,30 @@ class AgentRAGEngine:
                 print(f"[Agent] Client disconnected at iteration {iteration}")
                 return
             
-            # Force conclude if at max iterations
+            # At max iterations: pause and ask the user
             if iteration >= max_iterations:
                 try:
                     yield self._sse_event('thought', {
-                        'step': 'Finalizing',
-                        'thought': f'Reached maximum iterations ({max_iterations}). Proceeding to synthesis...',
+                        'step': 'Max Iterations',
+                        'thought': f'Reached {max_iterations} iterations. Asking user whether to continue or generate answer.',
                         'iteration': iteration
+                    })
+                    yield self._sse_event('max_iterations_reached', {
+                        'iterations': iteration,
+                        'sources_count': len(accumulated_sources),
+                        'knowledge_buffer': knowledge_buffer
+                    })
+                    yield self._sse_event('complete', {
+                        'sources': accumulated_sources[:10],
+                        'iterations': iteration,
+                        'stopped_at_limit': True
                     })
                 except (GeneratorExit, StopAsyncIteration):
                     print("[Agent] Client disconnected during max iteration check")
-                    return
-                break
+                return  # End stream — frontend will ask user and make a new request
             
             # Decide next action
-            action = await self._decide_next_action(query, knowledge_buffer, documents, iteration, max_iterations)
+            action = await self._decide_next_action(query, knowledge_buffer, documents, iteration, max_iterations, len(accumulated_sources))
             
             if action['type'] == 'conclude':
                 try:
@@ -751,7 +837,8 @@ class AgentRAGEngine:
         knowledge_buffer: str,
         documents: List[Dict],
         iteration: int,
-        max_iterations: int = 7
+        max_iterations: int = 7,
+        num_sources: int = 0
     ) -> Dict:
         """Decide next research action using LLM"""
         
@@ -770,10 +857,10 @@ class AgentRAGEngine:
                 'thought': f'Near iteration limit ({iteration}/{max_iterations}) with sufficient data. Moving to synthesis.'
             }
         
-        if knowledge_buffer and len(knowledge_buffer) > 1500:
+        if knowledge_buffer and len(knowledge_buffer) > 1500 and num_sources > 0:
             return {
                 'type': 'conclude',
-                'thought': f'Substantial information gathered ({len(knowledge_buffer)} chars). Proceeding to answer generation.'
+                'thought': f'Substantial information gathered ({num_sources} sources, {len(knowledge_buffer)} chars). Proceeding to answer generation.'
             }
         
         # Check if we have a working API key
@@ -821,22 +908,25 @@ ANTI-LOOP RULES (STRICTLY ENFORCED):
 5. If previous action failed (file not found, no match) → try different approach ONCE or conclude
 
 ACTIONS:
-• search: Semantic search in vault (conceptual queries) - USE for general content
-• grep: Exact text matching (names, phrases, patterns) - USE FIRST for keywords
+• search: Semantic search in vault (conceptual/how-to queries, explanations) - USE for general content & understanding
+• grep: Exact text matching (specific names, identifiers, exact phrases) - USE for literal keyword lookup
 • read_lines: Read specific lines from a file - USE for line number requests (e.g., "5th line", "lines 10-20")
 • conclude: Enough info gathered OR previous action succeeded OR file/data not found
 
 QUERY PARSING (CRITICAL):
 • "what is inside @file" → User wants FILE CONTENT → use search or read_lines on that file
-• "what is X" → grep for "X" in relevant files
+• "how to do X" → search for "X" (conceptual) → conclude
+• "what is X" → search for "X" → conclude
 • "summarize/content/inside @file" → read_lines to get full content of file (lines 1-100)
 • Do NOT grep for words like "inside", "content", "summary" - these are command words, not search terms
+• Do NOT use pipe '|' in grep patterns - use one clear phrase per grep
 
 OPTIMAL STRATEGY FOR COMMON QUERIES:
 • "what is inside @file" → read_lines file from 1-100 → conclude
-• Definition/concept question → grep once in relevant file → conclude
-• "What is X?" → grep for "X" in topic file → conclude
-• Specific facts → grep exact term → if no match, search once → conclude
+• "how to do X" / "explain X" → search for the concept → conclude
+• Definition/concept question → search in relevant file → conclude
+• "What is X?" → search for "X" in relevant files → conclude
+• Specific exact name/term lookup → grep exact term → conclude
 • Line number request → read_lines ONCE with filename, startLine, endLine → conclude
 • File not found → conclude immediately with explanation
 
@@ -858,10 +948,10 @@ DECISION PRIORITY (choose highest applicable):
 2. File not found or data missing → conclude with explanation
 3. Previous action failed → try different approach ONCE or conclude
 4. User mentions @file + wants content → read_lines 1-100 → conclude
-5. Simple definition/fact + obvious target → grep once → conclude
+5. How-to / conceptual / explanation → search once → conclude
 6. Line numbers requested → read_lines once → conclude
-7. Need exact match → grep → conclude
-8. Conceptual query → search once → conclude
+7. Need exact name/term/identifier → grep → conclude
+8. General query → search once → conclude
 
 RESPONSE FORMAT (JSON only):
 {{
@@ -1030,10 +1120,22 @@ CRITICAL: Return ONLY valid JSON. No extra text."""
         if target_files:
             normalized_targets = [t.lstrip('@').lower() for t in target_files]
         
-        # Split pattern into words for multi-word searches (find lines containing ANY word)
-        pattern_words = [w.strip().lower() for w in pattern.replace(',', ' ').split() if w.strip()]
+        # Parse pattern: support '|' as alternation (OR between phrases)
+        # Each phrase requires ALL its words to match (AND within phrase)
+        # Example: "declare function|function declaration" 
+        #   → match lines with ("declare" AND "function") OR ("function" AND "declaration")
+        alternatives = [alt.strip() for alt in pattern.split('|') if alt.strip()]
+        parsed_alternatives = []
+        for alt in alternatives:
+            words = [w.strip().lower() for w in alt.replace(',', ' ').split() if w.strip()]
+            if words:
+                parsed_alternatives.append(words)
         
-        print(f"[DEBUG] Grep searching for pattern: '{pattern}' -> words: {pattern_words}")
+        # Fallback: if parsing produced nothing, use original pattern as single word
+        if not parsed_alternatives:
+            parsed_alternatives = [[pattern.lower().strip()]]
+        
+        print(f"[DEBUG] Grep searching for pattern: '{pattern}' -> alternatives: {parsed_alternatives}")
         print(f"[DEBUG] Target files: {target_files} -> normalized: {normalized_targets}")
         
         for doc in documents:
@@ -1057,8 +1159,11 @@ CRITICAL: Return ONLY valid JSON. No extra text."""
             
             for line_num, line in enumerate(lines, 1):
                 line_lower = line.lower()
-                # Match if ANY word from the pattern is found in the line
-                matches_any = any(word in line_lower for word in pattern_words) if pattern_words else pattern.lower() in line_lower
+                # Match if ANY alternative matches (where each alternative requires ALL its words)
+                matches_any = any(
+                    all(word in line_lower for word in alt_words)
+                    for alt_words in parsed_alternatives
+                )
                 
                 if matches_any:
                     matched_files.add(filename)  # Track this file had a match

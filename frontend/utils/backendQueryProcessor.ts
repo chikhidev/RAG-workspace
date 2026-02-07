@@ -15,7 +15,9 @@ export async function processQueryWithBackend(
   addToast: Function,
   modelId?: string,
   abortSignal?: AbortSignal,
-  filteredSources?: Array<{ docName: string; text: string }>
+  filteredSources?: Array<{ docName: string; text: string }>,
+  skipResearch?: boolean,
+  priorContext?: string
 ) {
   setState((prev: any) => ({ ...prev, isProcessing: true }));
   
@@ -42,6 +44,14 @@ export async function processQueryWithBackend(
     // Add filtered sources if provided (for regeneration)
     if (filteredSources) {
       request.filtered_sources = filteredSources;
+    }
+    
+    // Skip research mode (user chose "Generate Answer" after max iterations)
+    if (skipResearch) {
+      request.skip_research = true;
+      if (priorContext) {
+        request.prior_context = priorContext;
+      }
     }
     
     // Stream events from backend with abort signal
@@ -141,6 +151,11 @@ export async function processQueryWithBackend(
         case 'complete':
           // Don't overwrite sources if they were already streamed via 'source' events
           // Backend may still send empty array in complete event for backward compatibility
+          if (event.data.stopped_at_limit) {
+            // Stream ended because of max iterations - don't mark as completed yet
+            // The max_iterations_reached handler already set pendingMaxIterations
+            break;
+          }
           setState((prev: any) => ({
             ...prev,
             messages: prev.messages.map((m: any) =>
@@ -153,6 +168,30 @@ export async function processQueryWithBackend(
                       ...(m.agentContext || {}),
                       sources: m.sources || sources,  // Use already streamed sources if available
                       iterations: event.data.iterations
+                    }
+                  }
+                : m
+            )
+          }));
+          break;
+          
+        case 'max_iterations_reached':
+          // Pause the stream and ask the user whether to continue or generate answer
+          setState((prev: any) => ({
+            ...prev,
+            isProcessing: false,
+            messages: prev.messages.map((m: any) =>
+              m.id === assistantId
+                ? {
+                    ...m,
+                    status: 'completed',
+                    pendingMaxIterations: true,
+                    agentContext: {
+                      ...(m.agentContext || {}),
+                      originalQuery: query,
+                      knowledgeBuffer: event.data.knowledge_buffer || '',
+                      iterations: event.data.iterations,
+                      sources: sources
                     }
                   }
                 : m

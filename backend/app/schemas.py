@@ -48,6 +48,8 @@ class ChatRequest(BaseModel):
     use_context_history: bool = False
     max_iterations: int = 7
     active_files: List[str] = [] # Filenames to focus on
+    skip_research: bool = False  # Skip agent loop and go straight to answer generation
+    prior_context: Optional[str] = None  # Knowledge buffer from prior iterations
 
 class DocumentSummary(BaseModel):
     """Document metadata without content - for list endpoint"""
