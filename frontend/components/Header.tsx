@@ -1,8 +1,10 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Menu, Settings, HelpCircle, PanelLeft, User as UserIcon, LogOut, Upload, MessageSquare } from 'lucide-react';
+import { Menu, Settings, HelpCircle, PanelLeft, User as UserIcon, LogOut, Upload, MessageCircle } from 'lucide-react';
+import { useResponsive } from '../hooks/useResponsive';
 
 interface HeaderProps {
   title?: string;
+  conversationTitle?: string | null;
   onMenuClick?: () => void;
   onSettingsClick?: () => void;
   onHelpClick?: () => void;
@@ -22,6 +24,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ 
   title = 'Copper Mole',
+  conversationTitle,
   onMenuClick,
   onSettingsClick,
   onHelpClick,
@@ -76,58 +79,71 @@ export const Header: React.FC<HeaderProps> = ({
     }
   };
 
+  const responsive = useResponsive();
+
   return (
     <header className="sticky top-0 z-40 w-full bg-brand-darker border-b border-brand-border/50 backdrop-blur-sm bg-opacity-95">
-      <div className="flex items-center justify-between h-16 px-6">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between h-16 px-4 md:px-6">
+        <div className="flex items-center gap-2 md:gap-3 min-w-0">
           {onMenuClick && (
             <button
               onClick={onMenuClick}
-              className="p-2 rounded-lg hover:bg-brand-border/20 transition-colors text-gray-400 hover:text-gray-200"
+              className="p-2 rounded-lg hover:bg-brand-border/20 transition-colors text-gray-400 hover:text-gray-200 flex-shrink-0"
               title="Toggle menu"
             >
-              <Menu size={20} />
+              <Menu size={responsive.isMobile ? 18 : 20} />
             </button>
           )}
-          <img src="/logo.png" alt="Copper" className="h-4 w-auto" />
-          <h1 className="text-xl font-bold text-gray-100 truncate">
-            {title} <span className="text-sm text-gray-400 ml-2">workspace</span>
+          <img src="/logo.png" alt="Copper" className={`w-auto flex-shrink-0 ${responsive.isMobile ? 'h-3' : 'h-4'}`} />
+          <h1 className={`font-bold text-gray-100 truncate ${responsive.isMobile ? 'text-base' : 'text-xl'}`}>
+            {title} <span className={`text-gray-400 ml-1 md:ml-2 ${responsive.isMobile ? 'hidden' : 'inline text-sm'}`}>workspace</span>
           </h1>
+          {conversationTitle && !responsive.isMobile && (
+            <>
+              <span className="text-gray-600 mx-2">/</span>
+              <span className="text-gray-400 text-sm truncate max-w-[200px] lg:max-w-xs" title={conversationTitle}>
+                {conversationTitle}
+              </span>
+            </>
+          )}
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 md:gap-2">
           {/* Conversations Button */}
           {onConversationsClick && (
             <button
               onClick={onConversationsClick}
-              className="p-2 rounded-lg hover:bg-brand-border/20 transition-colors text-gray-400 hover:text-brand-accent"
+              className="p-2 rounded-lg hover:bg-brand-border/20 transition-colors text-gray-400 hover:text-brand-accent flex-shrink-0"
               title="Conversations"
             >
-              <MessageSquare size={20} />
+              <MessageCircle size={20} className="mx-auto text-gray-600" />
+
             </button>
           )}
           
           {!isVaultOpen && onToggleVault && (
             <button
               onClick={onToggleVault}
-              className="p-2 rounded-lg hover:bg-brand-border/20 transition-colors text-gray-400 hover:text-brand-accent"
+              className="p-2 rounded-lg hover:bg-brand-border/20 transition-colors text-gray-400 hover:text-brand-accent flex-shrink-0"
               title="Open Vault (Ctrl+Shift+V)"
             >
-              <PanelLeft size={20} className="rotate-180" />
+              <PanelLeft size={responsive.isMobile ? 18 : 20} className="rotate-180" />
             </button>
           )}
           
           {user && (
-            <div className="flex items-center gap-3">
-              {/* Display Username */}
-              <div className="text-right hidden sm:block">
-                <p className="text-sm font-bold text-gray-200">{user.username || user.email.split('@')[0]}</p>
-              </div>
+            <div className="flex items-center gap-2 md:gap-3">
+              {/* Display Username - Hidden on small mobile */}
+              {!responsive.isSmallMobile && (
+                <div className="text-right hidden sm:block">
+                  <p className="text-sm font-bold text-gray-200">{user.username || user.email.split('@')[0]}</p>
+                </div>
+              )}
 
               <div className="relative">
                 <button
                   onClick={handleAvatarClick}
-                  className="w-10 h-10 rounded-full border-2 border-brand-border overflow-hidden hover:border-brand-accent transition-colors focus:outline-none"
+                  className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-brand-border overflow-hidden hover:border-brand-accent transition-colors focus:outline-none flex-shrink-0"
                 >
                   {user.avatar_path && avatarBlobUrl ? (
                     <img 
@@ -141,13 +157,13 @@ export const Header: React.FC<HeaderProps> = ({
                     />
                   ) : (
                     <div className="w-full h-full bg-brand-base flex items-center justify-center text-gray-400">
-                      <UserIcon size={20} />
+                      <UserIcon size={18} />
                     </div>
                   )}
                 </button>
 
                 {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-56 bg-brand-darker border border-brand-border rounded-xl shadow-xl py-2 z-50">
+                  <div className={`absolute right-0 mt-2 bg-brand-darker border border-brand-border rounded-xl shadow-xl py-2 z-50 ${responsive.isMobile ? 'w-48' : 'w-56'}`}>
                     <div className="px-4 py-3 border-b border-brand-border/50">
                       <p className="text-sm font-bold text-white truncate">{user.username || "No Username"}</p>
                       <p className="text-xs text-brand-muted truncate">{user.email}</p>
@@ -198,10 +214,10 @@ export const Header: React.FC<HeaderProps> = ({
           {onHelpClick && (
             <button
               onClick={onHelpClick}
-              className="p-2 rounded-lg hover:bg-brand-border/20 transition-colors text-gray-400 hover:text-gray-200"
+              className="p-2 rounded-lg hover:bg-brand-border/20 transition-colors text-gray-400 hover:text-gray-200 flex-shrink-0"
               title="Keyboard shortcuts (Ctrl+K)"
             >
-              <HelpCircle size={20} />
+              <HelpCircle size={responsive.isMobile ? 18 : 20} />
             </button>
           )}
           {/** Settings available in user menu now */}

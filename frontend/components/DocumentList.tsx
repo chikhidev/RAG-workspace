@@ -1,8 +1,9 @@
 import React from 'react';
 import { Document, MindMap } from '../types';
-import { FileText, Trash2, Upload, Box, Network } from 'lucide-react';
+import { FileText, Trash2, Upload, Box, Network, X } from 'lucide-react';
 import { CustomToggle } from './CustomToggle';
 import { getFileIcon } from './icons/FilesFormats';
+import { useResponsive } from '../hooks/useResponsive';
 
 interface Props {
   documents: Document[];
@@ -54,8 +55,10 @@ export const DocumentList: React.FC<Props> = ({
     }
   }, [activeFileNames]);
 
+  const responsive = useResponsive();
+
   return (
-    <div className="flex flex-col h-full dark:bg-brand-darker light:bg-light-base p-6 w-full transition-colors overflow-hidden">
+    <div className={`flex flex-col h-full dark:bg-brand-darker light:bg-light-base ${responsive.isMobile ? 'p-4' : 'p-6'} w-full transition-colors overflow-hidden`}>
       <div className="flex items-center justify-between mb-2 overflow-hidden shrink-0">
         <div className="flex items-center gap-3 min-w-0">
           {onCollapse && (

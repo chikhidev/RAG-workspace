@@ -1,0 +1,326 @@
+/* Mobile Responsiveness Styles */
+
+/* Mobile-first approach for better performance */
+
+/* Small Mobile Devices: < 375px */
+@media (max-width: 374px) {
+  body {
+    font-size: 14px;
+  }
+
+  h1 {
+    font-size: 1rem;
+  }
+
+  h2 {
+    font-size: 0.95rem;
+  }
+
+  button {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.75rem;
+  }
+
+  /* Reduce gaps on small screens */
+  .gap-2 {
+    gap: 0.4rem !important;
+  }
+
+  .gap-3 {
+    gap: 0.6rem !important;
+  }
+
+  .gap-4 {
+    gap: 0.8rem !important;
+  }
+
+  /* Ensure proper padding on mobile */
+  .px-6 {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  .py-6 {
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+  }
+}
+
+/* Mobile Devices: < 768px */
+@media (max-width: 767px) {
+  /* Stack layout vertically */
+  .flex-row-desktop {
+    flex-direction: column;
+  }
+
+  /* Make sidebars hidden by default on mobile */
+  .hidden-mobile {
+    display: none !important;
+  }
+
+  /* Ensure messages take full width */
+  .max-w-5xl {
+    max-width: 100%;
+  }
+
+  /* Make input area full width */
+  .max-w-4xl {
+    max-width: 100%;
+  }
+
+  /* Adjust modal sizes for mobile */
+  .max-w-sm {
+    width: 90vw;
+    max-width: none;
+  }
+
+  .max-w-md {
+    width: 90vw;
+    max-width: none;
+  }
+
+  /* Reduce border radius on mobile for performance */
+  .rounded-2xl {
+    border-radius: 1rem !important;
+  }
+
+  .rounded-3xl {
+    border-radius: 1.5rem !important;
+  }
+
+  /* Adjust shadow for mobile */
+  .shadow-2xl,
+  .shadow-xl {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  /* Make scrollbars thinner on mobile */
+  ::-webkit-scrollbar {
+    width: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    border-radius: 2px;
+  }
+
+  /* Ensure touch targets are at least 44px */
+  button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Prevent horizontal scroll */
+  body,
+  html {
+    overflow-x: hidden;
+  }
+
+  /* Make text input more mobile-friendly */
+  textarea,
+  input {
+    font-size: 16px !important; /* Prevents zoom on iOS */
+    padding: 0.75rem;
+  }
+
+  /* Adjust message bubbles for mobile */
+  .max-w-xl {
+    max-width: 85vw;
+  }
+
+  /* Make cards stack on mobile */
+  .grid-cols-2 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .grid-cols-3 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Adjust space between items */
+  .space-y-8 {
+    gap: 1.5rem !important;
+  }
+
+  .space-y-10 {
+    gap: 2rem !important;
+  }
+}
+
+/* Tablet Devices: 768px - 1024px */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .max-w-5xl {
+    max-width: 95%;
+  }
+
+  .max-w-4xl {
+    max-width: 90%;
+  }
+}
+
+/* Desktop Devices: >= 1024px */
+@media (min-width: 1024px) {
+  /* Normal behavior on desktop */
+  .hidden-mobile {
+    display: block !important;
+  }
+}
+
+/* Landscape Mobile - adjust heights */
+@media (max-height: 600px) and (max-width: 1024px) {
+  .h-screen {
+    min-height: auto;
+  }
+
+  .py-6,
+  .py-4 {
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+
+  .space-y-8 {
+    gap: 1rem !important;
+  }
+
+  textarea {
+    min-height: 50px !important;
+    max-height: 120px !important;
+  }
+}
+
+/* Safe area support for notched devices */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
+  }
+
+  .mobile-safe-area-top {
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+  }
+
+  .mobile-safe-area-bottom {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* Prevent zoom on input focus (iOS) */
+input,
+textarea,
+select {
+  font-size: 16px !important;
+}
+
+/* Improve tap feedback on mobile */
+@media (hover: none) and (pointer: coarse) {
+  button,
+  a,
+  [role="button"] {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  button:active,
+  a:active,
+  [role="button"]:active {
+    opacity: 0.7;
+  }
+}
+
+/* Reduce animation motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Dark mode optimizations for mobile */
+@media (prefers-color-scheme: dark) {
+  /* Reduce brightness to ease battery consumption */
+  body {
+    background-color: #191919;
+  }
+
+  /* Optimize scrollbar appearance */
+  ::-webkit-scrollbar {
+    width: 3px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 2px;
+  }
+}
+
+/* Utility classes for responsive layouts */
+.mobile\:inline-block {
+  @media (max-width: 767px) {
+    display: inline-block;
+  }
+}
+
+.mobile\:hidden {
+  @media (max-width: 767px) {
+    display: none !important;
+  }
+}
+
+.mobile\:flex {
+  @media (max-width: 767px) {
+    display: flex;
+  }
+}
+
+.mobile\:block {
+  @media (max-width: 767px) {
+    display: block;
+  }
+}
+
+.tablet\:hidden {
+  @media (max-width: 1023px) {
+    display: none !important;
+  }
+}
+
+.tablet\:flex {
+  @media (max-width: 1023px) {
+    display: flex;
+  }
+}
+
+/* Ensure menu overlays are visible on mobile */
+@media (max-width: 767px) {
+  .fixed {
+    position: fixed;
+  }
+
+  .z-30 {
+    z-index: 30;
+  }
+
+  .bg-black\/50 {
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* Toast slide-in animation */
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.3s ease-out;
+}

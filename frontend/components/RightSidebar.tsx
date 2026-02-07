@@ -1,7 +1,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, Sun, Moon, Terminal, Cpu, Eraser, Layers, Key, Settings2, Layout, Maximize2, AlertCircle, FileText, Trash2, BarChart2, Shield, ChevronDown, ChevronRight } from 'lucide-react';
+import { Send, Loader2, Sun, Moon, Terminal, Cpu, Eraser, Layers, Key, Settings2, Layout, Maximize2, AlertCircle, FileText, Trash2, BarChart2, Shield, ChevronDown, ChevronRight, X } from 'lucide-react';
 import { SUPPORTED_MODELS } from '../services/modelService';
+import { useResponsive } from '../hooks/useResponsive';
 
 import { ModelDefinition, Document } from '../types';
 import { ModelSelectorModal } from './ModelSelectorModal';
@@ -75,11 +76,12 @@ export const RightSidebar: React.FC<Props> = ({
   const selectedModelDef = SUPPORTED_MODELS.find(m => m.id === selectedModel);
 
   const [showCustomContext, setShowCustomContext] = useState(false);
+  const responsive = useResponsive();
 
   return (
-    <div className="flex flex-col h-full dark:bg-brand-darker light:bg-light-base dark:border-l dark:border-transparent light:border-l light:border-light-border p-6 w-full transition-colors overflow-y-auto relative">
+    <div className={`flex flex-col h-full dark:bg-brand-darker light:bg-light-base dark:border-l dark:border-transparent light:border-l light:border-light-border ${responsive.isMobile ? 'p-4' : 'p-6'} w-full transition-colors overflow-y-auto relative`}>
 
-      <div className="space-y-10">
+      <div className={`${responsive.isMobile ? 'space-y-6' : 'space-y-10'}`}>
         <div>
           <div className="space-y-8">
             <div className="space-y-2">

@@ -1,6 +1,7 @@
 import React from 'react';
 import { SUPPORTED_MODELS } from '../services/modelService';
 import { ChevronRight, ArrowLeft, Key, Check, Cpu, Globe, Zap, Shield } from 'lucide-react';
+import { useResponsive } from '../hooks/useResponsive';
 
 interface OnboardingSettings {
     provider: string;
@@ -18,6 +19,7 @@ const LoadingScreen: React.FC<Props> = ({ isOnboarding, onComplete }) => {
     const [selectedProvider, setSelectedProvider] = React.useState<string>('google');
     const [selectedModel, setSelectedModel] = React.useState<string>('gemini-2.0-flash-thinking-exp');
     const [apiKey, setApiKey] = React.useState('');
+    const responsive = useResponsive();
 
     const providers = [
         { id: 'google', name: 'Google Gemini', icon: Globe, desc: 'High performance & thinking models', logo: '/logos/google.png' },
@@ -47,7 +49,7 @@ const LoadingScreen: React.FC<Props> = ({ isOnboarding, onComplete }) => {
 
             {/* Center Content: Onboarding UI */}
             {isOnboarding && (
-                <div className="flex-1 flex items-center justify-center relative z-20 px-6">
+                <div className={`flex-1 flex items-center justify-center relative z-20 ${responsive.isMobile ? 'px-4' : 'px-6'}`}>
                     <div className="w-full max-w-2xl dark:bg-brand-base light:bg-light-base dark:border-white/10 light:border-light-border rounded-3xl overflow-hidden animate-[fadeIn_0.5s_ease-out]">
 
                         {/* Header */}

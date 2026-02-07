@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Eye, EyeOff, Key } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Eye, EyeOff, Key, AlertCircle, Save } from 'lucide-react';
 
 interface ApiKeyManagementModalProps {
   isOpen: boolean;
@@ -61,6 +61,64 @@ export const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({
   xaiKey, setXaiKey, openaiKey, setOpenaiKey, mistralKey, setMistralKey
 }) => {
   const [visibleKeys, setVisibleKeys] = useState<Record<string, boolean>>({});
+  
+  // Local state for editing (not saved until Done is clicked)
+  const [localKeys, setLocalKeys] = useState({
+    openrouter: openRouterKey,
+    google: googleKey,
+    xai: xaiKey,
+    openai: openaiKey,
+    mistral: mistralKey
+  });
+
+  // Initial values to track changes
+  const [initialKeys, setInitialKeys] = useState(localKeys);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showUnsavedToast, setShowUnsavedToast] = useState(false);
+
+  // Initialize local state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      const keys = {
+        openrouter: openRouterKey,
+        google: googleKey,
+        xai: xaiKey,
+        openai: openaiKey,
+        mistral: mistralKey
+      };
+      setLocalKeys(keys);
+      setInitialKeys(keys);
+      setHasUnsavedChanges(false);
+      setShowUnsavedToast(false);
+    }
+  }, [isOpen, openRouterKey, googleKey, xaiKey, openaiKey, mistralKey]);
+
+  // Check for changes
+  useEffect(() => {
+    const changed = Object.keys(localKeys).some(
+      key => localKeys[key as keyof typeof localKeys] !== initialKeys[key as keyof typeof initialKeys]
+    );
+    setHasUnsavedChanges(changed);
+
+    // Show toast when user makes first change
+    if (changed && !showUnsavedToast && isOpen) {
+      setShowUnsavedToast(true);
+      setTimeout(() => setShowUnsavedToast(false), 3000);
+    }
+  }, [localKeys, initialKeys, isOpen]);
+
+  // Prevent page refresh with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges && isOpen) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges, isOpen]);
 
   if (!isOpen) return null;
 
@@ -68,29 +126,49 @@ export const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({
     setVisibleKeys(prev => ({ ...prev, [providerId]: !prev[providerId] }));
   };
 
-  const getKeyValue = (providerId: string) => {
-    switch (providerId) {
-      case 'openrouter': return openRouterKey;
-      case 'google': return googleKey;
-      case 'xai': return xaiKey;
-      case 'openai': return openaiKey;
-      case 'mistral': return mistralKey;
-      default: return '';
+  const getLocalKeyValue = (providerId: string) => {
+    return localKeys[providerId as keyof typeof localKeys] || '';
+  };
+
+  const setLocalKeyValue = (providerId: string, value: string) => {
+    setLocalKeys(prev => ({
+      ...prev,
+      [providerId]: value
+    }));
+  };
+
+  const handleClose = () => {
+    if (hasUnsavedChanges) {
+      if (confirm('You have unsaved changes. Are you sure you want to close without saving?')) {
+        onClose();
+      }
+    } else {
+      onClose();
     }
   };
 
-  const setKeyValue = (providerId: string, value: string) => {
-    switch (providerId) {
-      case 'openrouter': setOpenRouterKey(value); break;
-      case 'google': setGoogleKey(value); break;
-      case 'xai': setXaiKey(value); break;
-      case 'openai': setOpenaiKey(value); break;
-      case 'mistral': setMistralKey(value); break;
-    }
+  const handleSave = () => {
+    // Save all keys to parent state
+    setOpenRouterKey(localKeys.openrouter);
+    setGoogleKey(localKeys.google);
+    setXaiKey(localKeys.xai);
+    setOpenaiKey(localKeys.openai);
+    setMistralKey(localKeys.mistral);
+    
+    onSave?.();
+    onClose();
   };
 
   return (
     <div className="fixed inset-0 z-[1000] flex flex-col bg-brand-darker animate-in fade-in duration-200">
+      {/* Unsaved Changes Toast */}
+      {showUnsavedToast && (
+        <div className="fixed top-4 right-4 z-[1100] bg-brand-accent text-white px-6 py-3 rounded-lg shadow-xl flex items-center gap-3 animate-slide-in">
+          <AlertCircle className="w-5 h-5" />
+          <span className="font-medium">You have unsaved changes</span>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between px-8 py-6 border-b border-brand-border bg-brand-base/50 shrink-0">
         <div className="flex items-center gap-3">
@@ -100,7 +178,7 @@ export const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({
           </div>
         </div>
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className="p-2 hover:bg-brand-border/50 rounded-full transition-colors text-gray-400 hover:text-white"
         >
           <X size={24} />
@@ -143,8 +221,8 @@ export const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({
                 <div className="relative">
                   <input
                     type={visibleKeys[provider.id] ? 'text' : 'password'}
-                    value={getKeyValue(provider.id)}
-                    onChange={(e) => setKeyValue(provider.id, e.target.value)}
+                    value={getLocalKeyValue(provider.id)}
+                    onChange={(e) => setLocalKeyValue(provider.id, e.target.value)}
                     placeholder={provider.placeholder}
                     className="w-full bg-brand-darker border border-brand-border rounded-lg px-4 py-3 pr-12 text-[13px] font-mono text-gray-200 placeholder:text-gray-600 focus:border-brand-accent focus:ring-1 focus:ring-brand-accent/20 outline-none transition-all"
                   />
@@ -168,13 +246,15 @@ export const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({
       <div className="border-t border-brand-border bg-brand-base/80 backdrop-blur-md px-8 py-6 shrink-0 z-50 sticky bottom-0">
         <div className="max-w-5xl mx-auto flex justify-end gap-3">
           <button
-            onClick={() => {
-              onSave?.();
-              onClose();
-            }}
-            className="px-6 py-3 bg-brand-accent hover:bg-brand-accent/90 text-white rounded-lg text-sm font-bold tracking-wide transition-all hover:-translate-y-0.5 active:translate-y-0"
+            onClick={handleSave}
+            className={`px-6 py-3 rounded-lg text-sm font-bold tracking-wide transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2 bg-brand-accent ${
+              hasUnsavedChanges
+                ? 'border border-white/20 hover:bg-brand-accent/90 text-white'
+                : 'hover:bg-brand-accent/90 text-white'
+            }`}
           >
-            Done
+            {hasUnsavedChanges ? "Save Changes" : "All Changes Saved"}
+            
           </button>
         </div>
       </div>
