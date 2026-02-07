@@ -39,7 +39,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
           alt=""
           className="w-full h-full object-cover opacity-30"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f12] via-[#0f0f12]/80 to-transparent" />
+        <div className="absolute inset-0 bg-brand-base/20 to-transparent" />
       </div>
 
       <div className="w-full max-w-md space-y-8 relative z-10">

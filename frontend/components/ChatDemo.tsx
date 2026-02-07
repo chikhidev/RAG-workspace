@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { RotateCcw } from 'lucide-react';
 import { ChatInterface } from './ChatInterface';
 import { Message, PipelineStatus } from '../types';
 
@@ -163,14 +164,19 @@ The document contains numerous code snippets demonstrating each concept, from ba
   }
 ];
 
-export const ChatDemo: React.FC = () => {
+export const ChatDemo: React.FC<{ start?: boolean }> = ({ start = true }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentStep, setCurrentStep] = useState(0);
+  const [replayKey, setReplayKey] = useState(0);
+  const hasStartedRef = useRef(false);
   
-  // Randomly select a scenario once on mount
-  const scenario = useMemo(() => scenarios[Math.floor(Math.random() * scenarios.length)], []);
+  // Randomly select a scenario once on mount or replay
+  const scenario = useMemo(() => scenarios[Math.floor(Math.random() * scenarios.length)], [replayKey]);
 
   useEffect(() => {
+    if (!start || hasStartedRef.current) return;
+    hasStartedRef.current = true;
+    
     // Step 0: Show user question
     const step0 = setTimeout(() => {
       setMessages([{
@@ -183,11 +189,22 @@ export const ChatDemo: React.FC = () => {
     }, 500);
 
     return () => clearTimeout(step0);
-  }, [scenario]);
+  }, [start, scenario, replayKey]);
+
+  const handleReplay = () => {
+    setMessages([]);
+    setCurrentStep(0);
+    hasStartedRef.current = false;
+    setReplayKey(prev => prev + 1);
+  };
 
   useEffect(() => {
     if (currentStep === 0) return;
-
+    
+    // Safety check - if we shouldn't be running but somehow step advanced, stop?
+    // Actually once started, let it finish? Usually better UX to let it finish or pause.
+    // Given the request "don't start... untill scroll", implies start triggers sequence.
+    
     const timers: NodeJS.Timeout[] = [];
 
     // Step 1: Start with planning
@@ -295,7 +312,7 @@ export const ChatDemo: React.FC = () => {
   }, [currentStep, scenario]);
 
   return (
-    <div className="h-[600px] overflow-hidden">
+    <div className="h-[600px] overflow-hidden relative group">
       <ChatInterface
         messages={messages}
         selectedModelId="anthropic/claude-sonnet-4"
@@ -313,6 +330,19 @@ export const ChatDemo: React.FC = () => {
         availableDocuments={[]}
         onHistoryNav={() => {}}
       />
+      
+      {currentStep === 6 && (
+        <div className="absolute top-4 left-4 z-20 animate-fade-in">
+          <button
+            onClick={handleReplay}
+            title="Replay Simulation"
+            className="p-2.5 rounded-full bg-brand-accent text-white shadow-lg hover:bg-brand-accent/90 transition-all hover:scale-105 backdrop-blur-sm"
+            aria-label="Replay simulation"
+          >
+            <RotateCcw className="w-5 h-5" />
+          </button>
+        </div>
+      )}
     </div>
   );
 };

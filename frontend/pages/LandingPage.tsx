@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FileText,
@@ -22,6 +22,62 @@ export default function LandingPage() {
     return stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches);
   });
   const [user, setUser] = useState<User | null>(null);
+  
+  // Demo section scroll logic
+  const demoSectionRef = useRef<HTMLDivElement>(null);
+  const [demoScale, setDemoScale] = useState(0.95);
+  const [startDemo, setStartDemo] = useState(false);
+
+  // Trigger start when visible using IntersectionObserver
+  useEffect(() => {
+    const el = demoSectionRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setStartDemo(true);
+          observer.disconnect(); // Only need to trigger once
+        }
+      },
+      { threshold: 0.15 } // Start when 15% visible
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  // Handle scaling effect
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!demoSectionRef.current) return;
+      
+      const rect = demoSectionRef.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      
+      // Calculate scale based on center alignment
+      const elementCenter = rect.top + rect.height / 2;
+      const viewportCenter = viewportHeight / 2;
+      const distanceFromCenter = Math.abs(elementCenter - viewportCenter);
+      
+      // Define the "active zone" (e.g. within 600px of center)
+      const maxDistance = viewportHeight / 1.5;
+      
+      if (distanceFromCenter < maxDistance) {
+        const factor = 1 - (distanceFromCenter / maxDistance);
+        // Scale range: 0.95 to 1.05
+        const scale = 0.95 + (0.1 * factor);
+        setDemoScale(Math.min(1.05, Math.max(0.95, scale)));
+      } else {
+        setDemoScale(0.95);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Initial check
+    
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Handle OAuth token in URL params (fallback if callback lands here)
   useEffect(() => {
@@ -68,11 +124,6 @@ export default function LandingPage() {
   }, [darkMode]);
 
   const features = [
-    {
-      icon: <Brain className="w-5 h-5" />,
-      title: "Agent-Powered Research",
-      description: "Intelligent agent loop that searches, analyzes, and synthesizes information across your documents."
-    },
     {
       icon: <FileText className="w-5 h-5" />,
       title: "Multi-Format Support",
@@ -152,7 +203,17 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <section className={`pt-32 pb-24 px-6 grid-bg relative overflow-hidden`}>
-        <div className="max-w-6xl mx-auto flex flex-col items-center">
+
+        <div className="absolute inset-0 -top-60 opacity-70 flex items-center justify-center z-0 pointer-events-none translate-y-12">
+              {/* Rocks background */}
+              <img 
+                src="/brand-rocks.png" 
+                alt="Copper Brand Rocks" 
+                className="w-full max-w-4xl mx-auto"
+              />
+        </div>
+
+        <div className="max-w-6xl mx-auto flex flex-col items-center relative z-10">
           <div className="flex flex-col items-center text-center space-y-6 max-w-2xl">
             <div className="space-y-6 w-full">
               <div className={`inline-block px-3 py-1 rounded-full text-sm font-mono border ${
@@ -198,29 +259,17 @@ export default function LandingPage() {
               </div>
             </div>
             
-            <div className="relative flex items-center justify-center mt-12 w-full">
-              {/* Rocks background */}
-              <img 
-                src="/brand-rocks.png" 
-                alt="Copper Brand Rocks" 
-                className="w-full max-w-2xl mx-auto opacity-100"
-              />
-              
-              {/* Character on top */}
-              <img 
-                src="/brand-character.png" 
-                alt="Copper Brand Character" 
-                className="absolute max-w-lg mx-auto"
-              />
-            </div>
+            
           </div>
         </div>
       </section>
 
       {/* Preview Section - Interactive Demo */}
-      <section className={`py-16 px-6 border-t ${
-        darkMode ? 'bg-brand-darker border-brand-border' : 'bg-light-darker border-light-border'
-      }`}>
+      <section 
+        className={`py-16 px-6 border-t ${
+          darkMode ? 'bg-brand-darker border-brand-border' : 'bg-light-darker border-light-border'
+        }`}
+      >
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-8">
             <h3 className="text-2xl mb-2">See It In Action</h3>
@@ -229,10 +278,18 @@ export default function LandingPage() {
             </p>
           </div>
           
-          <div className={`rounded-xl overflow-hidden border ${
-            darkMode ? 'border-brand-border bg-brand-base' : 'border-light-border bg-white'
-          }`}>
-            <ChatDemo />
+          <div 
+            ref={demoSectionRef}
+            style={{ 
+              transform: `scale(${demoScale})`,
+              opacity: Math.max(0.5, (demoScale - 0.95) * 10 + 0.5), // Fade in as it scales up
+              transition: 'transform 0.1s ease-out, opacity 0.2s ease-out'
+            }}
+            className={`rounded-xl overflow-hidden border shadow-2xl ${
+              darkMode ? 'border-brand-border bg-brand-base' : 'border-light-border bg-white'
+            }`}
+          >
+            <ChatDemo start={startDemo} />
           </div>
         </div>
       </section>
@@ -274,6 +331,85 @@ export default function LandingPage() {
                 </p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Supported Models Section */}
+      <section className={`py-20 px-6 border-t ${
+        darkMode ? 'bg-brand-darker border-brand-border' : 'bg-light-darker border-light-border'
+      }`}>
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16 space-y-4">
+            <h2 className="text-3xl md:text-4xl">
+              World-Class Models
+            </h2>
+            <p className={`text-lg ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              Choose from the best open and commercial models for your research
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            {[
+              {
+                name: "Gemini 3 Pro",
+                provider: "Google",
+                desc: "Multimodal reasoning & long context",
+                logo: "/logos/gemini.png"
+              },
+              {
+                name: "Llama 3.2",
+                provider: "Meta",
+                desc: "Optimized instruction tuning",
+                logo: "/logos/meta.png"
+              },
+              {
+                name: "DeepSeek R1",
+                provider: "DeepSeek",
+                desc: "High-performance reasoning",
+                logo: "/logos/deepseek.png"
+              },
+              {
+                name: "Qwen3",
+                provider: "Qwen",
+                desc: "Ultra-fast state of the art",
+                logo: "/logos/qwen.png"
+              },
+              {
+                name: "Nemotron",
+                provider: "NVIDIA",
+                desc: "Enterprise-grade reliability",
+                logo: "/logos/nvidia.png"
+              }
+            ].map((model, idx) => (
+              <div 
+                key={idx}
+                className={`p-4 rounded-xl text-center transition-all hover:-translate-y-1 ${
+                  darkMode 
+                    ? 'bg-brand-base border border-brand-border hover:border-brand-accent/50' 
+                    : 'bg-white border border-light-border hover:border-light-accent/50'
+                }`}
+              >
+                <div className="h-12 flex items-center justify-center mb-3">
+                  <img src={model.logo} alt={model.provider} className="h-8 w-auto object-contain opacity-90" />
+                </div>
+                <h3 className="font-semibold mb-1">{model.name}</h3>
+                <p className={`text-xs uppercase tracking-wider font-mono mb-2 ${
+                  darkMode ? 'text-brand-muted' : 'text-light-muted'
+                }`}>
+                  {model.provider}
+                </p>
+                <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {model.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+          
+          <div className="mt-10 text-center">
+            <p className={`text-sm ${darkMode ? 'text-brand-muted' : 'text-light-muted'}`}>
+              + Many more models available via OpenRouter integration
+            </p>
           </div>
         </div>
       </section>
