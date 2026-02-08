@@ -1186,14 +1186,14 @@ const App: React.FC = () => {
 
   return (
     <Suspense fallback={<LoadingScreen />}>
-      <div className="flex flex-col h-screen bg-brand-base text-gray-100 transition-colors overflow-hidden dark relative">
+      <div className="flex flex-col h-screen bg-light-base dark:bg-brand-base text-gray-900 dark:text-gray-100 transition-colors overflow-hidden relative">
         {/* Drag overlay */}
         {isDraggingOver && (
           <div className="fixed inset-0 bg-brand-accent/20 border-4 border-dashed border-brand-accent rounded-lg pointer-events-none z-[200] flex items-center justify-center backdrop-blur-sm">
             <div className="text-center">
               <div className="text-4xl font-bold text-brand-accent mb-2">📁</div>
-              <p className="text-xl font-semibold text-gray-100">Drop files to upload</p>
-              <p className="text-sm text-gray-400 mt-1">Supported: PDF, DOCX, TXT</p>
+              <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">Drop files to upload</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Supported: PDF, DOCX, TXT</p>
             </div>
           </div>
         )}
@@ -1225,7 +1225,7 @@ const App: React.FC = () => {
           className="shrink-0 flex relative z-30"
           style={{ width: `${controlsWidth}px` }}
         >
-          <div className="flex-1 min-w-0 h-full overflow-hidden border-r border-brand-border/50 relative">
+          <div className="flex-1 min-w-0 h-full overflow-hidden border-r border-light-border/50 dark:border-brand-border/50 relative">
             <RightSidebar
               inputValue={inputValue} setInputValue={setInputValue}
               onSend={handleSend} onStop={handleStop} onHistoryNav={handleHistoryNav}
@@ -1266,16 +1266,14 @@ const App: React.FC = () => {
 
             {/* INTERNAL COLLAPSE BUTTON REMOVED AS PER USER REQUEST */}
           </div>
-          <div onMouseDown={startResizingControls} className="w-1.5 cursor-col-resize bg-brand-border hover:bg-brand-accent transition-all flex flex-col items-center justify-center gap-1 group shrink-0">
-            <div className="w-[1px] h-8 bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
-            <div className="w-[1px] h-8 bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
+          <div onMouseDown={startResizingControls} className="w-1.5 cursor-col-resize bg-light-border dark:bg-brand-border hover:bg-brand-accent transition-all flex flex-col items-center justify-center gap-1 group shrink-0">
           </div>
         </div>
 
         {/* FLOAT OPEN BUTTONS */}
         {/* Vault Open Button Now in Navbar */}
 
-        <main className="flex-1 flex flex-col min-w-0 bg-brand-base relative transition-all">
+        <main className="flex-1 flex flex-col min-w-0 bg-light-base dark:bg-brand-base relative transition-all">
           <ChatInterface
             messages={state.messages}
             selectedModelId={state.selectedModel}
@@ -1300,12 +1298,10 @@ const App: React.FC = () => {
           style={{ width: isVaultOpen ? `${vaultWidth}px` : '0px' }}
           className="shrink-0 flex transition-all duration-300 ease-in-out relative z-30 overflow-hidden"
         >
-          <div onMouseDown={startResizingVault} className="w-1.5 cursor-col-resize bg-brand-border hover:bg-brand-accent transition-all flex flex-col items-center justify-center gap-1 group shrink-0">
-            <div className="w-[1px] h-8 bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
-            <div className="w-[1px] h-8 bg-brand-muted/40 rounded-full group-hover:bg-white/50"></div>
+          <div onMouseDown={startResizingVault} className="w-1.5 cursor-col-resize bg-light-border dark:bg-brand-border hover:bg-brand-accent transition-all flex flex-col items-center justify-center gap-1 group shrink-0">
           </div>
 
-          <div className="flex-1 min-w-0 h-full overflow-hidden border-l border-brand-border/50 relative">
+          <div className="flex-1 min-w-0 h-full overflow-hidden border-l border-light-border/50 dark:border-brand-border/50 relative">
             <DocumentList
               documents={state.documents} onUpload={handleFileUpload}
               onRemove={async (id) => {
@@ -1423,21 +1419,21 @@ const App: React.FC = () => {
 
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 flex flex-col gap-3 z-50 pointer-events-none w-full max-sm px-4 shadow-2xl">
           {state.toasts.map(toast => (
-            <div key={toast.id} className="pointer-events-auto flex items-center gap-3 px-5 py-3.5 bg-brand-darker message-shadow rounded-2xl border border-brand-border animate-blur-text w-full max-w-md">
+            <div key={toast.id} className="pointer-events-auto flex items-center gap-3 px-5 py-3.5 bg-light-darker dark:bg-brand-darker message-shadow rounded-2xl border border-light-border dark:border-brand-border animate-blur-text w-full max-w-md">
               <div className="flex-1 flex flex-col">
-                <p className="text-[13px] text-gray-300 font-medium leading-normal">{toast.message}</p>
+                <p className="text-[13px] text-gray-700 dark:text-gray-300 font-medium leading-normal">{toast.message}</p>
                 {toast.message.includes("OpenRouter Privacy Settings") && (
                   <a
                     href="https://openrouter.ai/settings/privacy"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-2 inline-flex items-center text-[11px] font-bold text-brand-accent hover:text-white transition-colors uppercase tracking-wide gap-1 self-start border-b border-brand-accent/30 hover:border-brand-accent pb-0.5"
+                    className="mt-2 inline-flex items-center text-[11px] font-bold text-brand-accent hover:text-brand-accent/80 dark:hover:text-white transition-colors uppercase tracking-wide gap-1 self-start border-b border-brand-accent/30 hover:border-brand-accent pb-0.5"
                   >
                     Configure Settings &rarr;
                   </a>
                 )}
               </div>
-              <button onClick={() => removeToast(toast.id)} className="text-gray-400 hover:text-white transition-colors">
+              <button onClick={() => removeToast(toast.id)} className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                 <X size={14} />
               </button>
             </div>

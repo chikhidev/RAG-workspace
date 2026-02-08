@@ -31,7 +31,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen bg-brand-base text-white flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-light-base dark:bg-brand-base text-primary flex flex-col items-center justify-center p-4 relative overflow-hidden">
       {/* Background Layer */}
       <div className="absolute inset-0 z-0 select-none pointer-events-none">
         <img
@@ -48,7 +48,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
           <img src="/logo.png" alt="Copper" className="h-24 w-auto" />
         </div>
 
-        <div className="mt-8 space-y-6 bg-brand-base/5 p-8 rounded-2xl border border-white/10 backdrop-blur-xl">
+        <div className="mt-8 space-y-6 bg-brand-base/5 p-8 rounded-2xl border border-theme backdrop-blur-xl">
           {error && (
             <div className="py-3 text-red-400 text-sm bg-red-500/10 px-4 rounded-lg border border-red-500/20">
               {error}
@@ -56,14 +56,14 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
           )}
 
           <div className="text-center space-y-2">
-            <h2 className="text-2xl font-bold text-white">Welcome to Copper</h2>
-            <p className="text-gray-400 text-sm">Sign in with your Google account to continue</p>
+            <h2 className="text-2xl font-bold text-primary">Welcome to Copper</h2>
+            <p className="dark:text-secondary text-sm">Sign in with your Google account to continue</p>
           </div>
 
           <button
             type="button"
             onClick={handleGoogleLogin}
-            className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-white/10 rounded-lg text-base font-medium text-white bg-white/5 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-white/20 transition-all"
+            className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-theme rounded-lg text-base font-medium text-primary bg-surface hover:bg-surface/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-theme/20 transition-all"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { X, Type, Link as LinkIcon, Loader2, FileText } from 'lucide-react';
 import { fileService } from '../services/fileService';
@@ -61,25 +60,25 @@ export const InputModal: React.FC<Props> = ({ isOpen, onClose, onConfirm, type =
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 dark:bg-black/60 light:bg-white/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="dark:bg-brand-darker light:bg-light-base w-full max-w-lg rounded-2xl dark:border dark:border-brand-border light:border light:border-light-border shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-white/60 dark:bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-light-base dark:bg-brand-darker w-full max-w-lg rounded-2xl border border-light-border dark:border-brand-border shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
                 {/* Header */}
-                <div className="px-6 py-4 dark:border-b dark:border-brand-border light:border-b light:border-light-border flex items-center justify-between dark:bg-brand-base/50 light:bg-light-darker/50 shrink-0">
+                <div className="px-6 py-4 border-b border-light-border dark:border-brand-border flex items-center justify-between bg-light-darker/50 dark:bg-brand-base/50 shrink-0">
                     <div className="flex items-center gap-2">
-                        <h3 className="text-lg font-bold dark:text-gray-100 light:text-gray-900">Add Knowledge Source</h3>
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Add Knowledge Source</h3>
                     </div>
-                    <button onClick={handleClose} className="p-1 dark:hover:bg-brand-base light:hover:bg-light-darker rounded-lg transition-colors dark:text-gray-400 light:text-gray-600">
+                    <button onClick={handleClose} className="p-1 hover:bg-light-darker dark:hover:bg-brand-base rounded-lg transition-colors text-gray-600 dark:text-gray-400">
                         <X size={18} />
                     </button>
                 </div>
 
                 {/* Tabs */}
-                <div className="flex dark:border-b dark:border-brand-border light:border-b light:border-light-border">
+                <div className="flex border-b border-light-border dark:border-brand-border">
                     <button
                         onClick={() => setActiveTab('text')}
                         className={`flex-1 py-3 text-[13px] font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 ${activeTab === 'text'
-                            ? 'bg-brand-base text-brand-accent border-b-2 border-brand-accent'
-                            : 'text-brand-muted hover:text-gray-300 hover:bg-brand-base/50'
+                            ? 'bg-light-darker dark:bg-brand-base text-brand-accent border-b-2 border-brand-accent'
+                            : 'text-light-muted dark:text-brand-muted hover:text-gray-700 dark:hover:text-gray-300 hover:bg-light-darker/50 dark:hover:bg-brand-base/50'
                             }`}
                     >
                         <Type size={14} />
@@ -88,8 +87,8 @@ export const InputModal: React.FC<Props> = ({ isOpen, onClose, onConfirm, type =
                     <button
                         onClick={() => setActiveTab('url')}
                         className={`flex-1 py-3 text-[13px] font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 ${activeTab === 'url'
-                            ? 'bg-brand-base text-brand-accent border-b-2 border-brand-accent'
-                            : 'text-brand-muted hover:text-gray-300 hover:bg-brand-base/50'
+                            ? 'bg-light-darker dark:bg-brand-base text-brand-accent border-b-2 border-brand-accent'
+                            : 'text-light-muted dark:text-brand-muted hover:text-gray-700 dark:hover:text-gray-300 hover:bg-light-darker/50 dark:hover:bg-brand-base/50'
                             }`}
                     >
                         <LinkIcon size={14} />
@@ -100,7 +99,7 @@ export const InputModal: React.FC<Props> = ({ isOpen, onClose, onConfirm, type =
                 {/* Content */}
                 <div className="p-6 space-y-5 overflow-y-auto flex-1">
                     <div className="space-y-2">
-                        <label className="text-[10px] font-mono text-brand-muted uppercase tracking-widest block">
+                        <label className="text-[10px] font-mono text-light-muted dark:text-brand-muted uppercase tracking-widest block">
                             Document Name
                         </label>
                         <input
@@ -108,12 +107,12 @@ export const InputModal: React.FC<Props> = ({ isOpen, onClose, onConfirm, type =
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             placeholder={activeTab === 'text' ? "e.g., My Notes" : "e.g., Wikipedia Article"}
-                            className="w-full bg-[#252525] border border-brand-border rounded-xl p-3 text-[13px] text-gray-200 outline-none focus:border-brand-accent/50 transition-all font-medium"
+                            className="w-full bg-gray-100 dark:bg-[#252525] border border-light-border dark:border-brand-border rounded-xl p-3 text-[13px] text-gray-900 dark:text-gray-200 outline-none focus:border-brand-accent/50 transition-all font-medium placeholder:text-gray-500 dark:placeholder:text-gray-600"
                         />
                     </div>
 
                     <div className="space-y-2 flex-1 flex flex-col min-h-0">
-                        <label className="text-[10px] font-mono text-brand-muted uppercase tracking-widest block">
+                        <label className="text-[10px] font-mono text-light-muted dark:text-brand-muted uppercase tracking-widest block">
                             {activeTab === 'text' ? 'Content' : 'URL Address'}
                         </label>
                         {activeTab === 'text' ? (
@@ -121,7 +120,7 @@ export const InputModal: React.FC<Props> = ({ isOpen, onClose, onConfirm, type =
                                 value={content}
                                 onChange={(e) => setContent(e.target.value)}
                                 placeholder="Paste your text content here..."
-                                className="w-full h-40 bg-[#252525] border border-brand-border rounded-xl p-3 text-[13px] font-mono text-gray-300 outline-none focus:border-brand-accent/50 transition-all resize-none"
+                                className="w-full h-40 bg-gray-100 dark:bg-[#252525] border border-light-border dark:border-brand-border rounded-xl p-3 text-[13px] font-mono text-gray-800 dark:text-gray-300 outline-none focus:border-brand-accent/50 transition-all resize-none placeholder:text-gray-500 dark:placeholder:text-gray-600"
                             />
                         ) : (
                             <input
@@ -129,11 +128,11 @@ export const InputModal: React.FC<Props> = ({ isOpen, onClose, onConfirm, type =
                                 value={content}
                                 onChange={(e) => setContent(e.target.value)}
                                 placeholder="https://example.com/article"
-                                className="w-full bg-[#252525] border border-brand-border rounded-xl p-3 text-[13px] font-mono text-brand-accent outline-none focus:border-brand-accent/50 transition-all"
+                                className="w-full bg-gray-100 dark:bg-[#252525] border border-light-border dark:border-brand-border rounded-xl p-3 text-[13px] font-mono text-brand-accent outline-none focus:border-brand-accent/50 transition-all placeholder:text-gray-500 dark:placeholder:text-gray-600"
                             />
                         )}
                         {activeTab === 'url' && (
-                            <p className="text-[11px] text-brand-muted italic flex items-start gap-1.5 mt-2">
+                            <p className="text-[11px] text-light-muted dark:text-brand-muted italic flex items-start gap-1.5 mt-2">
                                 <FileText size={12} className="shrink-0 mt-0.5" />
                                 Note: Some websites may block access depending on their security settings (CORS). Text extraction works best on static pages.
                             </p>
@@ -141,7 +140,7 @@ export const InputModal: React.FC<Props> = ({ isOpen, onClose, onConfirm, type =
                     </div>
 
                     {error && (
-                        <div className="text-red-400 text-[12px] bg-red-500/10 border border-red-500/20 p-3 rounded-lg flex items-center gap-2">
+                        <div className="text-red-600 dark:text-red-400 text-[12px] bg-red-500/10 border border-red-500/20 p-3 rounded-lg flex items-center gap-2">
                             {error}
                         </div>
                     )}

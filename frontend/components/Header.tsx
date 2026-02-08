@@ -90,26 +90,26 @@ export const Header: React.FC<HeaderProps> = ({
   const responsive = useResponsive();
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-brand-darker border-b border-brand-border/50 backdrop-blur-sm bg-opacity-95">
+    <header className="sticky top-0 z-40 w-full bg-light-base dark:bg-brand-darker border-b border-light-border/50 dark:border-brand-border/50 backdrop-blur-sm bg-opacity-95">
       <div className="flex items-center justify-between h-16 px-4 md:px-6">
         <div className="flex items-center gap-2 md:gap-3 min-w-0">
           {onMenuClick && (
             <button
               onClick={onMenuClick}
-              className="p-2 rounded-lg hover:bg-brand-border/20 transition-colors text-gray-400 hover:text-gray-200 flex-shrink-0"
+              className="p-2 rounded-lg hover:bg-gray-200/20 dark:hover:bg-brand-border/20 transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 flex-shrink-0"
               title="Toggle menu"
             >
               <Menu size={responsive.isMobile ? 18 : 20} />
             </button>
           )}
           <img src="/logo.png" alt="Copper" className={`w-auto flex-shrink-0 ${responsive.isMobile ? 'h-9' : 'h-6'}`} />
-          <h1 className={`font-bold text-gray-100 truncate ${responsive.isMobile ? 'text-base' : 'text-xl'}`}>
-            {title} <span className={`text-gray-400 ml-1 md:ml-2 ${responsive.isMobile ? 'hidden' : 'inline text-sm'}`}>workspace</span>
+          <h1 className={`font-bold text-gray-900 dark:text-gray-100 truncate ${responsive.isMobile ? 'text-base' : 'text-xl'}`}>
+            {title} <span className={`text-gray-600 dark:text-gray-400 ml-1 md:ml-2 ${responsive.isMobile ? 'hidden' : 'inline text-sm'}`}>workspace</span>
           </h1>
           {conversationTitle && !responsive.isMobile && (
             <>
-              <span className="text-gray-600 mx-2">/</span>
-              <span className="text-gray-400 text-sm truncate max-w-[200px] lg:max-w-xs" title={conversationTitle}>
+              <span className="text-gray-400 dark:text-gray-600 mx-2">/</span>
+              <span className="text-gray-600 dark:text-gray-400 text-sm truncate max-w-[200px] lg:max-w-xs" title={conversationTitle}>
                 {conversationTitle}
               </span>
             </>
@@ -121,7 +121,7 @@ export const Header: React.FC<HeaderProps> = ({
           {onConversationsClick && (
             <button
               onClick={onConversationsClick}
-              className="p-2 rounded-lg hover:bg-brand-border/20 transition-colors text-gray-400 hover:text-brand-accent flex-shrink-0"
+              className="p-2 rounded-lg hover:bg-gray-200/20 dark:hover:bg-brand-border/20 transition-colors text-gray-600 dark:text-gray-400 hover:text-brand-accent flex-shrink-0"
               title="Conversations"
             >
               <MessageCircle size={20} className="mx-auto text-gray-600" />
@@ -132,7 +132,7 @@ export const Header: React.FC<HeaderProps> = ({
           {!isVaultOpen && onToggleVault && (
             <button
               onClick={onToggleVault}
-              className="p-2 rounded-lg hover:bg-brand-border/20 transition-colors text-gray-400 hover:text-brand-accent flex-shrink-0"
+              className="p-2 rounded-lg hover:bg-gray-200/20 dark:hover:bg-brand-border/20 transition-colors text-gray-600 dark:text-gray-400 hover:text-brand-accent flex-shrink-0"
               title="Open Vault (Ctrl+Shift+V)"
             >
               <PanelLeft size={responsive.isMobile ? 18 : 20} className="rotate-180" />
@@ -144,14 +144,14 @@ export const Header: React.FC<HeaderProps> = ({
               {/* Display Username - Hidden on small mobile */}
               {!responsive.isSmallMobile && (
                 <div className="text-right hidden sm:block">
-                  <p className="text-sm font-bold text-gray-200">{user.username || user.email.split('@')[0]}</p>
+                  <p className="text-sm font-bold text-gray-900 dark:text-gray-200">{user.username || user.email.split('@')[0]}</p>
                 </div>
               )}
 
               <div className="relative">
                 <button
                   onClick={handleAvatarClick}
-                  className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-brand-border overflow-hidden hover:border-brand-accent transition-colors focus:outline-none flex-shrink-0"
+                  className="w-9 h-9 md:w-10 md:h-10 rounded-full border-2 border-light-border dark:border-brand-border overflow-hidden hover:border-brand-accent transition-colors focus:outline-none flex-shrink-0"
                 >
                   {user.avatar_path && avatarBlobUrl ? (
                     <img 
@@ -164,17 +164,17 @@ export const Header: React.FC<HeaderProps> = ({
                       }}
                     />
                   ) : (
-                    <div className="w-full h-full bg-brand-base flex items-center justify-center text-gray-400">
+                    <div className="w-full h-full bg-light-darker dark:bg-brand-base flex items-center justify-center text-gray-600 dark:text-gray-400">
                       <UserIcon size={18} />
                     </div>
                   )}
                 </button>
 
                 {showUserMenu && (
-                  <div className={`absolute right-0 mt-2 bg-brand-darker border border-brand-border rounded-xl shadow-xl py-2 z-50 ${responsive.isMobile ? 'w-48' : 'w-56'}`}>
-                    <div className="px-4 py-3 border-b border-brand-border/50">
-                      <p className="text-sm font-bold text-white truncate">{user.username || "No Username"}</p>
-                      <p className="text-xs text-brand-muted truncate">{user.email}</p>
+                  <div className={`absolute right-0 mt-2 bg-light-base dark:bg-brand-darker border border-light-border dark:border-brand-border rounded-xl shadow-xl py-2 z-50 ${responsive.isMobile ? 'w-48' : 'w-56'}`}>
+                    <div className="px-4 py-3 border-b border-light-border/50 dark:border-brand-border/50">
+                      <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{user.username || "No Username"}</p>
+                      <p className="text-xs text-light-muted dark:text-brand-muted truncate">{user.email}</p>
                     </div>
                     
                     <div className="py-1">
@@ -183,7 +183,7 @@ export const Header: React.FC<HeaderProps> = ({
                           if (onProfileClick) onProfileClick();
                           setShowUserMenu(false);
                         }}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-brand-base hover:text-white flex items-center gap-2"
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-light-darker dark:hover:bg-brand-base hover:text-gray-900 dark:hover:text-white flex items-center gap-2"
                       >
                         <UserIcon size={14} />
                         Profile Settings
@@ -195,7 +195,7 @@ export const Header: React.FC<HeaderProps> = ({
                             onSettingsClick();
                             setShowUserMenu(false);
                           }}
-                          className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-brand-base hover:text-white flex items-center gap-2"
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-light-darker dark:hover:bg-brand-base hover:text-gray-900 dark:hover:text-white flex items-center gap-2"
                         >
                           <Settings size={14} />
                           API Keys
@@ -203,10 +203,10 @@ export const Header: React.FC<HeaderProps> = ({
                       )}
                     </div>
                     
-                    <div className="border-t border-brand-border/50 mt-1 pt-1">
+                    <div className="border-t border-light-border/50 dark:border-brand-border/50 mt-1 pt-1">
                       <button
                         onClick={onLogout}
-                        className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2"
+                        className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-500/10 flex items-center gap-2"
                       >
                         <LogOut size={14} />
                         Sign Out
@@ -222,7 +222,7 @@ export const Header: React.FC<HeaderProps> = ({
           {onHelpClick && (
             <button
               onClick={onHelpClick}
-              className="p-2 rounded-lg hover:bg-brand-border/20 transition-colors text-gray-400 hover:text-gray-200 flex-shrink-0"
+              className="p-2 rounded-lg hover:bg-gray-200/20 dark:hover:bg-brand-border/20 transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 flex-shrink-0"
               title="Keyboard shortcuts (Ctrl+K)"
             >
               <HelpCircle size={responsive.isMobile ? 18 : 20} />

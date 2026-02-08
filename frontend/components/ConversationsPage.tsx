@@ -25,6 +25,7 @@ export const ConversationsPage: React.FC<ConversationsPageProps> = ({
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  
 
   const BACKEND_URL = '/api';
 
@@ -97,13 +98,13 @@ export const ConversationsPage: React.FC<ConversationsPageProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-brand-base z-50 flex flex-col">
-      <div className="border-b border-brand-border bg-brand-darker">
+    <div className="fixed inset-0 z-50 flex flex-col bg-light-base text-gray-900 dark:bg-brand-base dark:text-white">
+      <div className="border-b border-light-border bg-light-darker dark:border-brand-border dark:bg-brand-darker">
         <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <MessageCircle size={20} className="mx-auto text-gray-600" />
 
-            <h1 className="text-lg font-bold text-white">Conversations</h1>
+            <h1 className="text-lg font-bold text-gray-900 dark:text-white">Conversations</h1>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -111,14 +112,14 @@ export const ConversationsPage: React.FC<ConversationsPageProps> = ({
                 onNewConversation();
                 onClose();
               }}
-              className="px-3 py-1.5 rounded-lg bg-brand-accent text-white hover:bg-brand-accent/80 transition-all flex items-center gap-2 text-sm font-medium"
+              className="px-3 py-1.5 rounded-lg bg-light-accent text-white hover:bg-light-accent/80 dark:bg-brand-accent dark:hover:bg-brand-accent/80 transition-all flex items-center gap-2 text-sm font-medium"
             >
               <Plus size={16} />
               New Chat
             </button>
             <button
               onClick={onClose}
-              className="px-3 py-1.5 rounded-lg bg-brand-base border border-brand-border text-gray-300 hover:bg-brand-accent/10 hover:border-brand-accent hover:text-brand-accent transition-all text-sm"
+              className="px-3 py-1.5 rounded-lg bg-light-base border border-light-border text-gray-700 hover:bg-light-accent/10 hover:border-light-accent hover:text-light-accent transition-all text-sm dark:bg-brand-base dark:border-brand-border dark:text-gray-300 dark:hover:bg-brand-accent/10 dark:hover:border-brand-accent dark:hover:text-brand-accent"
             >
               Close
             </button>
@@ -130,13 +131,13 @@ export const ConversationsPage: React.FC<ConversationsPageProps> = ({
         <div className="max-w-6xl mx-auto px-6 py-6">
           {loading ? (
             <div className="flex items-center justify-center py-16">
-              <div className="w-8 h-8 border-2 border-brand-accent/30 border-t-brand-accent rounded-full animate-spin" />
+              <div className="w-8 h-8 border-2 rounded-full animate-spin border-light-accent/30 border-t-light-accent dark:border-brand-accent/30 dark:border-t-brand-accent" />
             </div>
           ) : conversations.length === 0 ? (
             <div className="text-center py-12">
               <MessageCircle size={40} className="mx-auto mb-3 text-gray-600" />
-              <p className="text-gray-400 text-base">No conversations yet</p>
-              <p className="text-gray-500 text-sm mt-1">Start chatting to create your first conversation</p>
+              <p className="text-gray-600 text-base dark:text-gray-400">No conversations yet</p>
+              <p className="text-gray-600 text-sm mt-1 dark:text-gray-500">Start chatting to create your first conversation</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -147,21 +148,19 @@ export const ConversationsPage: React.FC<ConversationsPageProps> = ({
                     onSelectConversation(conversation.id);
                     onClose();
                   }}
-                  className="group bg-brand-darker border border-brand-border rounded-lg p-3 hover:border-brand-accent hover:bg-brand-accent/5 transition-all cursor-pointer relative"
+                  className="group rounded-lg p-3 transition-all cursor-pointer relative bg-white border border-light-border hover:border-light-accent hover:bg-light-accent/5 dark:bg-brand-darker dark:border-brand-border dark:hover:border-brand-accent dark:hover:bg-brand-accent/5"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-base font-semibold text-white mb-1.5 group-hover:text-brand-accent transition-colors truncate">
+                      <h3 className="text-base font-semibold mb-1.5 truncate transition-colors text-gray-900 group-hover:text-light-accent dark:text-white dark:group-hover:text-brand-accent">
                         {conversation.title}
                       </h3>
                       
                       {conversation.last_message && (
-                        <p className="text-gray-400 text-xs line-clamp-2 mb-2">
-                          {conversation.last_message}
-                        </p>
+                        <p className="text-gray-600 text-xs line-clamp-2 mb-2 dark:text-gray-400">{conversation.last_message}</p>
                       )}
                       
-                      <div className="flex items-center gap-3 text-xs text-gray-500">
+                      <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-500">
                         <div className="flex items-center gap-1">
                           <Clock size={12} />
                           <span>{formatDate(conversation.created_at)}</span>
@@ -178,7 +177,7 @@ export const ConversationsPage: React.FC<ConversationsPageProps> = ({
                     <button
                       onClick={(e) => handleDelete(conversation.id, e)}
                       disabled={deletingId === conversation.id}
-                      className="p-1.5 rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-500/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                      className="p-1.5 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0 text-gray-600 hover:text-red-500 hover:bg-red-500/8 dark:text-gray-500 dark:hover:text-red-400 dark:hover:bg-red-500/10"
                       aria-label="Delete conversation"
                     >
                       {deletingId === conversation.id ? (

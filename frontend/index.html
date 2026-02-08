@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 
 <head>
   <meta charset="UTF-8" />
@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="/styles/responsive.css">
   <script>
     tailwind.config = {
-      darkMode: 'class',
+      darkMode: 'media',
       theme: {
         extend: {
           fontFamily: {
@@ -43,25 +43,114 @@
     }
   </script>
   <style>
+    /* Base (light) colors - prefer light by default */
     body {
       font-family: 'Inter', sans-serif;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
-      background-color: #191919;
-      color: #f3f4f6;
-    }
-    
-    .light body {
       background-color: #FFFFFF;
       color: #111827;
     }
-    
-    .light {
-      color-scheme: light;
+
+    /* Respect OS preference for dark mode */
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-color: #191919;
+        color: #f3f4f6;
+      }
+      :root {
+        color-scheme: dark;
+      }
     }
-    
-    .dark {
-      color-scheme: dark;
+
+    @media (prefers-color-scheme: light) {
+      :root {
+        color-scheme: light;
+      }
+    }
+
+    /* Design tokens as CSS variables for light/dark themes */
+    :root {
+      --brand-accent: #A76237;
+      --brand-base: #191919;
+      --brand-darker: #111111;
+      --brand-border: #2A2A2A;
+      --brand-muted: #666666;
+
+      --light-base: #FFFFFF;
+      --light-darker: #F8F9FA;
+      --light-border: #E5E7EB;
+      --light-muted: #9CA3AF;
+      --light-accent: #A76237;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --brand-accent: #A76237;
+        --brand-base: #191919;
+        --brand-darker: #111111;
+        --brand-border: #2A2A2A;
+        --brand-muted: #666666;
+
+        --light-base: #111827; /* fallback for components using light tokens in dark */
+        --light-darker: #0f172a;
+        --light-border: #1f2a37;
+        --light-muted: #6b7280;
+        --light-accent: #A76237;
+      }
+    }
+
+    /* Higher-level theme tokens (map to above tokens) */
+    :root {
+      /* RGB versions for rgba usage */
+      --brand-accent-rgb: 167,98,55;
+      --brand-base-rgb: 25,25,25;
+      --brand-darker-rgb: 17,17,17;
+      --brand-border-rgb: 42,42,42;
+
+      --light-base-rgb: 255,255,255;
+      --light-darker-rgb: 248,249,250;
+      --light-border-rgb: 229,231,235;
+
+      /* Semantic tokens */
+      --bg-primary: var(--light-base);
+      --bg-surface: var(--light-darker);
+      --text-primary: #111827;
+      --text-secondary: var(--light-muted);
+      --theme-border: var(--light-border);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-primary: var(--brand-base);
+        --bg-surface: var(--brand-darker);
+        --text-primary: #f3f4f6;
+        --text-secondary: var(--brand-muted);
+        --theme-border: var(--brand-border);
+      }
+    }
+
+    /* Utility classes that components can use to get consistent tokens */
+    .text-primary { color: var(--text-primary) !important; }
+    .text-secondary { color: var(--text-secondary) !important; }
+    .bg-primary { background-color: var(--bg-primary) !important; }
+    .bg-surface { background-color: var(--bg-surface) !important; }
+    .border-theme { border-color: var(--theme-border) !important; }
+
+    /* Inline code styling using the accent token */
+    .inline-code {
+      background-color: rgba(var(--brand-accent-rgb), 0.08);
+      color: var(--brand-accent);
+      padding: 0.15rem 0.35rem;
+      border-radius: 6px;
+      border: 1px solid rgba(var(--brand-accent-rgb), 0.12);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9em;
+    }
+
+    /* Bottom fade used for the chat gradient overlay */
+    .bottom-fade {
+      background: linear-gradient(to top, var(--bg-surface) 0%, rgba(var(--brand-base-rgb),0.95) 35%, transparent 100%);
     }
 
     .font-mono {
@@ -81,8 +170,10 @@
       border-radius: 10px;
     }
 
-    .dark ::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.15);
+    @media (prefers-color-scheme: dark) {
+      ::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.15);
+      }
     }
 
     .grid-bg {

@@ -6,8 +6,6 @@ import {
   MessageSquare,
   Search,
   Brain,
-  Moon,
-  Sun,
   ChevronRight,
   Layers,
   Eye
@@ -17,10 +15,6 @@ import { User } from '../types';
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const [darkMode, setDarkMode] = useState(() => {
-    const stored = localStorage.getItem('theme');
-    return stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  });
   const [user, setUser] = useState<User | null>(null);
   
   // Demo section scroll logic
@@ -40,12 +34,12 @@ export default function LandingPage() {
           observer.disconnect(); // Only need to trigger once
         }
       },
-      { threshold: 0.15 } // Start when 15% visible
-    );
+        { threshold: 0.15 } // Start when 15% visible
+      );
 
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+      observer.observe(el);
+      return () => observer.disconnect();
+    }, []);
 
   // Handle scaling effect
   useEffect(() => {
@@ -118,11 +112,6 @@ export default function LandingPage() {
     fetchUser();
   }, [navigate]);
 
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', darkMode);
-    localStorage.setItem('theme', darkMode ? 'dark' : 'light');
-  }, [darkMode]);
-
   const features = [
     {
       icon: <FileText className="w-5 h-5" />,
@@ -157,13 +146,9 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${
-      darkMode ? 'bg-brand-base text-white' : 'bg-light-base text-gray-900'
-    }`}>
+    <div className="min-h-screen transition-colors duration-300 bg-light-base text-gray-900 dark:bg-brand-base dark:text-white">
       {/* Header */}
-      <header className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-lg transition-colors ${
-        darkMode ? 'bg-brand-base/90 border-b border-brand-border' : 'bg-light-base/90 border-b border-light-border'
-      }`}>
+      <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-lg transition-colors bg-light-base/90 border-b border-light-border dark:bg-brand-base/90 dark:border-brand-border">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <button onClick={() => navigate('/')} className="flex items-center space-x-3 group">
             <img src="/logo.png" alt="Copper" className="w-8 h-8 transition-transform group-hover:scale-105" />
@@ -172,21 +157,8 @@ export default function LandingPage() {
           
           <div className="flex items-center space-x-3">
             <button
-              onClick={() => setDarkMode(!darkMode)}
-              className={`p-2 rounded-lg transition-colors ${
-                darkMode ? 'hover:bg-brand-border' : 'hover:bg-light-darker'
-              }`}
-              aria-label="Toggle theme"
-            >
-              {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </button>
-            <button
               onClick={() => navigate('/app')}
-              className={`px-5 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
-                darkMode 
-                  ? 'bg-brand-accent hover:bg-brand-accent/90 text-white'
-                  : 'bg-light-accent hover:bg-light-accent/90 text-white'
-              }`}
+              className="px-5 py-2 rounded-lg font-medium transition-all flex items-center gap-2 bg-light-accent hover:bg-light-accent/90 text-white dark:bg-brand-accent dark:hover:bg-brand-accent/90"
             >
               {user && user.avatar_path ? (
                 <img 
@@ -216,9 +188,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto flex flex-col items-center relative z-10">
           <div className="flex flex-col items-center text-center space-y-6 max-w-2xl">
             <div className="space-y-6 w-full">
-              <div className={`inline-block px-3 py-1 rounded-full text-sm font-mono border ${
-                darkMode ? 'border-brand-border text-brand-muted' : 'border-light-border text-light-muted'
-              }`}>
+              <div className="inline-block px-3 py-1 rounded-full text-sm font-mono border border-light-border text-light-muted dark:border-brand-border dark:text-brand-muted">
                 Free Forever
               </div>
               
@@ -226,9 +196,7 @@ export default function LandingPage() {
                 AI-Powered Research Over Your Documents
               </h1>
               
-              <p className={`text-lg leading-relaxed ${
-                darkMode ? 'text-gray-300' : 'text-gray-600'
-              }`}>
+              <p className="text-lg leading-relaxed text-gray-600 dark:text-gray-300">
                 Use your own API keys to make research easier than ever before. Upload documents, choose your preferred LLM, 
                 and watch as an intelligent agent searches, analyzes, and synthesizes comprehensive answers in real-time.
               </p>
@@ -236,11 +204,7 @@ export default function LandingPage() {
               <div className="flex flex-col sm:flex-row gap-3 pt-4 justify-center">
                 <button
                   onClick={() => navigate('/app')}
-                  className={`group px-6 py-3 rounded-lg font-medium transition-all flex items-center justify-center space-x-2 ${
-                    darkMode 
-                      ? 'bg-brand-accent hover:bg-brand-accent/90 text-white'
-                      : 'bg-light-accent hover:bg-light-accent/90 text-white'
-                  }`}
+                  className="group px-6 py-3 rounded-lg font-medium transition-all flex items-center justify-center space-x-2 bg-light-accent hover:bg-light-accent/90 text-white dark:bg-brand-accent dark:hover:bg-brand-accent/90"
                 >
                   <span>Get Started</span>
                   <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -248,11 +212,7 @@ export default function LandingPage() {
                 
                 <button
                   onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
-                  className={`px-6 py-3 rounded-lg font-medium transition-all border ${
-                    darkMode 
-                      ? 'border-brand-border hover:bg-brand-border/50' 
-                      : 'border-light-border hover:bg-light-darker'
-                  }`}
+                  className="px-6 py-3 rounded-lg font-medium transition-all border border-light-border hover:bg-light-darker dark:border-brand-border dark:hover:bg-brand-border/50"
                 >
                   Learn More
                 </button>
@@ -265,15 +225,11 @@ export default function LandingPage() {
       </section>
 
       {/* Preview Section - Interactive Demo */}
-      <section 
-        className={`py-16 px-6 border-t ${
-          darkMode ? 'bg-brand-darker border-brand-border' : 'bg-light-darker border-light-border'
-        }`}
-      >
+      <section className="py-16 px-6 border-t bg-light-darker border-light-border dark:bg-brand-darker dark:border-brand-border">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-8">
             <h3 className="text-2xl mb-2">See It In Action</h3>
-            <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               Watch how Copper's agent thinks and researches
             </p>
           </div>
@@ -285,9 +241,7 @@ export default function LandingPage() {
               opacity: Math.max(0.5, (demoScale - 0.95) * 10 + 0.5), // Fade in as it scales up
               transition: 'transform 0.1s ease-out, opacity 0.2s ease-out'
             }}
-            className={`rounded-xl overflow-hidden border shadow-2xl ${
-              darkMode ? 'border-brand-border bg-brand-base' : 'border-light-border bg-white'
-            }`}
+            className="rounded-xl overflow-hidden border shadow-2xl border-light-border bg-white dark:border-brand-border dark:bg-brand-base"
           >
             <ChatDemo start={startDemo} />
           </div>
@@ -301,34 +255,19 @@ export default function LandingPage() {
             <h2 className="text-4xl md:text-5xl">
               Features
             </h2>
-            <p className={`text-lg ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+            <p className="text-lg text-gray-600 dark:text-gray-300">
               Everything you need for intelligent document research
             </p>
           </div>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((feature, index) => (
-              <div
-                key={index}
-                className={`p-6 rounded-lg transition-all border ${
-                  darkMode 
-                    ? 'bg-brand-darker border-brand-border hover:border-brand-accent/50' 
-                    : 'bg-white border-light-border hover:border-light-accent/50'
-                }`}
-              >
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 ${
-                  darkMode 
-                    ? 'bg-brand-accent/10 text-brand-accent' 
-                    : 'bg-light-accent/10 text-light-accent'
-                }`}>
+              <div key={index} className="p-6 rounded-lg transition-all border bg-white border-light-border hover:border-light-accent/50 dark:bg-brand-darker dark:border-brand-border dark:hover:border-brand-accent/50">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-4 bg-light-accent/10 text-light-accent dark:bg-brand-accent/10 dark:text-brand-accent">
                   {feature.icon}
                 </div>
                 <h3 className="text-lg font-medium mb-2">{feature.title}</h3>
-                <p className={`text-sm leading-relaxed ${
-                  darkMode ? 'text-gray-400' : 'text-gray-600'
-                }`}>
-                  {feature.description}
-                </p>
+                <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-400">{feature.description}</p>
               </div>
             ))}
           </div>
@@ -336,17 +275,13 @@ export default function LandingPage() {
       </section>
 
       {/* Supported Models Section */}
-      <section className={`py-20 px-6 border-t ${
-        darkMode ? 'bg-brand-darker border-brand-border' : 'bg-light-darker border-light-border'
-      }`}>
+      <section className="py-20 px-6 border-t bg-light-darker border-light-border dark:bg-brand-darker dark:border-brand-border">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16 space-y-4">
             <h2 className="text-3xl md:text-4xl">
               World-Class Models
             </h2>
-            <p className={`text-lg ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-              Choose from the best open and commercial models for your research
-            </p>
+            <p className="text-lg text-gray-600 dark:text-gray-300">Choose from the best open and commercial models for your research</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -382,57 +317,36 @@ export default function LandingPage() {
                 logo: "/logos/nvidia.png"
               }
             ].map((model, idx) => (
-              <div 
-                key={idx}
-                className={`p-4 rounded-xl text-center transition-all hover:-translate-y-1 ${
-                  darkMode 
-                    ? 'bg-brand-base border border-brand-border hover:border-brand-accent/50' 
-                    : 'bg-white border border-light-border hover:border-light-accent/50'
-                }`}
-              >
+              <div key={idx} className="p-4 rounded-xl text-center transition-all hover:-translate-y-1 bg-white border border-light-border hover:border-light-accent/50 dark:bg-brand-base dark:border-brand-border dark:hover:border-brand-accent/50">
                 <div className="h-12 flex items-center justify-center mb-3">
                   <img src={model.logo} alt={model.provider} className="h-8 w-auto object-contain opacity-90" />
                 </div>
                 <h3 className="font-semibold mb-1">{model.name}</h3>
-                <p className={`text-xs uppercase tracking-wider font-mono mb-2 ${
-                  darkMode ? 'text-brand-muted' : 'text-light-muted'
-                }`}>
-                  {model.provider}
-                </p>
-                <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  {model.desc}
-                </p>
+                <p className="text-xs uppercase tracking-wider font-mono mb-2 text-light-muted dark:text-brand-muted">{model.provider}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{model.desc}</p>
               </div>
             ))}
           </div>
           
           <div className="mt-10 text-center">
-            <p className={`text-sm ${darkMode ? 'text-brand-muted' : 'text-light-muted'}`}>
-              + Many more models available via OpenRouter integration
-            </p>
+            <p className="text-sm text-light-muted dark:text-brand-muted">+ Many more models available via OpenRouter integration</p>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className={`py-20 px-6 border-t ${
-        darkMode ? 'border-brand-border' : 'border-light-border'
-      }`}>
+      <section className="py-20 px-6 border-t border-light-border dark:border-brand-border">
         <div className="max-w-3xl mx-auto text-center space-y-6">
           <h2 className="text-4xl md:text-5xl">
             Ready to Get Started?
           </h2>
-          <p className={`text-lg ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+          <p className="text-lg text-gray-600 dark:text-gray-300">
             Use your own API keys and choose your preferred model. Join researchers, students, and professionals 
             using Copper to unlock insights from their documents.
           </p>
           <button
             onClick={() => navigate('/app')}
-            className={`group px-8 py-4 rounded-lg font-medium text-lg transition-all inline-flex items-center space-x-2 ${
-              darkMode 
-                ? 'bg-brand-accent hover:bg-brand-accent/90 text-white'
-                : 'bg-light-accent hover:bg-light-accent/90 text-white'
-            }`}
+            className="group px-8 py-4 rounded-lg font-medium text-lg transition-all inline-flex items-center space-x-2 bg-light-accent hover:bg-light-accent/90 text-white dark:bg-brand-accent dark:hover:bg-brand-accent/90"
           >
             <span>Start Using Copper</span>
             <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -441,9 +355,7 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className={`py-12 px-6 border-t ${
-        darkMode ? 'bg-brand-darker border-brand-border' : 'bg-light-darker border-light-border'
-      }`}>
+      <footer className="py-12 px-6 border-t bg-light-darker border-light-border dark:bg-brand-darker dark:border-brand-border">
         <div className="max-w-6xl mx-auto">
           <div className="grid md:grid-cols-3 gap-8 mb-8">
             <div className="md:col-span-2">
@@ -451,14 +363,12 @@ export default function LandingPage() {
                 <img src="/logo.png" alt="Copper" className="w-8 h-8" />
                 <span className="text-xl font-medium">Copper</span>
               </div>
-              <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                AI-powered research assistant for your documents
-              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">AI-powered research assistant for your documents</p>
             </div>
             
             <div>
               <h4 className="font-medium mb-3">Product</h4>
-              <ul className={`space-y-2 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
                 <li>
                   <button onClick={() => navigate('/app')} className="hover:text-brand-accent transition-colors">
                     Launch App
@@ -474,9 +384,7 @@ export default function LandingPage() {
             
           </div>
           
-          <div className={`pt-8 border-t text-center text-sm ${
-            darkMode ? 'border-brand-border text-gray-400' : 'border-light-border text-gray-600'
-          }`}>
+          <div className="pt-8 border-t text-center text-sm border-light-border text-gray-600 dark:border-brand-border dark:text-gray-400">
             <p>&copy; 2026 Copper. Built for researchers.</p>
           </div>
         </div>

@@ -16,8 +16,8 @@ export const CustomToggle: React.FC<CustomToggleProps> = ({
   onChange,
   disabled = false,
   isLoading = false,
-  activeColor = '#a7623783',
-  inactiveColor = '#474747',
+  activeColor,
+  inactiveColor,
 }) => {
   if (isLoading) {
     return (
@@ -30,10 +30,12 @@ export const CustomToggle: React.FC<CustomToggleProps> = ({
   return (
     <div 
       className="toggle-container"
-      style={{
-        '--active-color': activeColor,
-        '--inactive-color': inactiveColor,
-      } as React.CSSProperties}
+      style={(() => {
+        const s: React.CSSProperties = {};
+        if (activeColor) (s as any)['--active-color'] = activeColor;
+        if (inactiveColor) (s as any)['--inactive-color'] = inactiveColor;
+        return s;
+      })()}
     >
       <input
         type="checkbox"

@@ -1,0 +1,21 @@
+/* Spinner color variables with sensible light/dark defaults */
+.simple-spinner-container {
+  --spinner-accent: #A76237; /* purple accent (light fallback) */
+  --spinner-border: #6666667a; /* light gray border */
+  position: relative;
+  display: inline-block;
+}
+
+@media (prefers-color-scheme: light) {
+  .simple-spinner-container {
+    --spinner-accent: #A76237;
+    --spinner-border: #e5e7eb00;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .simple-spinner-container {
+    --spinner-accent: #A76237; /* brighter blue accent in dark mode */
+    --spinner-border: #6666667a; /* darker border for contrast */
+  }
+}

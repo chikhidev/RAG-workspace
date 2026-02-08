@@ -65,6 +65,7 @@ interface ShortcutsModalProps {
 export const ShortcutsModal: React.FC<ShortcutsModalProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
+
   const getKeyDisplay = (shortcut: Shortcut): string => {
     const parts: string[] = [];
     if (shortcut.ctrl) parts.push('Ctrl');
@@ -75,15 +76,15 @@ export const ShortcutsModal: React.FC<ShortcutsModalProps> = ({ isOpen, onClose 
   };
 
   return (
-    <div className="fixed inset-0 z-[1000] flex flex-col bg-brand-darker animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[1000] flex flex-col animate-in fade-in duration-200 bg-light-base text-gray-900 dark:bg-brand-darker dark:text-white">
       {/* Header */}
-      <div className="flex items-center justify-between px-8 py-6 border-b border-brand-border bg-brand-base/50">
+      <div className="flex items-center justify-between px-8 py-6 border-b border-light-border bg-light-base/90 dark:border-brand-border dark:bg-brand-base/50">
         <div className="flex items-center gap-3">
-          <h2 className="text-xl font-bold text-gray-100 tracking-tight">Keyboard Shortcuts</h2>
+          <h2 className="text-xl font-bold tracking-tight text-gray-900 dark:text-gray-100">Keyboard Shortcuts</h2>
         </div>
         <button
           onClick={onClose}
-          className="p-2 hover:bg-brand-border/50 rounded-full transition-colors text-gray-400 hover:text-white"
+          className="p-2 rounded-full transition-colors hover:bg-light-darker text-gray-600 hover:text-gray-900 dark:hover:bg-brand-border/50 dark:text-gray-400 dark:hover:text-white"
         >
           <X size={24} />
         </button>
@@ -97,28 +98,24 @@ export const ShortcutsModal: React.FC<ShortcutsModalProps> = ({ isOpen, onClose 
               <div className="flex items-center gap-3 mb-6">
                 <div className="text-brand-accent">{section.icon}</div>
                 <div>
-                  <h3 className="text-lg font-bold text-gray-100">{section.title}</h3>
-                  <p className="text-xs text-gray-500 mt-1">{section.description}</p>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{section.title}</h3>
+                  <p className="text-xs mt-1 text-gray-600 dark:text-gray-500">{section.description}</p>
                 </div>
               </div>
-              <div className="space-y-3 ml-8 border-l-2 border-brand-border/30 pl-6">
+              <div className="space-y-3 ml-8 border-l-2 pl-6 border-light-border/30 dark:border-brand-border/30">
                 {section.shortcuts.map((shortcut, idx) => (
-                  <div 
-                    key={idx} 
-                    className="flex items-center justify-between py-3 px-4 bg-brand-base/40 hover:bg-brand-base/60 rounded-lg border border-brand-border/30 hover:border-brand-border/60 transition-all group"
+                  <div
+                    key={idx}
+                    className={`flex items-center justify-between py-3 px-4 rounded-lg transition-all group bg-white shadow-sm hover:bg-light-darker border border-light-border/30 hover:border-light-border/60 dark:bg-brand-base/40 dark:hover:bg-brand-base/60 dark:border-brand-border/30 dark:hover:border-brand-border/60`}
                   >
-                    <span className="text-sm text-gray-300 group-hover:text-gray-100 transition-colors font-medium">
-                      {shortcut.description}
-                    </span>
+                    <span className="text-sm font-medium transition-colors text-gray-700 group-hover:text-gray-900 dark:text-gray-300 dark:group-hover:text-gray-100">{shortcut.description}</span>
                     <div className="flex gap-1.5">
                       {getKeyDisplay(shortcut)
                         .split(' + ')
                         .map((part, i) => (
                           <React.Fragment key={i}>
                             {i > 0 && <span className="text-brand-muted mx-0.5">+</span>}
-                            <kbd className="px-3 py-1.5 bg-brand-darker hover:bg-brand-border border border-brand-border rounded text-xs font-mono text-gray-200 whitespace-nowrap transition-colors shadow-sm">
-                              {part}
-                            </kbd>
+                            <kbd className="px-3 py-1.5 rounded text-xs font-mono whitespace-nowrap transition-colors shadow-sm bg-light-darker hover:bg-light-border border border-light-border text-gray-800 dark:bg-brand-darker dark:hover:bg-brand-border dark:border-brand-border dark:text-gray-200">{part}</kbd>
                           </React.Fragment>
                         ))}
                     </div>
@@ -129,10 +126,10 @@ export const ShortcutsModal: React.FC<ShortcutsModalProps> = ({ isOpen, onClose 
           ))}
 
           {/* Drag & Drop Info */}
-          <div className="mt-12 pt-8 border-t border-brand-border/50">
-            <div className="bg-brand-accent/10 border border-brand-accent/30 rounded-lg p-6">
-              <h4 className="text-sm font-bold text-brand-accent mb-2">Pro Tip</h4>
-              <p className="text-sm text-gray-300">
+          <div className="mt-12 pt-8 border-t border-light-border/50 dark:border-brand-border/50">
+            <div className="rounded-lg p-6 bg-light-accent/10 border border-light-accent/30 text-gray-700 dark:bg-brand-accent/10 dark:border-brand-accent/30 dark:text-gray-300">
+              <h4 className="text-sm font-bold mb-2 text-light-accent dark:text-brand-accent">Pro Tip</h4>
+              <p className="text-sm">
                 You can drag and drop files from your computer anywhere in the app to upload them instantly. No need to navigate to the documents panel!
               </p>
             </div>

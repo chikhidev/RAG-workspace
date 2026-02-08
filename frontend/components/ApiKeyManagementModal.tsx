@@ -161,7 +161,7 @@ export const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[1000] flex flex-col bg-brand-darker animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[1000] flex flex-col bg-light-base dark:bg-brand-darker animate-in fade-in duration-200">
       {/* Unsaved Changes Toast */}
       {showUnsavedToast && (
         <div className="fixed top-4 right-4 z-[1100] bg-brand-accent text-white px-6 py-3 rounded-lg shadow-xl flex items-center gap-3 animate-slide-in">
@@ -171,16 +171,16 @@ export const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between px-8 py-6 border-b border-brand-border bg-brand-base/50 shrink-0">
+      <div className="flex items-center justify-between px-8 py-6 border-b border-light-border dark:border-brand-border bg-light-darker/50 dark:bg-brand-base/50 shrink-0">
         <div className="flex items-center gap-3">
           <div>
-            <h2 className="text-xl font-bold text-gray-100 tracking-tight">API Key Management</h2>
-            <p className="text-xs text-brand-muted mt-0.5">Secure your API credentials for various AI providers</p>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">API Key Management</h2>
+            <p className="text-xs text-light-muted dark:text-brand-muted mt-0.5">Secure your API credentials for various AI providers</p>
           </div>
         </div>
         <button
           onClick={handleClose}
-          className="p-2 hover:bg-brand-border/50 rounded-full transition-colors text-gray-400 hover:text-white"
+          className="p-2 hover:bg-light-border dark:hover:bg-brand-border/50 rounded-full transition-colors text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
         >
           <X size={24} />
         </button>
@@ -194,7 +194,7 @@ export const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({
           <div className="space-y-3">{providers.map((provider) => (
               <div
                 key={provider.id}
-                className="bg-[#1a1a1a] border border-brand-border rounded-xl p-6 hover:border-brand-accent/30 transition-all hover:shadow-lg hover:shadow-brand-accent/5"
+                className="bg-gray-50 dark:bg-[#1a1a1a] border border-light-border dark:border-brand-border rounded-xl p-6 hover:border-brand-accent/30 transition-all hover:shadow-lg hover:shadow-brand-accent/5"
               >
                 <div className="flex items-start gap-4 mb-4">
                   <div className="w-12 h-12 bg-white rounded-lg p-2 shrink-0 flex items-center justify-center">
@@ -202,14 +202,14 @@ export const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <h4 className="text-sm font-bold text-gray-100">{provider.name}</h4>
+                      <h4 className="text-sm font-bold text-gray-900 dark:text-gray-100">{provider.name}</h4>
                       {provider.isPrimary && (
                         <span className="px-2 py-0.5 rounded bg-brand-accent/10 text-brand-accent text-[9px] font-bold uppercase tracking-wider">
                           Primary
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-brand-muted leading-relaxed">{provider.description}</p>
+                    <p className="text-xs text-light-muted dark:text-brand-muted leading-relaxed">{provider.description}</p>
                   </div>
                 </div>
 
@@ -220,12 +220,12 @@ export const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({
                     value={getLocalKeyValue(provider.id)}
                     onChange={(e) => setLocalKeyValue(provider.id, e.target.value)}
                     placeholder={provider.placeholder}
-                    className="w-full bg-brand-darker border border-brand-border rounded-lg px-4 py-3 pr-12 text-[13px] font-mono text-gray-200 placeholder:text-gray-600 focus:border-brand-accent focus:ring-1 focus:ring-brand-accent/20 outline-none transition-all"
+                    className="w-full bg-light-base dark:bg-brand-darker border border-light-border dark:border-brand-border rounded-lg px-4 py-3 pr-12 text-[13px] font-mono text-gray-900 dark:text-gray-200 placeholder:text-gray-500 dark:placeholder:text-gray-600 focus:border-brand-accent focus:ring-1 focus:ring-brand-accent/20 outline-none transition-all"
                   />
                   <button
                     type="button"
                     onClick={() => toggleKeyVisibility(provider.id)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
                     title={visibleKeys[provider.id] ? 'Hide key' : 'Show key'}
                   >
                     {visibleKeys[provider.id] ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -239,7 +239,7 @@ export const ApiKeyManagementModal: React.FC<ApiKeyManagementModalProps> = ({
       </div>
 
       {/* Footer */}
-      <div className="border-t border-brand-border bg-brand-base/80 backdrop-blur-md px-8 py-6 shrink-0 z-50 sticky bottom-0">
+      <div className="border-t border-light-border dark:border-brand-border bg-light-base/80 dark:bg-brand-base/80 backdrop-blur-md px-8 py-6 shrink-0 z-50 sticky bottom-0">
         <div className="max-w-5xl mx-auto flex justify-end gap-3">
           <button
             onClick={handleSave}

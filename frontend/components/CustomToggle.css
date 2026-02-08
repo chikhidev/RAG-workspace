@@ -1,10 +1,27 @@
 .toggle-container {
-  --active-color: #a7623783;
+  /* defaults are set per color-scheme below; these act as a final fallback */
+  --active-color: #A7623783;
   --inactive-color: #474747;
   position: relative;
   aspect-ratio: 292 / 142;
   height: 1.1em;
   display: inline-block;
+}
+
+/* Light mode defaults */
+@media (prefers-color-scheme: light) {
+  .toggle-container {
+    --active-color: #A7623783;
+    --inactive-color: #474747;
+  }
+}
+
+/* Dark mode defaults */
+@media (prefers-color-scheme: dark) {
+  .toggle-container {
+    --active-color: #A76237; /* stronger, opaque accent in dark mode */
+    --inactive-color: #9a9a9a; /* lighter inactive for contrast */
+  }
 }
 
 .toggle-input {
